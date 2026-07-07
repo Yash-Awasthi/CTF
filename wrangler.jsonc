@@ -1,0 +1,28 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "case-files",
+	"compatibility_date": "2026-07-07",
+	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+	"main": "@astrojs/cloudflare/entrypoints/server",
+	"assets": {
+		"directory": "./dist",
+		"binding": "ASSETS"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "case-files-db",
+			"database_id": "PLACEHOLDER_SET_AFTER_wrangler_d1_create",
+			"migrations_dir": "migrations"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "BUCKET",
+			"bucket_name": "case-files-assets"
+		}
+	]
+}

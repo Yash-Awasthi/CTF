@@ -1,0 +1,41 @@
+# build output
+dist/
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# environment variables
+.env
+.env.production
+.dev.vars
+.dev.vars.*
+
+# wrangler / cloudflare local state
+.wrangler/
+worker-configuration.d.ts
+
+# playwright
+playwright-report/
+test-results/
+.cache/
+
+# macOS-specific files
+.DS_Store
+
+# KDE folder metadata
+.directory
+
+# local Claude Code overrides (personal, permissive perms)
+.claude/settings.local.json
+
+# jetbrains setting folder
+.idea/
