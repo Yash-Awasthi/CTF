@@ -15,6 +15,20 @@
       "when": 1783429817388,
       "tag": "0001_huge_sunspot",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1783451601050,
+      "tag": "0002_gifted_proemial_gods",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1783454355678,
+      "tag": "0003_smart_centennial",
+      "breakpoints": true
     }
   ]
 }

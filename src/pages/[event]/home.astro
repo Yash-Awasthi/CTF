@@ -117,7 +117,72 @@ else view = 'ended'; // FROZEN or expired-LIVE
 			</div>
 		)}
 	</main>
+
+	<div data-toasts class="fixed bottom-4 right-4 flex flex-col gap-2"></div>
 </Layout>
+
+<script>
+	// Live updates (Phase 12): SSE with a polling fallback. State/timer changes
+	// trigger a resync (reload); first-blood + announcements show a toast. The
+	// countdown itself is NOT streamed — it's computed locally below.
+	(() => {
+		const toasts = document.querySelector<HTMLElement>('[data-toasts]');
+		function toast(msg: string) {
+			if (!toasts) return;
+			const d = document.createElement('div');
+			d.className = 'rounded bg-neutral-800 px-4 py-2 text-sm text-emerald-300 shadow';
+			d.textContent = msg;
+			toasts.appendChild(d);
+			setTimeout(() => d.remove(), 8000);
+		}
+		let cursors = { fb: 0, ann: 0 };
+		let stateVersion: string | null = null;
+		const seen = new Set<string>();
+
+		function handleSnapshot(snap: any) {
+			if (stateVersion === null) stateVersion = snap.stateVersion;
+			else if (snap.stateVersion !== stateVersion) { location.reload(); return; }
+			for (const fb of snap.firstBloods ?? []) {
+				if (!seen.has('fb' + fb.id)) { seen.add('fb' + fb.id); toast(fb.message); }
+			}
+			for (const a of snap.announcements ?? []) {
+				if (!seen.has('an' + a.id)) { seen.add('an' + a.id); toast('📢 ' + a.message); }
+			}
+			if (snap.cursors) cursors = snap.cursors;
+		}
+
+		if (typeof EventSource !== 'undefined') {
+			const connect = () => {
+				const es = new EventSource(`/api/events/stream?fb=${cursors.fb}&ann=${cursors.ann}`);
+				es.addEventListener('state', (e) => {
+					const d = JSON.parse((e as MessageEvent).data);
+					if (stateVersion === null) stateVersion = d.stateVersion;
+					else if (d.stateVersion !== stateVersion) location.reload();
+				});
+				es.addEventListener('firstblood', (e) => {
+					const d = JSON.parse((e as MessageEvent).data);
+					const id = (e as MessageEvent).lastEventId;
+					if (!seen.has('fb' + id)) { seen.add('fb' + id); cursors.fb = Number(id) || cursors.fb; toast(d.message); }
+				});
+				es.addEventListener('announcement', (e) => {
+					const d = JSON.parse((e as MessageEvent).data);
+					const id = (e as MessageEvent).lastEventId;
+					if (!seen.has('an' + id)) { seen.add('an' + id); cursors.ann = Number(id) || cursors.ann; toast('📢 ' + d.message); }
+				});
+				es.onerror = () => { es.close(); setTimeout(connect, 3000); };
+			};
+			connect();
+		} else {
+			// Fallback: lightweight polling of authoritative D1 snapshots.
+			setInterval(async () => {
+				try {
+					const res = await fetch(`/api/events/updates?fb=${cursors.fb}&ann=${cursors.ann}`);
+					if (res.ok) handleSnapshot(await res.json());
+				} catch { /* offline — D1 remains source of truth on next tick */ }
+			}, 6000);
+		}
+	})();
+</script>
 
 <script>
 	// Display-only countdown. Server timing is authoritative; a refresh resyncs.

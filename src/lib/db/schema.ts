@@ -250,6 +250,14 @@ export const antiCheatEvents = sqliteTable(
 			t.eventId,
 			t.submitterParticipantId,
 		),
+		// One strike per (event, submitter, challenge): repeatedly submitting the
+		// same (or any) foreign answer for the same challenge is idempotent and
+		// counts as a single strike (Phase 8 strike-idempotency policy).
+		uniqueIndex('anti_cheat_event_strike_unq').on(
+			t.eventId,
+			t.submitterParticipantId,
+			t.challengeId,
+		),
 	],
 );
 
@@ -353,6 +361,32 @@ export const loginRateLimit = sqliteTable(
 	],
 );
 
+// ── admin_sessions (opaque admin sessions; Phase 12.5) ──────────────────────
+// The raw token lives only in the admin's HttpOnly cookie; D1 stores only its
+// SHA-256 hash. No admin identity/RBAC — a single shared ADMIN_SECRET credential
+// mints these sessions. Distinct from participant `sessions` so a participant
+// session can never authenticate as admin and vice-versa.
+export const adminSessions = sqliteTable('admin_sessions', {
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	tokenHash: text('token_hash').notNull().unique(),
+	createdAt: createdAt(),
+	expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+	revokedAt: integer('revoked_at', { mode: 'timestamp' }),
+});
+
+// ── admin_login_rate_limit (global, non-event-scoped) ───────────────────────
+// Fixed-window failed-attempt counter for admin login, keyed by HMAC(ip,
+// RATE_LIMIT_SECRET) — raw IPs never persisted. Separate from login_rate_limit
+// because admin login is NOT event-scoped (that table requires event_id).
+export const adminLoginRateLimit = sqliteTable('admin_login_rate_limit', {
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	ipHash: text('ip_hash').notNull().unique(),
+	windowStart: integer('window_start', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`),
+	failureCount: integer('failure_count').notNull().default(0),
+});
+
 export const schema = {
 	events,
 	participants,
@@ -367,6 +401,8 @@ export const schema = {
 	announcements,
 	challengeBypasses,
 	loginRateLimit,
+	adminSessions,
+	adminLoginRateLimit,
 };
 
 export type Schema = typeof schema;

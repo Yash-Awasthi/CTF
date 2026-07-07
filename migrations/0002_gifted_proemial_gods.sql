@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `anti_cheat_event_strike_unq` ON `anti_cheat_events` (`event_id`,`submitter_participant_id`,`challenge_id`);

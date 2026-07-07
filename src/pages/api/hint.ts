@@ -35,6 +35,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
 	if (!canSubmit(event, now)) return json({ error: 'event_not_live' }, 403);
 
+	// Eliminated participants cannot consume hints.
+	if (auth.participant.status === 'disqualified') {
+		return json({ error: 'eliminated' }, 403);
+	}
+
 	let payload: unknown;
 	try {
 		payload = await request.json();

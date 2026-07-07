@@ -30,8 +30,11 @@ import {
 } from '../challenges';
 import { hasUsedHint } from '../hints';
 import { recordSolve } from '../scoring';
+import { classifyIncorrectSubmission, ELIMINATED_STATUS } from '../anti-cheat';
+import { claimFirstBlood } from '../first-blood';
 
 export type SubmitOutcome =
+	| { outcome: 'eliminated' }
 	| { outcome: 'locked' }
 	| { outcome: 'already_solved' }
 	| { outcome: 'not_found' }
@@ -44,6 +47,7 @@ export type SubmitOutcome =
 			hintUsed: boolean;
 			currentChallenge: number;
 			completed: boolean;
+			firstBlood: boolean;
 	  };
 
 export interface ProcessSubmissionInput {
@@ -64,6 +68,9 @@ export async function processSubmission(
 	input: ProcessSubmissionInput,
 ): Promise<SubmitOutcome> {
 	const { env, event, participant, slot, rawAnswer, now } = input;
+
+	// 0. Eliminated participants cannot make competitive submissions.
+	if (participant.status === ELIMINATED_STATUS) return { outcome: 'eliminated' };
 
 	// 1. Progression guard — only the current challenge is submittable.
 	const status = getChallengeAccessStatus(participant, slot);
@@ -95,7 +102,20 @@ export async function processSubmission(
 		isCorrect: result.correct,
 	});
 
-	if (!result.correct) return { outcome: 'incorrect' };
+	if (!result.correct) {
+		// Anti-cheat classification (server-only). The participant response stays
+		// a generic "incorrect" — classification/strike/elimination is never leaked.
+		await classifyIncorrectSubmission(db, {
+			env,
+			event,
+			participant,
+			slot,
+			challengeId: challenge.id,
+			rawAnswer,
+			roster,
+		});
+		return { outcome: 'incorrect' };
+	}
 
 	// 5. Correct: hint_used derived ONLY from persisted state (never the client).
 	const hintUsed = await hasUsedHint(db, event.id, participant.id, challenge.id);
@@ -108,6 +128,14 @@ export async function processSubmission(
 		basePoints: challenge.basePoints,
 		hintUsed,
 		solvedAt: now,
+	});
+
+	// 6b. First blood (Phase 9): atomic, race-safe, one winner per challenge.
+	const { claimed: firstBlood } = await claimFirstBlood(db, {
+		eventId: event.id,
+		challengeId: challenge.id,
+		participantId: participant.id,
+		now,
 	});
 
 	// 7. Advance progression once, conditionally (idempotent, race-safe). Slot 30
@@ -145,5 +173,6 @@ export async function processSubmission(
 		hintUsed,
 		currentChallenge,
 		completed: slot === TOTAL_SLOTS,
+		firstBlood,
 	};
 }

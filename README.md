@@ -332,6 +332,84 @@ answer-never-in-response (`submission.test.ts`); Playwright flow — reveal hint
 persist across refresh → incorrect → correct → advance → prior slot read-only
 (`challenge-play.spec.ts`).
 
+## Anti-cheat · first blood · leaderboard · admin · live updates (Phases 8–12)
+
+All server-only. Wired into the existing submission path; nothing sensitive
+reaches the browser.
+
+### Anti-cheat (Phase 8, `src/lib/anti-cheat/`)
+On an **incorrect** submission to an **attribution-enabled** challenge, the wrong
+normalized answer is looked up in the Phase 4/5 deterministic ownership map
+(`normalizedAnswer → rollNumber`) — an O(1) hit, never an N-participant scan.
+A **foreign** owner records an `anti_cheat_events` row. Ordinary challenges do no
+lookup; a participant's own answer never flags. Classification is **server-only**:
+the participant always sees a generic "incorrect"; the source is never revealed.
+
+- **Strike policy:** 1st confirmed foreign attribution = a strike, NOT eliminated;
+  a 2nd (on a **different** challenge) sets `participants.status='disqualified'`.
+  Eliminated participants are excluded from public standings and blocked from
+  competitive submissions and hint consumption.
+- **Strike idempotency:** `UNIQUE(event, submitter, challenge)` (migration 0002) —
+  repeating a foreign answer on the same challenge is one strike; only distinct
+  challenges accrue more.
+- Only deterministic ownership attribution counts — no heuristic detection
+  (timing/IP/tab-switching/answer-similarity are never used). This two-strike
+  policy is the authoritative anti-cheat decision (`ctf-build-plan.md` Phase 8).
+
+### First blood (Phase 9, `src/lib/first-blood/`)
+On a correct solve, `claimFirstBlood` inserts guarded by the Phase 1
+`UNIQUE(event, challenge)` (`onConflictDoNothing`) → exactly one winner under
+concurrency, idempotent, independent of solve/score/progression. Broadcast is
+generic — `First blood: Q7 has been cracked.` — never the solver.
+
+### Leaderboard (Phase 10, `src/lib/leaderboard/`)
+Reads **persisted** milli-point totals (never recomputes). Order: score DESC →
+earliest final solve (`MAX(solved_at)` ASC, no-solves last) → roll ASC.
+Participants never see standings; `getAdminLeaderboard` (with strike counts, all
+statuses) is admin-only and live; `getPublicLeaderboard` serves **only** when
+`state = RESULTS_PUBLISHED`, excludes eliminated participants, unmasked rolls.
+`GET /api/leaderboard?event=<slug>` 403s until then.
+
+### Admin (Phase 11, `src/lib/admin/`, `/admin`, `/api/admin/*`)
+- **Auth (opaque sessions, Phase 12.5):** a single `ADMIN_SECRET` (env,
+  server-only) is the login **credential** (constant-time compare). Success mints
+  an **opaque admin session** — a 256-bit CSPRNG raw token sent only in the
+  HttpOnly/SameSite=Lax/Secure-in-prod admin cookie; D1's `admin_sessions` table
+  stores only `SHA-256(token)` with explicit `created_at`/`expires_at` (12h) and
+  `revoked_at`. Expired/revoked sessions are rejected; logout revokes. Admin
+  sessions live in their own table, so a participant session can never
+  authenticate as admin and vice-versa. Mutations also require a **same-origin**
+  check (CSRF defence). Admin login is IP-hash rate-limited
+  (`admin_login_rate_limit`, HMAC(ip) — raw IPs never stored, reuses the Phase 2
+  policy). `ADMIN_SECRET` never enters D1 or a client bundle.
+- **Operations** (Zod-validated, centralized services, each writes an
+  `admin_actions` audit row): timer extend + manual freeze + lifecycle advance
+  (reuse the Phase 3 service, 6h cap enforced), announcements, reset stuck
+  session, global challenge bypass, and a read-only overview (state/timing,
+  status counts, active sessions, per-challenge solve counts, anti-cheat events,
+  first bloods, recent submissions, live admin leaderboard).
+- **Session reset** revokes the active session only — score, solves, hints and
+  anti-cheat records are preserved; clean re-login works.
+- **Bypass semantics** (build-plan "global bypass", per event+challenge — schema
+  has no participantId): records a `challenge_bypasses` row and advances every
+  participant stuck at that slot to slot+1. **No fake solve, no score, no first
+  blood** — distinct from a legitimate solve. Audited.
+
+### Live updates (Phase 12, `src/lib/sse/`, `/api/events/stream`, `/api/events/updates`)
+Zero-cost, no Durable Objects, **no module-global broadcaster** (Workers are
+multi-isolate). Every SSE stream and the polling fallback READ authoritative D1
+and diff against client cursors, so correctness holds across isolates and missed
+events are recoverable on reconnect. Event types: `state` (state/timing version —
+changes on transitions AND timer extensions), `firstblood` (slot-only message),
+`announcement`. **Timer ticks are NOT streamed** — the browser computes the
+countdown locally and resyncs on a `state` change. The client uses `EventSource`
+with a `/api/events/updates` polling fallback; announcements are persisted first
+(SSE is only notification).
+
+**Tests:** `anti-cheat.test.ts`, `first-blood.test.ts`, `leaderboard.test.ts`,
+`admin.test.ts`, `sse.test.ts` (Vitest); `admin.spec.ts`, `leaderboard.spec.ts`
+(Playwright).
+
 ## Commands
 
 | Command | Action |

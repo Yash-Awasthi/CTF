@@ -1,0 +1,157 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { createDb } from '../../lib/db/client';
+import { getEnv } from '../../lib/runtime';
+import { isAdmin, getAdminOverview } from '../../lib/admin';
+import { ensureCurrentEventState } from '../../lib/event/state';
+import { resolveEventBySlug } from '../../lib/event/resolve';
+
+export const prerender = false;
+
+const env = getEnv();
+const db = createDb(env.DB);
+const authed = await isAdmin(Astro.cookies, db);
+const slug = Astro.url.searchParams.get('event') ?? 'case-files-dev-2026';
+
+let overview: Awaited<ReturnType<typeof getAdminOverview>> | null = null;
+if (authed) {
+	const ev = await resolveEventBySlug(db, slug);
+	if (ev) {
+		const now = new Date();
+		const event = await ensureCurrentEventState(db, ev, now);
+		overview = await getAdminOverview(db, event, now);
+	}
+}
+---
+
+<Layout title="Admin — case-files">
+	<main class="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-6 px-6 py-10">
+		<h1 class="text-2xl font-semibold">Admin dashboard</h1>
+
+		{!authed && (
+			<form class="flex max-w-xs flex-col gap-2" data-admin-login>
+				<label class="text-sm text-neutral-400" for="pw">Admin password</label>
+				<input id="pw" name="password" type="password" class="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm" />
+				<button type="submit" class="rounded bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950">Log in</button>
+				<p class="min-h-[1rem] text-sm text-red-400" data-login-error></p>
+			</form>
+		)}
+
+		{authed && !overview && <p class="text-red-400">Event <code>{slug}</code> not found.</p>}
+
+		{authed && overview && (
+			<div class="flex flex-col gap-6" data-admin data-event={slug}>
+				<section class="rounded border border-neutral-800 p-4">
+					<h2 class="mb-2 text-sm uppercase tracking-widest text-neutral-500">Event</h2>
+					<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+						<dt class="text-neutral-400">Name</dt><dd>{overview.event.name}</dd>
+						<dt class="text-neutral-400">State</dt><dd data-state>{overview.event.state}</dd>
+						<dt class="text-neutral-400">Remaining (s)</dt><dd>{overview.timing.remainingSeconds}</dd>
+						<dt class="text-neutral-400">Participants</dt><dd>{overview.participantCount}</dd>
+						<dt class="text-neutral-400">Active sessions</dt><dd>{overview.activeSessions}</dd>
+						<dt class="text-neutral-400">By status</dt><dd>{JSON.stringify(overview.participantsByStatus)}</dd>
+					</dl>
+				</section>
+
+				<section class="flex flex-wrap gap-2">
+					<button data-act="freeze" class="rounded border border-red-500/50 px-3 py-1 text-sm text-red-300">Manual freeze</button>
+					<button data-act="advance" data-action="start" class="rounded border border-neutral-700 px-3 py-1 text-sm">Start</button>
+					<button data-act="advance" data-action="review" class="rounded border border-neutral-700 px-3 py-1 text-sm">Begin review</button>
+					<button data-act="advance" data-action="publish" class="rounded border border-neutral-700 px-3 py-1 text-sm">Publish results</button>
+					<form data-act-form="extend" class="flex items-center gap-1">
+						<input name="seconds" type="number" min="1" placeholder="secs" class="w-24 rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm" />
+						<button class="rounded border border-neutral-700 px-3 py-1 text-sm">Extend</button>
+					</form>
+					<form data-act-form="announce" class="flex items-center gap-1">
+						<input name="message" type="text" placeholder="announcement" class="w-48 rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm" />
+						<button class="rounded border border-neutral-700 px-3 py-1 text-sm">Announce</button>
+					</form>
+					<form data-act-form="reset-session" class="flex items-center gap-1">
+						<input name="participantId" type="number" placeholder="participantId" class="w-32 rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm" />
+						<button class="rounded border border-neutral-700 px-3 py-1 text-sm">Reset session</button>
+					</form>
+					<form data-act-form="bypass" class="flex items-center gap-1">
+						<input name="slot" type="number" min="1" max="30" placeholder="slot" class="w-20 rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm" />
+						<button class="rounded border border-amber-600/50 px-3 py-1 text-sm text-amber-300">Bypass</button>
+					</form>
+					<p class="w-full min-h-[1rem] text-sm text-neutral-400" data-act-result></p>
+				</section>
+
+				<section class="rounded border border-neutral-800 p-4">
+					<h2 class="mb-2 text-sm uppercase tracking-widest text-neutral-500">Leaderboard (live, admin)</h2>
+					<table class="w-full text-left text-sm">
+						<thead class="text-neutral-500"><tr><th>#</th><th>Roll</th><th>Score</th><th>Solves</th><th>Strikes</th><th>Status</th></tr></thead>
+						<tbody>
+							{overview.leaderboard.slice(0, 15).map((r, i) => (
+								<tr class={r.eliminated ? 'text-red-400' : ''}>
+									<td>{i + 1}</td><td>{r.rollNumber}</td><td>{r.score}</td><td>{r.solveCount}</td><td>{r.strikeCount}</td><td>{r.status}</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</section>
+
+				<section class="rounded border border-neutral-800 p-4">
+					<h2 class="mb-2 text-sm uppercase tracking-widest text-neutral-500">Anti-cheat events ({overview.antiCheatEvents.length})</h2>
+					<ul class="text-sm text-amber-300">
+						{overview.antiCheatEvents.slice(0, 20).map((a) => (
+							<li>submitter {a.submitterParticipantId} → owner {a.matchedParticipantId} (challenge {a.challengeId})</li>
+						))}
+					</ul>
+				</section>
+
+				<section class="rounded border border-neutral-800 p-4">
+					<h2 class="mb-2 text-sm uppercase tracking-widest text-neutral-500">First bloods · solve counts</h2>
+					<p class="text-sm text-neutral-400">First bloods: {overview.firstBloods.length}</p>
+					<p class="text-sm text-neutral-400">Solve counts: {overview.solveCounts.map((s) => `Q${s.slot}:${s.count}`).join('  ')}</p>
+				</section>
+			</div>
+		)}
+	</main>
+</Layout>
+
+<script>
+	// Login form.
+	const loginForm = document.querySelector<HTMLFormElement>('[data-admin-login]');
+	loginForm?.addEventListener('submit', async (e) => {
+		e.preventDefault();
+		const password = (loginForm.querySelector('input[name="password"]') as HTMLInputElement).value;
+		const res = await fetch('/api/admin/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ password }) });
+		if (res.ok) location.reload();
+		else {
+			const el = document.querySelector('[data-login-error]');
+			if (el) el.textContent = 'Invalid password.';
+		}
+	});
+
+	// Admin actions.
+	const root = document.querySelector<HTMLElement>('[data-admin]');
+	if (root) {
+		const eventSlug = root.dataset.event!;
+		const result = root.querySelector<HTMLElement>('[data-act-result]');
+		const post = async (path: string, body: Record<string, unknown>) => {
+			const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ eventSlug, ...body }) });
+			const data = await res.json().catch(() => ({}));
+			if (result) result.textContent = res.ok ? 'OK' : `Error: ${data.error ?? res.status}`;
+			if (res.ok) setTimeout(() => location.reload(), 500);
+		};
+		root.querySelectorAll<HTMLButtonElement>('[data-act]').forEach((btn) => {
+			btn.addEventListener('click', () => {
+				const act = btn.dataset.act!;
+				if (act === 'freeze') { if (confirm('Freeze the event now?')) post('/api/admin/freeze', {}); }
+				else if (act === 'advance') post('/api/admin/advance', { action: btn.dataset.action });
+			});
+		});
+		root.querySelectorAll<HTMLFormElement>('[data-act-form]').forEach((form) => {
+			form.addEventListener('submit', (e) => {
+				e.preventDefault();
+				const kind = form.dataset.actForm!;
+				const fd = new FormData(form);
+				if (kind === 'extend') post('/api/admin/extend', { seconds: Number(fd.get('seconds')) });
+				else if (kind === 'announce') post('/api/admin/announce', { message: String(fd.get('message')) });
+				else if (kind === 'reset-session') post('/api/admin/reset-session', { participantId: Number(fd.get('participantId')) });
+				else if (kind === 'bypass') { if (confirm('Bypass this challenge globally?')) post('/api/admin/bypass', { slot: Number(fd.get('slot')) }); }
+			});
+		});
+	}
+</script>

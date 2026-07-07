@@ -51,6 +51,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 	});
 
 	switch (outcome.outcome) {
+		case 'eliminated':
+			return json({ error: 'eliminated' }, 403);
 		case 'not_found':
 			return json({ error: 'not_found' }, 404);
 		case 'locked':
@@ -69,6 +71,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 					hintUsed: outcome.hintUsed,
 					currentChallenge: outcome.currentChallenge,
 					completed: outcome.completed,
+					firstBlood: outcome.firstBlood,
 				},
 				200,
 			);
