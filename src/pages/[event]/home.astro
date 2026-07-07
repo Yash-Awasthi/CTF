@@ -78,6 +78,12 @@ else view = 'ended'; // FROZEN or expired-LIVE
 					<dt>Started</dt><dd class="text-neutral-100">{new Date((timing.startedAt ?? 0) * 1000).toUTCString()}</dd>
 					<dt>Ends</dt><dd class="text-neutral-100">{new Date((timing.endsAt ?? 0) * 1000).toUTCString()}</dd>
 				</dl>
+				<a
+					href={`/${slug}/challenge/${auth.participant.currentChallenge}`}
+					class="inline-block rounded bg-emerald-500 px-4 py-2 text-center text-sm font-semibold text-neutral-950 hover:bg-emerald-400"
+				>
+					Go to challenge {auth.participant.currentChallenge} →
+				</a>
 				<p class="text-xs text-neutral-500">Timer is display-only; the server is authoritative. Refresh to resync.</p>
 			</div>
 		)}

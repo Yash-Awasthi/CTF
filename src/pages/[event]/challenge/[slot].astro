@@ -1,0 +1,92 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { createDb } from '../../../lib/db/client';
+import { getEnv } from '../../../lib/runtime';
+import { ensureCurrentEventState } from '../../../lib/event/state';
+import { canAccessCompetition } from '../../../lib/event/access';
+import {
+	getPublicChallengeData,
+	getEventRoster,
+	getChallengeAccessStatus,
+	parseSlot,
+	InvalidSlotError,
+	type PublicChallengeData,
+} from '../../../lib/challenges';
+
+export const prerender = false;
+
+const slug = Astro.params.event!;
+const auth = Astro.locals.auth;
+
+// Protected + event-scoped.
+if (!auth || auth.event.slug !== slug) {
+	return Astro.redirect(`/${slug}/login`);
+}
+
+const db = createDb(getEnv().DB);
+const now = new Date();
+const event = await ensureCurrentEventState(db, auth.event, now);
+
+// Centralized event access policy: challenges are playable only while LIVE.
+if (!canAccessCompetition(event, now)) {
+	return Astro.redirect(`/${slug}/home`);
+}
+
+// Validate the slot; invalid → 404.
+let slot: number;
+try {
+	slot = parseSlot(Astro.params.slot);
+} catch (e) {
+	if (e instanceof InvalidSlotError) return new Response('Not found', { status: 404 });
+	throw e;
+}
+
+// Progression guard — a locked future slot redirects to the current challenge.
+const status = getChallengeAccessStatus(auth.participant, slot);
+if (status === 'locked') {
+	return Astro.redirect(`/${slug}/challenge/${auth.participant.currentChallenge}`);
+}
+
+// Roster (roll asc) needed for attribution-enabled slots; cheap at this scale.
+const roster = await getEventRoster(db, event.id);
+
+// PUBLIC data only — private answer/validation material never crosses this line.
+let view: PublicChallengeData;
+try {
+	view = await getPublicChallengeData(
+		{ env: getEnv(), event, rollNumber: auth.participant.rollNumber, roster },
+		slot,
+	);
+} catch {
+	// Never leak generation internals to the participant.
+	return new Response('Challenge temporarily unavailable', { status: 500 });
+}
+
+const pub = view.publicData as { prompt: string; token: string };
+const roll = auth.participant.rollNumber;
+---
+
+<Layout title={`${event.name} — Challenge ${view.slot}`}>
+	<main class="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-4 px-6">
+		<div class="flex items-center justify-between">
+			<a href={`/${slug}/home`} class="text-xs text-neutral-500 hover:text-neutral-300">← Home</a>
+			<span class="text-xs uppercase tracking-[0.3em] text-emerald-400">
+				Slot {view.slot} · {view.tier}
+			</span>
+		</div>
+
+		<h1 class="text-2xl font-semibold">{view.title}</h1>
+		<p class="text-neutral-400">{pub.prompt}</p>
+
+		<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm text-neutral-400">
+			<dt>Investigator</dt><dd class="text-neutral-100">{roll}</dd>
+			<dt>Status</dt><dd class="text-neutral-100">{status}</dd>
+			<dt>Points</dt><dd class="text-neutral-100">{view.basePoints}</dd>
+			<dt>Token</dt><dd class="font-mono text-neutral-100">{pub.token}</dd>
+		</dl>
+
+		<p class="text-xs text-neutral-500">
+			Development placeholder. Submission, hints and scoring arrive in later phases.
+		</p>
+	</main>
+</Layout>

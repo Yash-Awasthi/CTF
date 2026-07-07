@@ -186,6 +186,67 @@ participant/challenge/attribution seeds + first RNG block + int/string/shuffle
 (`tests/unit/crypto-*.test.ts`), so an accidental algorithm change fails loudly.
 Coverage test derives all **116 × 30 = 3,480** combinations (unique, reproducible).
 
+## Challenge engine (Phase 5)
+
+Server-only engine (`src/lib/challenges/`) all 30 challenges plug into. Phase 5
+ships the architecture + **dev-only placeholder modules** (synthetic
+`DEV-PLACEHOLDER-…` answers, never real content); real challenges replace the
+placeholder array later without changing the engine.
+
+- **Module contract** (`types.ts`): each `ChallengeModule` exposes `metadata`
+  (slot, key, title, basePoints, tier, attributionEnabled), exactly **two hints**,
+  `generate(ctx)`, and `validate(instance, normalizedAnswer)`. Modules pick their
+  own `publicData`/`privateData` types via generics — no universal optional blob.
+- **Registry** (`registry.ts`): one **explicit** in-code array (no runtime
+  filesystem scan, no dynamic import of user paths). Self-validates at import
+  (30 slots, exactly 1..30, no dup/missing slot or key, positive points, two
+  ordered hints). `getChallengeBySlot/ByKey/getAllChallenges/validateChallengeRegistry`.
+- **Stable identity** = **slot** (1..30). Never the autoincrement DB `id` (which
+  is still the FK target for submissions/solves, just not a crypto/logic identity).
+- **Source of truth split** (`sync.ts`): CODE owns behavior + descriptive
+  metadata (key/title/basePoints/tier/attribution/hints/generate/validate); the
+  D1 `challenges` row owns event-scoped operational identity (surrogate `id`,
+  `event_id`, `slot`, mirrored tier/base_points/attribution_enabled). Join key =
+  `(event_id, slot)`. `syncChallengeRows` upserts 30 rows idempotently;
+  `validateChallengeConsistency` asserts code ↔ DB agreement. Executable logic is
+  never stored in the DB. Dev seed (`scripts/seed-dev.sql`) seeds the 30 rows.
+- **Generation context** (engine-supplied): `{ eventSlug, rollNumber, slot, rng,
+  attributionAnswer? }`. Modules consume only a seeded RNG (+ assigned attribution
+  answer) — they never see `EVENT_SECRET`, event keys, seeds, or implement HMAC.
+  Generation is deterministic for a fixed (event, secret version, participant, slot)
+  and independent of DB row ids.
+- **Public/private boundary** (`engine.ts`): `generateChallengeForParticipant`
+  returns `{ publicData, privateData }`; `getPublicChallengeData()` projects ONLY
+  safe fields — routes serialize that, never the raw instance. Tests inspect
+  serialized output to prove answers/`privateData`/seeds never cross the line.
+- **Validation**: server-side. The engine applies the shared `normalizeAnswer`
+  (one canonical boundary) then calls the module's `validate`. Reusable helpers
+  `exactMatch` / `oneOf`. Wrong answers and another participant's ordinary answer
+  fail; no submission is persisted in Phase 5.
+- **Attribution integration**: for `attributionEnabled` slots the engine pulls the
+  canonical roster (roll asc), calls Phase 4 `assignAttributionAnswers`, injects
+  this participant's unique answer into generation, and can build the ownership map
+  (`getAttributionOwnershipMap` → `normalizedAnswer → rollNumber`, for Phase 8).
+  Ordinary slots require no uniqueness and get no ownership map. Two placeholder
+  slots (**8, 16**) exercise this path.
+- **Progression** (`access.ts`): `participants.current_challenge` = the currently
+  **unlocked** slot (starts at 1). `slot < current` → `solved` (revisitable
+  read-only later), `= current` → `current`, `> current` → `locked`. Solving slot
+  N (later phase) advances to `min(N+1, 30)`; it saturates at 30. Single source of
+  truth `getChallengeAccessStatus` / `canAccessChallenge` / `assertChallengeAccess`
+  — no scattered `slot <= current` comparisons. Solve advancement is NOT in Phase 5.
+- **Routes**: `GET /<event>/challenge/<slot>` (page) and `GET /api/challenges/<slot>`
+  (JSON) share the exact chain — auth → LIVE event access → slot validation →
+  progression guard → public-data only. Invalid slot → 404; locked future slot →
+  403 (API) / redirect to current (page). The LIVE home links to the current
+  challenge. Future slots cannot be reached by URL or API manipulation.
+
+**Tests:** registry invariants, deterministic generation, validation, attribution
+integration, progression guards, public-boundary serialization, DB sync/consistency
++ roster ordering, and full **116 × 30 = 3,480** engine coverage (Vitest);
+representative Playwright flow (LIVE → current challenge → stable content → future
+locked). Placeholder answers are dev-only and clearly marked.
+
 ## Commands
 
 | Command | Action |
