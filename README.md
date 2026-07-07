@@ -124,6 +124,68 @@ persisted freeze lands. The browser countdown is display-only and resyncs on ref
 - Access policies live in `src/lib/event/access.ts` (`canParticipantLogin`,
   `canAccessWaitingRoom`, `canAccessCompetition`, `canSubmit`, `canViewFinalResults`).
 
+## Personalization & seed engine (Phase 4)
+
+Deterministic, cryptographic per-participant personalization. All of it is
+**server-only** (`src/lib/crypto/`) — no secret, key, seed, or RNG state ever
+reaches the browser; the client receives only rendered challenge content.
+
+**Derivation hierarchy** (each stage's HMAC *key* is the previous stage's output,
+so `EVENT_SECRET` is never fed directly into RNG or challenge derivation):
+
+```text
+EVENT_SECRET (runtime env, resolved by secret_version)
+  └─ eventKey        = HMAC(secret,          frame[ "case-files:event-key:v1",       secretVersion, slug ])
+       ├─ participantSeed = HMAC(eventKey,        frame[ "case-files:participant-seed:v1", rollNumber ])
+       │    └─ challengeSeed  = HMAC(participantSeed, frame[ "case-files:challenge-seed:v1",  slot ])
+       │         └─ RNG block  = HMAC(challengeSeed,  frame[ "case-files:rng-block:v1",       counter ])
+       └─ attributionSeed = HMAC(eventKey,       frame[ "case-files:attribution:v1",     slot ])
+```
+
+- **Secret-version resolution** (`secrets.ts`): D1 stores only `secret_version`
+  (e.g. `v1`). `resolveEventSecret(env, version)` maps a version → runtime binding
+  via `SECRET_VERSION_BINDINGS` (`v1 → EVENT_SECRET`). Unknown version or
+  missing/empty binding **throws** (`SecretResolutionError`) — no fallback to
+  another version, no default secret, and error messages never contain the value.
+  Future versions = one map entry + one new `wrangler secret put` binding.
+- **Stable identities only.** Event identity = `slug` (unique, immutable);
+  challenge identity = **slot** (`1..30`), never the autoincrement DB `id` (which
+  is environment-dependent). Same logical event/challenge → identical seeds after
+  a clean migrate + reseed. No time, no event state, no DB row ids enter derivation.
+- **Domain separation + framing** (`constants.ts`, `encoding.ts`): every stage
+  has an explicit versioned label; every HMAC input is `frame([...])` — 4-byte
+  big-endian length-prefixed chunks, so `frame([a,b])` can never collide with a
+  different split. No naive `slug + roll + slot` concatenation anywhere.
+- **Deterministic RNG** (`rng.ts`): counter-based HMAC expansion —
+  `block(i) = HMAC(challengeSeed, frame["rng-block", i])`, 32 bytes each. The key
+  is imported once per instance; the counter + partial-block leftover are **local**
+  to the instance, so two RNGs from the same seed reproduce the identical stream
+  and one can never perturb another. No `Math.random`, no `Date`, no globals.
+- **Unbiased integers** (`int(min, max)`): rejection sampling — draw enough bytes,
+  reject the tail above the largest multiple of the range, then map. No `% range`
+  bias. Helpers: `bytes`, `int`, `choice`, `shuffle` (Fisher-Yates), `sample`
+  (partial F-Y, no replacement), `string(len, alphabet)`. All deterministic,
+  none mutate inputs, all validate edge cases.
+- **Ordinary vs attribution personalization** — two separate systems.
+  *Ordinary* reads a participant/challenge RNG and may collide across participants
+  (names, dates, filenames…). *Attribution-enabled* (`attribution.ts`) assigns each
+  participant a **unique** answer so a copied answer identifies its source: a
+  deterministic **bijection**, not retry-until-unique. Participants in canonical
+  order (roll ascending), answers normalized + validated unique, shuffled under a
+  per-challenge `attributionSeed`, zipped. `buildOwnershipMap()` yields
+  `normalizedAnswer → rollNumber` for Phase 8. Uniqueness is judged **after**
+  `normalizeAnswer` (`src/lib/validation/answer.ts`, the shared submission rule),
+  so `TOM`/`tom`/` Tom ` are one answer. Invalid pools throw **before** the event runs.
+
+**Environment:** Phase 4 adds no new required variables — `v1` resolves to the
+existing `EVENT_SECRET` (`.dev.vars` locally, `wrangler secret put` in prod).
+A future `v2` would add `EVENT_SECRET_V2` (or similar) plus a map entry.
+
+**Test vectors:** fixed development-only inputs assert exact expected event/
+participant/challenge/attribution seeds + first RNG block + int/string/shuffle
+(`tests/unit/crypto-*.test.ts`), so an accidental algorithm change fails loudly.
+Coverage test derives all **116 × 30 = 3,480** combinations (unique, reproducible).
+
 ## Commands
 
 | Command | Action |

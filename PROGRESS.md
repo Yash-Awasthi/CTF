@@ -9,8 +9,8 @@ Read `ctf-build-plan.md` (source of truth, already corrected). This file = per-p
 4. Commit + push each phase to `origin/main` (github.com/Yash-Awasthi/CTFplayground).
 
 ## Status
-- Phase 0 ✅ · Phase 1 schema ✅ · Phase 2 auth ✅ · **Phase 3 event lifecycle+timer ✅ (awaiting confirm)**
-- Next: Phase 4 (personalization/seed engine — HMAC).
+- Phase 0 ✅ · Phase 1 schema ✅ · Phase 2 auth ✅ · Phase 3 event lifecycle+timer ✅ · **Phase 4 personalization/seed engine ✅ (awaiting confirm)**
+- Next: Phase 5 (challenge engine).
 
 ## Non-obvious facts (not in the plan)
 - Project name `case-files`. Bindings: `DB` (D1), `BUCKET` (R2), `ASSETS` (CF static).
@@ -25,6 +25,14 @@ Read `ctf-build-plan.md` (source of truth, already corrected). This file = per-p
 - Expiry is LAZY: `ensureCurrentEventState()` freezes an expired LIVE event on the next request (no cron/SSE). Idempotent via conditional `WHERE state='LIVE'`.
 - Timer API: `GET /api/event/state` (auth). Browser countdown display-only, resyncs on refresh.
 - Login policy single source: `event/access.ts canParticipantLogin` (auth `isLoginAllowed` delegates).
+- Personalization engine in `src/lib/crypto/` (server-only). Hierarchy: secret→eventKey→participantSeed→challengeSeed; attributionSeed hangs off eventKey (per-challenge, all participants). Keys chain (each stage keys HMAC with prior output) — EVENT_SECRET never RNG input.
+- Stable identity ONLY: event=`slug`, challenge=`slot` (1..30), NEVER DB autoincrement id. No time/state/row-id in derivation.
+- HMAC inputs always `frame([...])` (4-byte BE length-prefixed) — never naive concat. Domain labels in `crypto/constants.ts` (`case-files:*:v1`); bump label + test vectors if algo changes.
+- RNG = counter HMAC expansion, key imported once/instance, counter+leftover local (no shared/global state). Async methods (Web Crypto). `int()` = rejection sampling (no modulo bias). Helpers: bytes/int/choice/shuffle/sample/string.
+- Secret resolution: `resolveEventSecret(env, version)` via `SECRET_VERSION_BINDINGS` (`v1→EVENT_SECRET`). Unknown/missing → throw, no fallback/default, value never in error. Add version = 1 map entry + 1 binding. No new env var in Phase 4.
+- Attribution = deterministic bijection (shuffle answers under attributionSeed, zip to roll-ascending), NOT retry-until-unique. Uniqueness judged AFTER `normalizeAnswer` (validation/answer.ts — shared submission rule). `buildOwnershipMap` → normalizedAnswer→roll for Phase 8. Invalid pool throws pre-event.
+- Stable test vectors hardcoded in `tests/unit/crypto-derive.test.ts`/`crypto-rng.test.ts` (fixed dev secret `test-vector-secret-DO-NOT-USE-0000`, slug dev, roll 25115000, slot 7). Coverage test = full 116×30=3480.
+- Secrets server-only: `dist/client/` clean; secret value only in `dist/server/.dev.vars` (dev-only, gitignored src). No crypto/seed strings in client bundle.
 
 ## Local dev / test
 - `pnpm db:reset:local` (wipe+migrate+seed) → dev event slug `case-files-dev-2026`, state `READY`, rolls 25115000–25115115.
