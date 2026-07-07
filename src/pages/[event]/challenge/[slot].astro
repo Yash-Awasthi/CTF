@@ -1,9 +1,11 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
+import { and, eq } from 'drizzle-orm';
 import { createDb } from '../../../lib/db/client';
 import { getEnv } from '../../../lib/runtime';
 import { ensureCurrentEventState } from '../../../lib/event/state';
 import { canAccessCompetition } from '../../../lib/event/access';
+import { challenges } from '../../../lib/db/schema';
 import {
 	getPublicChallengeData,
 	getEventRoster,
@@ -12,6 +14,7 @@ import {
 	InvalidSlotError,
 	type PublicChallengeData,
 } from '../../../lib/challenges';
+import { getRevealedHints, MAX_HINTS } from '../../../lib/hints';
 
 export const prerender = false;
 
@@ -64,10 +67,29 @@ try {
 
 const pub = view.publicData as { prompt: string; token: string };
 const roll = auth.participant.rollNumber;
+
+// Already-revealed hints (server-side) so they survive refresh/re-login.
+const challengeRow = await db
+	.select({ id: challenges.id })
+	.from(challenges)
+	.where(and(eq(challenges.eventId, event.id), eq(challenges.slot, slot)))
+	.get();
+const revealedHints = challengeRow
+	? await getRevealedHints(db, event.id, auth.participant.id, challengeRow.id, slot)
+	: [];
+
+const isCurrent = status === 'current';
+const isSolved = status === 'solved';
+const nextHintNumber = revealedHints.length + 1; // 1..2, or 3 when exhausted
 ---
 
 <Layout title={`${event.name} — Challenge ${view.slot}`}>
-	<main class="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-4 px-6">
+	<main
+		class="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-4 px-6"
+		data-challenge
+		data-slug={slug}
+		data-slot={view.slot}
+	>
 		<div class="flex items-center justify-between">
 			<a href={`/${slug}/home`} class="text-xs text-neutral-500 hover:text-neutral-300">← Home</a>
 			<span class="text-xs uppercase tracking-[0.3em] text-emerald-400">
@@ -80,13 +102,116 @@ const roll = auth.participant.rollNumber;
 
 		<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm text-neutral-400">
 			<dt>Investigator</dt><dd class="text-neutral-100">{roll}</dd>
-			<dt>Status</dt><dd class="text-neutral-100">{status}</dd>
+			<dt>Status</dt><dd class="text-neutral-100" data-status>{status}</dd>
 			<dt>Points</dt><dd class="text-neutral-100">{view.basePoints}</dd>
 			<dt>Token</dt><dd class="font-mono text-neutral-100">{pub.token}</dd>
 		</dl>
 
-		<p class="text-xs text-neutral-500">
-			Development placeholder. Submission, hints and scoring arrive in later phases.
-		</p>
+		{isSolved && (
+			<p class="rounded bg-neutral-800 px-3 py-2 text-sm text-emerald-300">
+				Solved — read-only. This challenge can no longer be scored.
+			</p>
+		)}
+
+		{/* Hints: revealed ones persist; the next can be requested in order. */}
+		<section class="flex flex-col gap-2" data-hints>
+			<h2 class="text-xs uppercase tracking-widest text-neutral-500">Hints</h2>
+			<ul class="flex flex-col gap-1 text-sm text-amber-300" data-hint-list>
+				{revealedHints.map((h) => (
+					<li data-hint-number={h.hintNumber}>Hint {h.hintNumber}: {h.text}</li>
+				))}
+			</ul>
+			{isCurrent && nextHintNumber <= MAX_HINTS && (
+				<button
+					type="button"
+					data-hint-button
+					data-next-hint={nextHintNumber}
+					class="self-start rounded border border-amber-500/40 px-3 py-1 text-xs text-amber-300 hover:bg-amber-500/10"
+				>
+					Reveal hint {nextHintNumber} (halves this challenge's score)
+				</button>
+			)}
+		</section>
+
+		{isCurrent && (
+			<form class="flex flex-col gap-2" data-submit-form>
+				<input
+					type="text"
+					name="answer"
+					autocomplete="off"
+					placeholder="Your answer"
+					class="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm"
+				/>
+				<button
+					type="submit"
+					class="rounded bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-emerald-400"
+				>
+					Submit
+				</button>
+				<p class="min-h-[1.25rem] text-sm" data-result></p>
+			</form>
+		)}
 	</main>
 </Layout>
+
+<script>
+	const root = document.querySelector<HTMLElement>('[data-challenge]');
+	if (root) {
+		const slug = root.dataset.slug!;
+		const slot = Number(root.dataset.slot);
+
+		// Hint reveal (one-way, confirm dialog, in order).
+		const hintBtn = root.querySelector<HTMLButtonElement>('[data-hint-button]');
+		const hintList = root.querySelector<HTMLUListElement>('[data-hint-list]');
+		hintBtn?.addEventListener('click', async () => {
+			const n = Number(hintBtn.dataset.nextHint);
+			if (!confirm(`Reveal hint ${n}? This halves your score for this challenge.`)) return;
+			hintBtn.disabled = true;
+			const res = await fetch('/api/hint', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ slot, hintNumber: n }),
+			});
+			if (res.ok) {
+				const data = await res.json();
+				const li = document.createElement('li');
+				li.dataset.hintNumber = String(data.hintNumber);
+				li.textContent = `Hint ${data.hintNumber}: ${data.text}`;
+				hintList?.appendChild(li);
+				if (data.hintNumber < 2) {
+					hintBtn.dataset.nextHint = String(data.hintNumber + 1);
+					hintBtn.textContent = `Reveal hint ${data.hintNumber + 1} (halves this challenge's score)`;
+					hintBtn.disabled = false;
+				} else {
+					hintBtn.remove();
+				}
+			} else {
+				hintBtn.disabled = false;
+			}
+		});
+
+		// Answer submission.
+		const form = root.querySelector<HTMLFormElement>('[data-submit-form]');
+		const result = root.querySelector<HTMLElement>('[data-result]');
+		form?.addEventListener('submit', async (e) => {
+			e.preventDefault();
+			const answer = (form.querySelector('input[name="answer"]') as HTMLInputElement).value;
+			if (result) { result.textContent = 'Checking…'; result.className = 'min-h-[1.25rem] text-sm text-neutral-400'; }
+			const res = await fetch('/api/submit', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ slot, answer }),
+			});
+			const data = await res.json().catch(() => ({}));
+			if (res.ok && data.correct) {
+				if (result) { result.textContent = 'Correct! Advancing…'; result.className = 'min-h-[1.25rem] text-sm text-emerald-400'; }
+				const next = data.completed ? `/${slug}/home` : `/${slug}/challenge/${data.currentChallenge ?? slot}`;
+				setTimeout(() => { window.location.href = next; }, 600);
+			} else if (res.ok) {
+				if (result) { result.textContent = 'Incorrect. Try again.'; result.className = 'min-h-[1.25rem] text-sm text-red-400'; }
+			} else {
+				if (result) { result.textContent = 'Submission rejected.'; result.className = 'min-h-[1.25rem] text-sm text-red-400'; }
+			}
+		});
+	}
+</script>

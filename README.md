@@ -247,6 +247,91 @@ integration, progression guards, public-boundary serialization, DB sync/consiste
 representative Playwright flow (LIVE → current challenge → stable content → future
 locked). Placeholder answers are dev-only and clearly marked.
 
+## Scoring engine (Phase 6)
+
+Server-only scoring (`src/lib/scoring/`). Implements the **locked** formula
+(build plan, do not change): `score = base_points × time_factor × hint_factor`.
+
+- **Milli-point precision** — every persisted score is an **integer** in
+  milli-points (1 pt = 1000). `final_score = round(base_points × time_factor ×
+  hint_factor × 1000)` with a **single** rounding over exact integer fractions —
+  never by multiplying pre-rounded factors. No floats reach D1.
+- **Time factor** (`calculate.ts`): `max(0.5, 1 − (elapsed/duration) × 0.5)`,
+  stored as a per-mille integer (500..1000). 1.0 at elapsed 0, linear decay,
+  floors at 0.5 at/after `duration` (elapsed is clamped to `[0, duration]`).
+  Elapsed comes from authoritative server timing only — `deriveElapsedSeconds(event,
+  solvedAt)` uses `events.started_at` + solve time; never browser/client time.
+- **Hint factor**: binary — `1.0` (1000) if no hint used on the challenge, else
+  `0.5` (500). One flag, applied once; using both hints is still a single 0.5.
+  Absolute floor is `0.25 × base` (0.5 time × 0.5 hint).
+- **Persistence + idempotency** (`aggregate.ts`): `recordSolve()` computes the
+  score and inserts a `solves` row guarded by the Phase 1 `UNIQUE(event_id,
+  participant_id, challenge_id)` via `onConflictDoNothing` + `returning`. Score is
+  added to the participant total ONLY when a new row is actually created — a
+  repeated solve is a no-op (never double-adds).
+- **Aggregate** — `solves.final_score` is authoritative; `participants.score` is a
+  cached integer aggregate incremented in the same write path. `recomputeParticipantScore`
+  (SUM of solves) and `verifyParticipantScore` (cached vs recomputed) give a
+  consistency/verification path.
+- **Query paths** — `getLeaderboard` orders by **persisted** `participants.score`
+  DESC, then the build-plan tie fallback (earliest final solve: `MAX(solved_at)`
+  ASC, no-solves last), then roll ASC. Plus `getSolveHistory`, `getChallengeSolveCounts`.
+  The UI divides milli-points by 1000 for display (never persisted as a fraction).
+- **Single source of truth** — the formula lives only in `calculate.ts`; routes/
+  leaderboard/submission (later) consume the service, never re-implement the math.
+- No schema change: `solves.time_factor`/`hint_factor` (per-mille int) +
+  `final_score` and `participants.score` (milli-points) already existed (Phase 1).
+
+**Tests:** `scoring-calculate.test.ts` (formula, floors, integer-only, timing
+derivation) and `scoring-aggregate.test.ts` (persistence, idempotency, aggregate
+consistency, integer storage, leaderboard ordering + tie fallback, history/counts).
+
+## Submission + hints (Phase 7)
+
+Wires the challenge engine (Phase 5) and scoring engine (Phase 6) together via
+`POST /api/submit`, plus the hint system `POST /api/hint`. Both are thin routes
+over server-only services (`src/lib/submission/`, `src/lib/hints/`).
+
+- **`POST /api/submit`** — auth → authoritative LIVE state (`canSubmit`) → Zod
+  (`submitSchema`) → `processSubmission`. That orchestrator: progression guard
+  (only the **current** slot; locked/solved rejected) → engine `validateChallengeAnswer`
+  (shared normalize + module validator) → persist the attempt in `submissions`
+  (correct or not, for Phase 8) → on correct: derive `hint_used` from D1 →
+  `recordSolve` (Phase 6, idempotent) → advance progression → return safe result.
+  Responses expose only `{correct, finalScore, timeFactor, hintFactor, hintUsed,
+  currentChallenge, completed}` — never answers, private data, seeds, or maps.
+- **`POST /api/hint`** — auth → LIVE → Zod (`hintSchema`) → current-slot guard →
+  `revealHint`. Two hints max, revealed strictly in order (can only reveal
+  `count+1`; re-requesting a revealed hint is idempotent; skipping ahead → 409).
+  Persisted in `hint_usage` (participant- and event-scoped). Hint text is returned
+  ONLY after a successful, persisted reveal — never before consumption.
+- **Hint ↔ scoring** — the first hint used on a challenge locks its scoring
+  `hint_factor` to 0.5 permanently; the second does NOT stack. `hint_used` is
+  derived **only** from `hint_usage` at solve time — the client never sends it,
+  so no client manipulation can claim "no hints" after revealing one.
+- **Atomicity / idempotency** — a correct solve is (solve insert + score
+  increment + progression advance). `recordSolve` is guarded by the Phase 1
+  `UNIQUE(event,participant,challenge)` (`onConflictDoNothing`) so at most one
+  solve and one score add. Progression is a **conditional** update
+  `WHERE current_challenge = slot`, decoupled from `created`, so a duplicate or
+  concurrent correct submit advances exactly once, never skips, and a
+  crash-between-solve-and-advance self-heals on retry (solve already exists → no
+  double score; the guard still advances once). Constraints are never weakened.
+- **Progression** — first correct solve of slot N advances `current_challenge` to
+  `N+1` (Phase 5 semantics); **slot 30 saturates at 30** and completion is derived
+  from the slot-30 solve row (`completed: true`), not a counter past the range.
+  Future slots are unreachable by URL or API; solved slots are read-only.
+- **UI** — the challenge page gains answer submission (incorrect shown safely,
+  correct advances to the next slot / home on completion), in-order hint reveal
+  with a confirm dialog ("this halves your score"), server-rendered revealed hints
+  that survive refresh, and a read-only view for solved challenges.
+
+**Tests:** hint ordering/idempotency/persistence/scoping (`hint-service.test.ts`);
+submission incorrect/correct/hint-factor/idempotency/self-heal/locked/slot-30 +
+answer-never-in-response (`submission.test.ts`); Playwright flow — reveal hint →
+persist across refresh → incorrect → correct → advance → prior slot read-only
+(`challenge-play.spec.ts`).
+
 ## Commands
 
 | Command | Action |
