@@ -1,5 +1,9 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import { createDb } from '../../lib/db/client';
+import { getEnv } from '../../lib/runtime';
+import { ensureCurrentEventState } from '../../lib/event/state';
+import { getEventTiming } from '../../lib/event/timer';
 
 export const prerender = false;
 
@@ -10,26 +14,124 @@ const auth = Astro.locals.auth;
 if (!auth || auth.event.slug !== slug) {
 	return Astro.redirect(`/${slug}/login`);
 }
+
+// Canonical lazy expiry refresh, then derive authoritative timing.
+const db = createDb(getEnv().DB);
+const now = new Date();
+const event = await ensureCurrentEventState(db, auth.event, now);
+const timing = getEventTiming(event, now);
+
+const roll = auth.participant.rollNumber;
+
+function fmt(seconds: number): string {
+	const s = Math.max(0, seconds);
+	const h = Math.floor(s / 3600);
+	const m = Math.floor((s % 3600) / 60);
+	const sec = s % 60;
+	return [h, m, sec].map((n) => String(n).padStart(2, '0')).join(':');
+}
+
+type View = 'waiting' | 'live' | 'ended' | 'review' | 'results' | 'archived';
+let view: View;
+if (timing.isLive) view = 'live';
+else if (event.state === 'READY' || event.state === 'DRAFT') view = 'waiting';
+else if (event.state === 'REVIEW') view = 'review';
+else if (event.state === 'RESULTS_PUBLISHED') view = 'results';
+else if (event.state === 'ARCHIVED') view = 'archived';
+else view = 'ended'; // FROZEN or expired-LIVE
 ---
 
-<Layout title={`${auth.event.name} — Home`}>
+<Layout title={`${event.name} — ${event.state}`}>
 	<main class="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-4 px-6">
-		<p class="text-xs uppercase tracking-[0.3em] text-emerald-400">Authenticated</p>
-		<h1 class="text-2xl font-semibold">Welcome, investigator.</h1>
-		<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-			<dt class="text-neutral-400">Event</dt>
-			<dd>{auth.event.name}</dd>
-			<dt class="text-neutral-400">Participant</dt>
-			<dd>{auth.participant.rollNumber}</dd>
-		</dl>
-		<form method="POST" action="/api/auth/logout" class="mt-2">
-			<input type="hidden" name="redirect" value={`/${slug}/login`} />
-			<button
-				type="submit"
-				class="w-fit rounded-md border border-neutral-700 px-3 py-2 text-sm hover:border-neutral-500"
+		<div class="flex items-center justify-between">
+			<p class="text-xs uppercase tracking-[0.3em] text-emerald-400">{event.name}</p>
+			<form method="POST" action="/api/auth/logout">
+				<input type="hidden" name="redirect" value={`/${slug}/login`} />
+				<button type="submit" class="text-xs text-neutral-500 hover:text-neutral-300">Log out</button>
+			</form>
+		</div>
+
+		{view === 'waiting' && (
+			<div class="flex flex-col gap-3">
+				<h1 class="text-2xl font-semibold">Waiting room</h1>
+				<p class="text-neutral-400">The competition has not started yet. This page updates on refresh.</p>
+				<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+					<dt class="text-neutral-400">Investigator</dt><dd>{roll}</dd>
+					<dt class="text-neutral-400">State</dt><dd>{event.state}</dd>
+					<dt class="text-neutral-400">Duration</dt><dd>{fmt(timing.durationSeconds)}</dd>
+				</dl>
+			</div>
+		)}
+
+		{view === 'live' && (
+			<div
+				class="flex flex-col gap-3"
+				data-live-timer
+				data-ends-at={timing.endsAt}
+				data-server-now={timing.serverNow}
 			>
-				Log out
-			</button>
-		</form>
+				<h1 class="text-2xl font-semibold">Competition is live.</h1>
+				<p class="text-5xl font-mono tabular-nums" data-remaining>{fmt(timing.remainingSeconds)}</p>
+				<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm text-neutral-400">
+					<dt>Investigator</dt><dd class="text-neutral-100">{roll}</dd>
+					<dt>State</dt><dd class="text-neutral-100">{event.state}</dd>
+					<dt>Started</dt><dd class="text-neutral-100">{new Date((timing.startedAt ?? 0) * 1000).toUTCString()}</dd>
+					<dt>Ends</dt><dd class="text-neutral-100">{new Date((timing.endsAt ?? 0) * 1000).toUTCString()}</dd>
+				</dl>
+				<p class="text-xs text-neutral-500">Timer is display-only; the server is authoritative. Refresh to resync.</p>
+			</div>
+		)}
+
+		{(view === 'ended' || view === 'review') && (
+			<div class="flex flex-col gap-3">
+				<h1 class="text-2xl font-semibold">Competition ended.</h1>
+				<p class="text-neutral-400">
+					{view === 'review'
+						? 'Results are under review.'
+						: 'Submissions are closed. Results are not published yet.'}
+				</p>
+				<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+					<dt class="text-neutral-400">Investigator</dt><dd>{roll}</dd>
+					<dt class="text-neutral-400">State</dt><dd>{event.state}</dd>
+				</dl>
+			</div>
+		)}
+
+		{view === 'results' && (
+			<div class="flex flex-col gap-3">
+				<h1 class="text-2xl font-semibold">Results published.</h1>
+				<p class="text-neutral-400">Final standings are available.</p>
+			</div>
+		)}
+
+		{view === 'archived' && (
+			<div class="flex flex-col gap-3">
+				<h1 class="text-2xl font-semibold">Event archived.</h1>
+				<p class="text-neutral-400">This investigation is closed.</p>
+			</div>
+		)}
 	</main>
 </Layout>
+
+<script>
+	// Display-only countdown. Server timing is authoritative; a refresh resyncs.
+	const el = document.querySelector<HTMLElement>('[data-live-timer]');
+	const out = el?.querySelector<HTMLElement>('[data-remaining]');
+	if (el && out) {
+		const endsAt = Number(el.dataset.endsAt);
+		const serverNow = Number(el.dataset.serverNow);
+		const clientStart = Date.now();
+		const tick = () => {
+			const elapsed = Math.floor((Date.now() - clientStart) / 1000);
+			let rem = endsAt - (serverNow + elapsed);
+			if (rem < 0) rem = 0;
+			const h = Math.floor(rem / 3600);
+			const m = Math.floor((rem % 3600) / 60);
+			const s = rem % 60;
+			out.textContent = [h, m, s].map((n) => String(n).padStart(2, '0')).join(':');
+			if (rem === 0) clearInterval(timer);
+		};
+		const timer = setInterval(tick, 1000);
+		tick();
+	}
+</script>

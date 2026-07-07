@@ -1,13 +1,16 @@
 import type { AstroCookies } from 'astro';
 import type { AnySQLiteDb } from '../db/client';
-import { LOGIN_ALLOWED_STATES } from './constants';
+import { canParticipantLogin } from '../event/access';
 import { readSessionCookie } from './cookies';
 import { findValidSession } from './sessions';
 import type { AuthContext, EventRow } from './types';
 
-/** Phase 2 event-state login policy: READY / LIVE / FROZEN permit login. */
+/**
+ * Event-state login policy (READY / LIVE / FROZEN). Delegates to the centralized
+ * event access policy so the rule lives in exactly one place.
+ */
 export function isLoginAllowed(state: EventRow['state']): boolean {
-	return LOGIN_ALLOWED_STATES.includes(state);
+	return canParticipantLogin(state);
 }
 
 /**

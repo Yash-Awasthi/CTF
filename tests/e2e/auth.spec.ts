@@ -24,16 +24,15 @@ test('login → protected page → refresh persists → logout → blocked', asy
 	await submitLogin(page, HAPPY_ROLL, HAPPY_ROLL);
 
 	await page.waitForURL(`**/${SLUG}/home`);
-	await expect(page.getByText('Authenticated')).toBeVisible();
 	await expect(page.getByText(HAPPY_ROLL)).toBeVisible();
 
 	// Refresh → server-side session restores identity (survives reload)
 	await page.reload();
 	await expect(page).toHaveURL(new RegExp(`/${SLUG}/home$`));
-	await expect(page.getByText('Authenticated')).toBeVisible();
+	await expect(page.getByText(HAPPY_ROLL)).toBeVisible();
 
 	// Logout → back to login
-	await page.click('button[type="submit"]');
+	await page.getByRole('button', { name: 'Log out' }).click();
 	await page.waitForURL(`**/${SLUG}/login`);
 
 	// Protected page now inaccessible → redirected to login

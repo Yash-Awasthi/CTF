@@ -97,6 +97,33 @@ persisted. Set `RATE_LIMIT_SECRET` (distinct from `EVENT_SECRET`) in `.dev.vars`
 E2E note: `pnpm test:e2e` runs against the Astro dev server; if it isn't already
 running, start it once with `pnpm dev` (it daemonizes) and re-run.
 
+## Event lifecycle & timing (Phase 3)
+
+State machine `DRAFT → READY → LIVE → FROZEN → REVIEW → RESULTS_PUBLISHED → ARCHIVED`
+(strictly forward-only). All changes go through the centralized service in
+`src/lib/event/` (`state.ts`) — application code never writes `events.state`
+directly. Operations: `markEventReady`, `startEvent`, `freezeEvent`,
+`beginEventReview`, `publishEventResults`, `archiveEvent`, `extendEvent`,
+`setEventDuration`. Every mutation writes an `admin_actions` audit row.
+
+**Server time is authoritative.** Canonical timing: `endsAt = started_at +
+duration_seconds` (no separate `ends_at`). `getEventTiming()` derives
+remaining/elapsed/isLive/hasEnded. Max **total** duration is 6h
+(`MAX_EVENT_DURATION_SECONDS = 21600`); `extendEvent` adds time only up to that cap.
+
+**Lazy expiry** (no cron/SSE, zero-cost): `ensureCurrentEventState()` atomically
+freezes an expired LIVE event on the next request that touches it — idempotent via
+a conditional `UPDATE … WHERE state='LIVE'`. The event is functionally over at
+`ends_at` because every protected op checks authoritative time, even before the
+persisted freeze lands. The browser countdown is display-only and resyncs on refresh.
+
+- **Timer API:** `GET /api/event/state` (authenticated) → state + authoritative
+  timing (never exposes `secret_version`).
+- **Participant page** `/<event>/home` is state-aware: waiting room (READY),
+  live placeholder + countdown (LIVE), ended/under-review (FROZEN/REVIEW).
+- Access policies live in `src/lib/event/access.ts` (`canParticipantLogin`,
+  `canAccessWaitingRoom`, `canAccessCompetition`, `canSubmit`, `canViewFinalResults`).
+
 ## Commands
 
 | Command | Action |
