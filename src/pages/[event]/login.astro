@@ -1,0 +1,90 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { createDb } from '../../lib/db/client';
+import { getEnv } from '../../lib/runtime';
+import { resolveEventBySlug } from '../../lib/event/resolve';
+import { isLoginAllowed } from '../../lib/auth/authenticate';
+
+export const prerender = false;
+
+const slug = Astro.params.event!;
+const db = createDb(getEnv().DB);
+const event = await resolveEventBySlug(db, slug);
+
+// Already authenticated for this event → go straight to the protected page.
+if (event && Astro.locals.auth?.event.slug === slug) {
+	return Astro.redirect(`/${slug}/home`);
+}
+
+if (!event) {
+	Astro.response.status = 404;
+}
+const loginOpen = event ? isLoginAllowed(event.state) : false;
+
+const errorCode = Astro.url.searchParams.get('error');
+const retry = Astro.url.searchParams.get('retry');
+const ERROR_MESSAGES: Record<string, string> = {
+	invalid_input: 'Please enter a valid roll number and password.',
+	invalid_credentials: 'Incorrect roll number or password.',
+	event_closed: 'This event is not open for login yet.',
+	event_not_found: 'Event not found.',
+	rate_limited: `Too many attempts. Try again in ${retry ?? 60}s.`,
+};
+const errorMessage = errorCode ? (ERROR_MESSAGES[errorCode] ?? 'Sign in failed.') : '';
+---
+
+<Layout title={event ? `${event.name} — Login` : 'Event not found'}>
+	<main class="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center gap-6 px-6">
+		{!event ? (
+			<div class="text-center">
+				<h1 class="text-2xl font-semibold">Event not found</h1>
+				<p class="mt-2 text-neutral-400">No investigation exists at this address.</p>
+			</div>
+		) : (
+			<>
+				<div class="text-center">
+					<p class="text-xs uppercase tracking-[0.3em] text-emerald-400">Case Files</p>
+					<h1 class="mt-1 text-2xl font-semibold">{event.name}</h1>
+					<p class="mt-1 text-sm text-neutral-400">Sign in with your roll number.</p>
+				</div>
+
+				{!loginOpen && (
+					<p class="rounded-md bg-amber-950/60 px-3 py-2 text-center text-sm text-amber-300">
+						This event is not open for login yet.
+					</p>
+				)}
+
+				<form method="POST" action="/api/auth/login" class="flex flex-col gap-3">
+					<input type="hidden" name="eventSlug" value={slug} />
+					<label class="flex flex-col gap-1 text-sm">
+						<span class="text-neutral-400">Roll number</span>
+						<input
+							name="rollNumber"
+							inputmode="numeric"
+							autocomplete="username"
+							required
+							class="rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-emerald-500"
+						/>
+					</label>
+					<label class="flex flex-col gap-1 text-sm">
+						<span class="text-neutral-400">Password</span>
+						<input
+							name="password"
+							type="password"
+							autocomplete="current-password"
+							required
+							class="rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-emerald-500"
+						/>
+					</label>
+					<button
+						type="submit"
+						class="mt-1 rounded-md bg-emerald-600 px-3 py-2 font-medium text-white hover:bg-emerald-500"
+					>
+						Sign in
+					</button>
+					<p class="min-h-5 text-center text-sm text-red-400" role="alert">{errorMessage}</p>
+				</form>
+			</>
+		)}
+	</main>
+</Layout>

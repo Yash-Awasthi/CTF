@@ -8,6 +8,13 @@
       "when": 1783428849656,
       "tag": "0000_sturdy_annihilus",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1783429817388,
+      "tag": "0001_huge_sunspot",
+      "breakpoints": true
     }
   ]
 }

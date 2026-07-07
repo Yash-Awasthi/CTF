@@ -70,6 +70,33 @@ pnpm exec wrangler d1 execute case-files-db --local \
 Scores are stored as **integer milli-points** (1 pt = 1000 units); time/hint factors as
 integer per-mille (0.5 → 500) — no floats persisted (see build spec "Score precision").
 
+## Authentication (Phase 2)
+
+Event-scoped, roll-number login. Username = password = roll number, validated by
+**participant lookup within the event** (never a global range). Public event
+identity is the **slug**; internal ids are never exposed.
+
+- **Login page:** `/<event-slug>/login` (e.g. `/case-files-dev-2026/login`).
+- **Protected page:** `/<event-slug>/home` — redirects to login if unauthenticated.
+- **APIs:** `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/session`
+  (401 JSON when unauthenticated). Login/logout accept **JSON** (programmatic) or
+  a **native form POST** (the UI uses this — works without client JS; 303 redirects).
+
+Sessions: a 256-bit CSPRNG opaque token in an `HttpOnly`, `SameSite=Lax`,
+`Secure`-in-prod cookie; the DB stores only `SHA-256(token)`. **One active session
+per participant** is enforced by a partial unique index
+(`sessions(participant_id) WHERE revoked_at IS NULL`) — a new login revokes the
+old one. No inactivity logout; sessions last 12h or until logout/replacement/expiry.
+Login is allowed only when the event state is `READY`, `LIVE`, or `FROZEN`.
+
+Login is rate-limited (persistent D1 table `login_rate_limit`): 10 failures / 5 min
+per roll and per client IP → temporary cooldown (never a permanent lock; success
+clears it). IPs are stored only as `HMAC(ip, RATE_LIMIT_SECRET)` — raw IPs are never
+persisted. Set `RATE_LIMIT_SECRET` (distinct from `EVENT_SECRET`) in `.dev.vars`.
+
+E2E note: `pnpm test:e2e` runs against the Astro dev server; if it isn't already
+running, start it once with `pnpm dev` (it daemonizes) and re-run.
+
 ## Commands
 
 | Command | Action |

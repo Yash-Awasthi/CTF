@@ -106,6 +106,11 @@ export const sessions = sqliteTable(
 	(t) => [
 		index('sessions_participant_idx').on(t.participantId),
 		index('sessions_event_idx').on(t.eventId),
+		// One active (non-revoked) session per participant, enforced at the DB
+		// level. A concurrent second login cannot leave two live sessions.
+		uniqueIndex('sessions_one_active_per_participant')
+			.on(t.participantId)
+			.where(sql`revoked_at IS NULL`),
 	],
 );
 
@@ -319,6 +324,35 @@ export const challengeBypasses = sqliteTable('challenge_bypasses', {
 	createdAt: createdAt(),
 });
 
+// ── login_rate_limit (persistent, Workers-instance-agnostic) ────────────────
+// Fixed-window counter per scope. `subject` is the roll number (string) for the
+// 'roll' scope, or an HMAC(ip, RATE_LIMIT_SECRET) hex digest for the 'ip' scope
+// — raw IPs are never persisted (privacy §14).
+export const RATE_LIMIT_SCOPES = ['roll', 'ip'] as const;
+
+export const loginRateLimit = sqliteTable(
+	'login_rate_limit',
+	{
+		id: integer('id').primaryKey({ autoIncrement: true }),
+		eventId: integer('event_id')
+			.notNull()
+			.references(() => events.id, { onDelete: 'cascade' }),
+		scope: text('scope', { enum: RATE_LIMIT_SCOPES }).notNull(),
+		subject: text('subject').notNull(),
+		windowStart: integer('window_start', { mode: 'timestamp' })
+			.notNull()
+			.default(sql`(unixepoch())`),
+		failureCount: integer('failure_count').notNull().default(0),
+	},
+	(t) => [
+		uniqueIndex('login_rate_limit_scope_unq').on(
+			t.eventId,
+			t.scope,
+			t.subject,
+		),
+	],
+);
+
 export const schema = {
 	events,
 	participants,
@@ -332,6 +366,7 @@ export const schema = {
 	adminActions,
 	announcements,
 	challengeBypasses,
+	loginRateLimit,
 };
 
 export type Schema = typeof schema;

@@ -1,0 +1,35 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+export const prerender = false;
+
+const slug = Astro.params.event!;
+const auth = Astro.locals.auth;
+
+// Protected: unauthenticated (or wrong-event) requests redirect to login.
+if (!auth || auth.event.slug !== slug) {
+	return Astro.redirect(`/${slug}/login`);
+}
+---
+
+<Layout title={`${auth.event.name} — Home`}>
+	<main class="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-4 px-6">
+		<p class="text-xs uppercase tracking-[0.3em] text-emerald-400">Authenticated</p>
+		<h1 class="text-2xl font-semibold">Welcome, investigator.</h1>
+		<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+			<dt class="text-neutral-400">Event</dt>
+			<dd>{auth.event.name}</dd>
+			<dt class="text-neutral-400">Participant</dt>
+			<dd>{auth.participant.rollNumber}</dd>
+		</dl>
+		<form method="POST" action="/api/auth/logout" class="mt-2">
+			<input type="hidden" name="redirect" value={`/${slug}/login`} />
+			<button
+				type="submit"
+				class="w-fit rounded-md border border-neutral-700 px-3 py-2 text-sm hover:border-neutral-500"
+			>
+				Log out
+			</button>
+		</form>
+	</main>
+</Layout>

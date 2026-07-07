@@ -5,8 +5,10 @@
 -- Apply:  pnpm db:seed:local
 --   (= wrangler d1 execute case-files-db --local --file scripts/seed-dev.sql)
 
+-- Dev event seeded as READY so participants can log in (waiting room) during
+-- local development. Real events are created by the admin flow in a later phase.
 INSERT INTO events (name, slug, state, duration_seconds, secret_version, created_at)
-VALUES ('Case Files — Dev Event', 'case-files-dev-2026', 'DRAFT', 14400, 'v1', unixepoch());
+VALUES ('Case Files — Dev Event', 'case-files-dev-2026', 'READY', 14400, 'v1', unixepoch());
 
 INSERT INTO participants (event_id, roll_number, current_challenge, score, status, created_at)
 WITH RECURSIVE roster(n) AS (
