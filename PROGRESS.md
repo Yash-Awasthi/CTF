@@ -9,8 +9,8 @@ Read `ctf-build-plan.md` (source of truth, already corrected). This file = per-p
 4. Commit + push each phase to `origin/main` (github.com/Yash-Awasthi/CTFplayground).
 
 ## Status
-- Phase 0 ✅ · P1 schema ✅ · P2 auth ✅ · P3 lifecycle+timer ✅ · P4 seed engine ✅ · P5 challenge engine ✅ · P6 scoring ✅ · P7 hints+submission ✅ · **P8 anti-cheat + P9 first-blood + P10 leaderboard + P11 admin + P12 SSE ✅ (awaiting confirm)**
-- Next: Phase 13 (challenge authoring — needs story/theme confirmation first).
+- Phase 0 ✅ · P1–P7 ✅ · P8–P12 ✅ · P12.5 admin hardening ✅ · **P13 DEFERRED + P14 integration + P15 verification + P16 static replay ✅ (awaiting confirm)**
+- Next: Phase 13 production challenge authoring — BLOCKED on story/theme + per-slot technique mapping + base-point confirmation. Do NOT write content without those.
 
 ## Non-obvious facts (not in the plan)
 - Project name `case-files`. Bindings: `DB` (D1), `BUCKET` (R2), `ASSETS` (CF static).
@@ -61,6 +61,11 @@ Read `ctf-build-plan.md` (source of truth, already corrected). This file = per-p
 - Bypass = build-plan GLOBAL per event+challenge (schema no participantId; SWEEP said per-participant — DEVIATION noted). Records challenge_bypasses + bulk-advances participants stuck at slot→slot+1. NO solve/score/first-blood. Session reset revokes session only, preserves all progress.
 - P12 SSE `src/lib/sse/` + /api/events/stream (SSE) + /api/events/updates (poll fallback). NO Durable Objects, NO module-global broadcaster — each stream READS D1 + diffs client cursors (fb,ann) → correct cross-isolate, missed events recoverable. Events: state (version changes on transition+extension), firstblood, announcement. NO timer ticks (browser computes countdown, resync on state). Client EventSource+poll fallback in home.astro. Announcements persisted first.
 - ADMIN_SECRET added to .dev.vars/.env.example + regen worker types. Client bundle scanned clean (no secret/seed/ownership/private).
+- P12.5 opaque admin sessions: migration 0003 admin_sessions (token_hash unique, created/expires 12h/revoked) + admin_login_rate_limit (ip_hash). `src/lib/admin/auth.ts` createAdminSession/isValidAdminSession/revokeAdminSession, `isAdmin(cookies,db)`. Raw 256-bit token cookie-only, SHA-256 hash stored. Admin login IP-hash rate-limited (`admin/rate-limit.ts`). Build-plan Phase 8 spec aligned to two-strike (no longer "no auto-punishment").
+- P13 DEFERRED (build-plan revision note added): no production challenges/story/assets. Integration proven on Phase 5 placeholders; slot-1 placeholder = dev Hello-World fixture via real pipeline.
+- P16 static replay `src/lib/static-replay/` + `/replay` (prerender=true, ZERO backend/secret at runtime). personalize.ts: investigatorId(localStorage)+PUBLIC REPLAY_SALT+slot→SHA256 (never EVENT_SECRET/seeds). verify.ts client-side (reuses normalizeAnswer, non-secret by design; live validation untouched). manifest.ts→prerendered /replay/challenges.json (public metadata only). leaderboard-export.ts + scripts/export-leaderboard.mjs→public/replay/leaderboard.json (final data, eliminated excluded, unmasked rolls, deterministic). scrub.ts + scripts/scrub-static-replay.mjs (`pnpm replay:scrub`) fails on prohibited data; unmasked rolls allowed.
+- Cold-start Playwright flake FIXED: tests/e2e/global-setup.ts warms routes before timed tests; playwright.config retries:1 + timeouts. Cold run green (1 flaky→retry-absorbed).
+- pnpm scripts: replay:export, replay:scrub. Zero-cost: no DO, no paid svc; static replay = plain prerendered assets.
 
 ## Local dev / test
 - `pnpm db:reset:local` (wipe+migrate+seed) → dev event slug `case-files-dev-2026`, state `READY`, rolls 25115000–25115115.

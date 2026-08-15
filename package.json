@@ -18,7 +18,9 @@
     "db:migrate:local": "wrangler d1 migrations apply case-files-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply case-files-db --remote",
     "db:seed:local": "wrangler d1 execute case-files-db --local --file scripts/seed-dev.sql",
-    "db:reset:local": "rm -rf .wrangler/state/v3/d1 && pnpm db:migrate:local && pnpm db:seed:local"
+    "db:reset:local": "rm -rf .wrangler/state/v3/d1 && pnpm db:migrate:local && pnpm db:seed:local",
+    "replay:export": "node scripts/export-leaderboard.mjs",
+    "replay:scrub": "node scripts/scrub-static-replay.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.1.1",

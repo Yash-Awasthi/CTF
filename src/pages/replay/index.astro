@@ -1,0 +1,125 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { REPLAY_SALT } from '../../lib/static-replay';
+
+// Fully static, prerendered. NO auth, NO D1, NO Worker/API calls at runtime —
+// all personalization + verification runs client-side from investigatorId +
+// the PUBLIC replay salt. Deployable as plain static hosting.
+export const prerender = true;
+---
+
+<Layout title="Case Files — Static Replay (archive)">
+	<main class="mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 px-6 py-10" data-replay data-salt={REPLAY_SALT}>
+		<div class="flex items-center justify-between">
+			<h1 class="text-xl font-semibold">Case Files — Replay</h1>
+			<button data-reset class="text-xs text-neutral-500 hover:text-neutral-300">Reset Investigation</button>
+		</div>
+		<p class="text-xs text-neutral-500">
+			Post-event public archive. Non-competitive; answers are checked in your
+			browser. Your investigator id is random and local to this device.
+		</p>
+		<p class="text-sm text-neutral-400" data-investigator></p>
+
+		<section data-challenge class="flex flex-col gap-3">
+			<p class="text-sm" data-progress></p>
+			<h2 class="text-lg font-semibold" data-title></h2>
+			<p class="text-neutral-400" data-prompt></p>
+			<p class="text-xs text-neutral-500">Token: <span class="font-mono" data-token></span></p>
+			<ul class="flex flex-col gap-1 text-sm text-amber-300" data-hints></ul>
+			<button data-hint class="self-start rounded border border-amber-500/40 px-3 py-1 text-xs text-amber-300">Reveal a hint</button>
+			<form class="flex flex-col gap-2" data-form>
+				<input name="answer" autocomplete="off" placeholder="Your answer" class="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm" />
+				<button class="rounded bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950">Submit</button>
+				<p class="min-h-[1.25rem] text-sm" data-result></p>
+			</form>
+		</section>
+
+		<section class="rounded border border-neutral-800 p-4">
+			<h2 class="mb-2 text-sm uppercase tracking-widest text-neutral-500">Final standings (archive)</h2>
+			<table class="w-full text-left text-sm"><thead class="text-neutral-500"><tr><th>#</th><th>Roll</th><th>Score</th></tr></thead>
+				<tbody data-leaderboard><tr><td colspan="3" class="text-neutral-500">Loading…</td></tr></tbody>
+			</table>
+		</section>
+	</main>
+</Layout>
+
+<script>
+	import { replayPersonalize, newInvestigatorId } from '../../lib/static-replay/personalize';
+	import { replayVerify } from '../../lib/static-replay/verify';
+
+	type Ch = { slot: number; title: string; prompt: string; hints: { order: number; text: string }[]; basePoints: number };
+
+	const root = document.querySelector<HTMLElement>('[data-replay]');
+	if (root) {
+		const KEY_ID = 'cf_replay_investigator';
+		const KEY_PROGRESS = 'cf_replay_progress';
+		let investigatorId = localStorage.getItem(KEY_ID) ?? '';
+		if (!investigatorId) { investigatorId = newInvestigatorId(); localStorage.setItem(KEY_ID, investigatorId); }
+		let solved = Number(localStorage.getItem(KEY_PROGRESS) ?? '0'); // slots 0..N solved
+		let hintsShown = 0;
+
+		const $ = (s: string) => root.querySelector<HTMLElement>(s)!;
+		$('[data-investigator]').textContent = `Investigator ${investigatorId.slice(0, 8)}`;
+
+		let challenges: Ch[] = [];
+
+		async function render() {
+			const idx = solved; // current challenge = first unsolved
+			if (idx >= challenges.length) {
+				$('[data-challenge]').innerHTML = '<p class="text-emerald-300">Investigation complete — all challenges replayed.</p>';
+				return;
+			}
+			const ch = challenges[idx];
+			const p = await replayPersonalize(investigatorId, ch.slot);
+			$('[data-progress]').textContent = `Challenge ${idx + 1} / ${challenges.length}`;
+			$('[data-title]').textContent = ch.title;
+			$('[data-prompt]').textContent = ch.prompt;
+			$('[data-token]').textContent = p.token;
+			$('[data-hints]').innerHTML = '';
+			hintsShown = 0;
+			(root as HTMLElement).dataset.expected = p.expectedAnswer;
+		}
+
+		$('[data-hint]').addEventListener('click', () => {
+			const ch = challenges[solved];
+			if (!ch || hintsShown >= ch.hints.length) return;
+			const li = document.createElement('li');
+			li.textContent = `Hint ${ch.hints[hintsShown].order}: ${ch.hints[hintsShown].text}`;
+			$('[data-hints]').appendChild(li);
+			hintsShown++;
+		});
+
+		$('[data-form]').addEventListener('submit', (e) => {
+			e.preventDefault();
+			const input = (root.querySelector('input[name="answer"]') as HTMLInputElement).value;
+			const expected = (root as HTMLElement).dataset.expected ?? '';
+			const res = $('[data-result]');
+			if (replayVerify(input, expected)) {
+				res.textContent = 'Correct — advancing.'; res.className = 'min-h-[1.25rem] text-sm text-emerald-400';
+				solved++; localStorage.setItem(KEY_PROGRESS, String(solved));
+				(root.querySelector('input[name="answer"]') as HTMLInputElement).value = '';
+				setTimeout(render, 400);
+			} else {
+				res.textContent = 'Incorrect — try again.'; res.className = 'min-h-[1.25rem] text-sm text-red-400';
+			}
+		});
+
+		$('[data-reset]').addEventListener('click', () => {
+			investigatorId = newInvestigatorId();
+			localStorage.setItem(KEY_ID, investigatorId);
+			solved = 0; localStorage.setItem(KEY_PROGRESS, '0');
+			$('[data-investigator]').textContent = `Investigator ${investigatorId.slice(0, 8)}`;
+			render();
+		});
+
+		// Load static manifest + leaderboard (plain static assets, no live backend).
+		fetch('./challenges.json').then((r) => r.json()).then((d) => { challenges = d.challenges; render(); });
+		fetch('./leaderboard.json').then((r) => r.ok ? r.json() : { standings: [] }).then((d) => {
+			const tb = $('[data-leaderboard]');
+			const rows = (d.standings ?? []) as { rank: number; rollNumber: number; score: number }[];
+			tb.innerHTML = rows.length
+				? rows.slice(0, 25).map((s) => `<tr><td>${s.rank}</td><td>${s.rollNumber}</td><td>${s.score}</td></tr>`).join('')
+				: '<tr><td colspan="3" class="text-neutral-500">No published standings in this archive.</td></tr>';
+		}).catch(() => {});
+	}
+</script>

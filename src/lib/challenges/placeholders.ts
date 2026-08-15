@@ -7,6 +7,11 @@
  *
  * A factory builds all 30 so the fixtures stay minimal and uniform. Two slots
  * are attribution-enabled to exercise the Phase 4 attribution path end-to-end.
+ *
+ * Phase 13 note: production challenge authoring is DEFERRED. Slot 1 doubles as
+ * the minimal development "Hello World" integration fixture — driven through the
+ * real submit/hint/score/first-blood pipeline by the Playwright/Vitest suites.
+ * No parallel challenge system exists for it; it is an ordinary registry module.
  */
 import { ALPHABETS } from '../crypto/constants';
 import { exactMatch } from './validators';

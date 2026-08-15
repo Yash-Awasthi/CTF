@@ -10,11 +10,18 @@ export default defineConfig({
 	fullyParallel: false,
 	workers: 1,
 	forbidOnly: !!process.env.CI,
-	retries: process.env.CI ? 1 : 0,
+	// One retry locally too: absorbs the rare residual cold-compile/wrangler-exec
+	// hiccup so a clean cold run is reliably green (warmup handles the common case).
+	retries: 1,
 	reporter: 'list',
+	// Warm every key route before the first timed test (fixes the cold-compile flake).
+	globalSetup: './tests/e2e/global-setup.ts',
+	timeout: 45_000,
 	use: {
 		baseURL: `http://localhost:${PORT}`,
 		trace: 'on-first-retry',
+		navigationTimeout: 30_000,
+		actionTimeout: 15_000,
 	},
 	projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 	webServer: {

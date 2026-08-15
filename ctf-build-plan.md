@@ -222,6 +222,16 @@ Each phase below is a self-contained prompt — paste into Claude Code/Cursor on
 
 ## Phase 13 — Challenge authoring (content)
 
+> **Revision note (Phase 13 DEFERRED):** production challenge authoring — the 30
+> real challenges, final story, OSINT/forensic puzzles, and production assets —
+> is intentionally deferred pending the open items below (story/theme, technique
+> mapping, base-point confirmation). Phases 14–16 were completed against the
+> existing Phase 5 registry (30 placeholder modules for structural/coverage
+> testing, the attribution placeholders on slots 8 & 16 for anti-cheat, and one
+> minimal **development** Hello-World-style fixture — the slot-1 placeholder
+> exercised through the real submit/hint/score/first-blood pipeline) plus the
+> static replay (Phase 16). No production challenge content exists yet.
+
 **Goal:** write all 30 challenges using the Phase 5 interface.
 
 - One challenge at a time. For each: `challenge.ts` (metadata/prereqs/points), `generator.ts` (personalized content via Phase 4 seed helpers), `validator.ts`, `hints.ts`, `assets/` if needed.

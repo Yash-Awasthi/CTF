@@ -410,6 +410,57 @@ with a `/api/events/updates` polling fallback; announcements are persisted first
 `admin.test.ts`, `sse.test.ts` (Vitest); `admin.spec.ts`, `leaderboard.spec.ts`
 (Playwright).
 
+## Challenge content status (Phase 13 deferred)
+
+Production challenge authoring — the 30 real challenges, final story, OSINT/
+forensic puzzles, production assets — is **intentionally deferred** (see the
+Phase 13 revision note in `ctf-build-plan.md`) pending story/theme, per-slot
+technique mapping, and base-point confirmation. The platform is proven end-to-end
+against: the 30 Phase 5 **placeholder** modules (structural + 3,480 coverage),
+the attribution placeholders on slots 8 & 16 (anti-cheat), and the slot-1
+placeholder driven through the real submit/hint/score/first-blood pipeline as the
+minimal **development** Hello-World fixture. No production content exists yet.
+
+## Static replay / archive (Phase 16, `src/lib/static-replay/`, `/replay`)
+
+Post-event **public** archive, operationally separate from the live platform:
+fully prerendered (`prerender = true`), **no auth, no D1, no R2, no Worker APIs,
+no live secrets** at runtime.
+
+- **Personalization** (`personalize.ts`): per-visitor `investigatorId` (random,
+  localStorage) + a **public** `REPLAY_SALT` + slot → SHA-256. Deterministic per
+  visitor, different across visitors; **never** uses `EVENT_SECRET`, HMAC keys, or
+  participant seeds. "Reset Investigation" mints a new id and restarts.
+- **Answer verification** (`verify.ts`): client-side, reuses `normalizeAnswer`.
+  Non-secret / not tamper-proof **by design** — archival, not competitive. Live
+  secure server-side validation is untouched and stays on the server.
+- **Sanitized manifest** (`manifest.ts` → prerendered `/replay/challenges.json`):
+  public metadata only (slot/key/title/tier/points/prompt/hints) — no answers,
+  seeds, generation state, or validators.
+- **Static leaderboard** (`leaderboard-export.ts` + `scripts/export-leaderboard.mjs`
+  → `public/replay/leaderboard.json`): built from authoritative final data,
+  excludes eliminated participants, deterministic order (score DESC → earliest
+  final solve → roll ASC), **unmasked** roll numbers (locked decision), score
+  from milli-points, reproducible for unchanged input, no live dependency.
+- **Privacy scrub** (`scrub.ts` + `scripts/scrub-static-replay.mjs`, `pnpm
+  replay:scrub`): scans built static output and fails on any prohibited data
+  (EVENT/ADMIN/RATE_LIMIT secrets, session/IP hashes, ownership maps, anti-cheat
+  internals, private challenge state, `dev-only` markers). Unmasked rolls are
+  allowed. Runs after the static build; part of the release check.
+
+**Live vs static boundary:** the live app stays server-backed and secure
+(server-side validation, secrets in env only); static replay is a separate
+prerendered transformation that reproduces the *experience* from a public salt —
+never live secrets, never moving validation-of-record into the browser.
+
+**Deploy:** `pnpm build` emits `/replay/*` into `dist/client/`; after
+RESULTS_PUBLISHED run `pnpm replay:export <slug>` then `pnpm replay:scrub`, and
+serve `dist/client` (or the `replay/` subtree) as plain static hosting.
+
+**Tests:** `static-replay.test.ts` (personalization determinism, sanitized
+manifest, leaderboard export ordering/exclusion/reproducibility, privacy scrub);
+`replay.spec.ts` (Playwright: client-side solve, advance, reset changes id).
+
 ## Commands
 
 | Command | Action |
