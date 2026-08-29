@@ -1,0 +1,300 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const endpoints = [
+  {
+    method: 'POST',
+    path: '/api/register',
+    description: 'Register a new user account',
+    params: [
+      { name: 'username', type: 'string', required: true, description: '3-20 characters, alphanumeric + underscore' },
+      { name: 'email', type: 'string', required: true, description: 'Valid email address' },
+      { name: 'password', type: 'string', required: true, description: '8+ chars, mixed case + number' },
+    ],
+    response: '{ id, username, email, createdAt }',
+  },
+  {
+    method: 'POST',
+    path: '/api/login',
+    description: 'Authenticate user and get session token',
+    params: [
+      { name: 'username', type: 'string', required: true },
+      { name: 'password', type: 'string', required: true },
+    ],
+    response: '{ token, user: { id, username, points } }',
+  },
+  {
+    method: 'POST',
+    path: '/api/submit-flag',
+    description: 'Submit a flag for a challenge',
+    params: [
+      { name: 'challenge_id', type: 'number', required: true },
+      { name: 'flag', type: 'string', required: true },
+    ],
+    response: '{ correct: boolean, points: number, message: string }',
+  },
+  {
+    method: 'GET',
+    path: '/api/challenges',
+    description: 'List all challenges',
+    params: [],
+    response: '{ challenges: [{ id, title, tier, points, solved }] }',
+  },
+  {
+    method: 'GET',
+    path: '/api/leaderboard',
+    description: 'Get global leaderboard',
+    params: [
+      { name: 'limit', type: 'number', required: false, description: 'Number of entries (default 50)' },
+    ],
+    response: '{ leaderboard: [{ rank, username, points, solves }] }',
+  },
+  {
+    method: 'GET',
+    path: '/api/hints/:challengeId',
+    description: 'Get available hints for a challenge',
+    params: [],
+    response: '{ hints: [{ id, content, cost, revealed }] }',
+  },
+  {
+    method: 'POST',
+    path: '/api/hints/:challengeId/reveal',
+    description: 'Reveal a hint (costs points)',
+    params: [
+      { name: 'hint_id', type: 'number', required: true },
+    ],
+    response: '{ hint: { content, cost }, remaining_points: number }',
+  },
+  {
+    method: 'POST',
+    path: '/api/teams',
+    description: 'Create a new team',
+    params: [
+      { name: 'name', type: 'string', required: true, description: '3-30 characters' },
+    ],
+    response: '{ id, name, inviteCode, members }',
+  },
+  {
+    method: 'POST',
+    path: '/api/teams/join',
+    description: 'Join an existing team',
+    params: [
+      { name: 'inviteCode', type: 'string', required: true },
+    ],
+    response: '{ team: { id, name }, members }',
+  },
+  {
+    method: 'GET',
+    path: '/api/team-score/:teamId',
+    description: 'Get team score and rankings',
+    params: [],
+    response: '{ score, rank, members: [{ username, points, solves }] }',
+  },
+];
+
+const methodColors = {
+  GET: '#00ff88',
+  POST: '#ffaa00',
+  PUT: '#00aaff',
+  DELETE: '#ff4444',
+};
+---
+
+<Layout title="CTF API Documentation">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0a0e1a;
+      color: #e0e0e0;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      line-height: 1.6;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: #00ff88;
+      margin-bottom: 0.5rem;
+      text-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 2rem;
+      font-size: 0.9rem;
+    }
+
+    .endpoint {
+      background: #0f1423;
+      border: 1px solid #1a2035;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      overflow: hidden;
+      transition: border-color 0.3s;
+    }
+
+    .endpoint:hover {
+      border-color: #00ff88;
+    }
+
+    .endpoint-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      cursor: pointer;
+    }
+
+    .method {
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 0.8rem;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .method-GET { background: rgba(0, 255, 136, 0.2); color: #00ff88; }
+    .method-POST { background: rgba(255, 170, 0, 0.2); color: #ffaa00; }
+    .method-PUT { background: rgba(0, 170, 255, 0.2); color: #00aaff; }
+    .method-DELETE { background: rgba(255, 68, 68, 0.2); color: #ff4444; }
+
+    .path {
+      color: #e0e0e0;
+      font-weight: 500;
+    }
+
+    .description {
+      color: #888;
+      margin-left: auto;
+      font-size: 0.9rem;
+    }
+
+    .endpoint-body {
+      display: none;
+      padding: 1rem;
+      border-top: 1px solid #1a2035;
+    }
+
+    .endpoint-body.show {
+      display: block;
+    }
+
+    .params-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    .params-table th {
+      text-align: left;
+      padding: 0.5rem;
+      border-bottom: 1px solid #1a2035;
+      color: #888;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+    }
+
+    .params-table td {
+      padding: 0.5rem;
+      border-bottom: 1px solid #0f1423;
+    }
+
+    .required {
+      color: #ff4444;
+      font-size: 0.8rem;
+    }
+
+    .optional {
+      color: #666;
+      font-size: 0.8rem;
+    }
+
+    .response {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #0a0e1a;
+      border-radius: 4px;
+      border-left: 3px solid #00ff88;
+    }
+
+    .response-label {
+      color: #888;
+      font-size: 0.8rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .response code {
+      color: #00ff88;
+      font-size: 0.9rem;
+    }
+
+    .arrow {
+      transition: transform 0.3s;
+    }
+
+    .arrow.open {
+      transform: rotate(90deg);
+    }
+  </style>
+
+  <div class="container">
+    <h1>🔑 CTF API Documentation</h1>
+    <p class="subtitle">Authentication • Challenges • Scoring • Teams</p>
+
+    {endpoints.map((endpoint) => (
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="this.nextElementSibling.classList.toggle('show'); this.querySelector('.arrow').classList.toggle('open')">
+          <span class={`method method-${endpoint.method}`}>{endpoint.method}</span>
+          <span class="path">{endpoint.path}</span>
+          <span class="description">{endpoint.description}</span>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="endpoint-body">
+          {endpoint.params.length > 0 && (
+            <table class="params-table">
+              <thead>
+                <tr>
+                  <th>Parameter</th>
+                  <th>Type</th>
+                  <th>Required</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {endpoint.params.map((param) => (
+                  <tr>
+                    <td>{param.name}</td>
+                    <td style="color: #00aaff;">{param.type}</td>
+                    <td>
+                      {param.required ? (
+                        <span class="required">required</span>
+                      ) : (
+                        <span class="optional">optional</span>
+                      )}
+                    </td>
+                    <td style="color: #888;">{param.description || ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          <div class="response">
+            <div class="response-label">Response:</div>
+            <code>{endpoint.response}</code>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+</Layout>

@@ -1,0 +1,270 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Teams — Case 71-C">
+  <style>
+    :root {
+      --noir-bg: #0a0e1a;
+      --noir-card: #0f1629;
+      --noir-border: #1e293b;
+      --accent-green: #00ff88;
+      --accent-amber: #ffaa00;
+      --accent-red: #ff4444;
+      --accent-purple: #a855f7;
+      --accent-cyan: #06b6d4;
+      --text-primary: #e2e8f0;
+      --text-muted: #64748b;
+      --text-dim: #475569;
+    }
+    body { background: var(--noir-bg); font-family: 'Inter', system-ui, sans-serif; }
+    .noir-card { background: var(--noir-card); border: 1px solid var(--noir-border); border-radius: 12px; padding: 24px; }
+    .input-field {
+      width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.03);
+      border: 1px solid var(--noir-border); border-radius: 8px;
+      color: var(--text-primary); font-size: 14px; outline: none; box-sizing: border-box;
+    }
+    .input-field:focus { border-color: var(--accent-green); }
+    .input-field::placeholder { color: var(--text-dim); }
+    .btn {
+      padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      cursor: pointer; border: none; transition: opacity 0.2s;
+    }
+    .btn-green { background: var(--accent-green); color: var(--noir-bg); }
+    .btn-amber { background: var(--accent-amber); color: var(--noir-bg); }
+    .btn-outline { background: transparent; border: 1px solid var(--noir-border); color: var(--text-muted); }
+    .btn-red { background: var(--accent-red); color: white; }
+    .btn:hover { opacity: 0.9; }
+    .tab { padding: 8px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; background: transparent; border: 1px solid transparent; color: var(--text-muted); }
+    .tab:hover { color: var(--text-primary); }
+    .tab.active { background: rgba(0,255,136,0.1); color: var(--accent-green); border-color: rgba(0,255,136,0.3); }
+    .team-member { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--noir-border); }
+    .role-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+    .code-display { font-family: 'JetBrains Mono', monospace; font-size: 24px; letter-spacing: 0.3em; color: var(--accent-green); text-align: center; padding: 16px; background: rgba(0,255,136,0.05); border-radius: 8px; border: 1px dashed rgba(0,255,136,0.3); }
+    .error-msg { color: var(--accent-red); font-size: 12px; margin-top: 4px; }
+    .success-msg { color: var(--accent-green); font-size: 12px; margin-top: 4px; }
+    .lb-row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--noir-border); }
+    .lb-row:hover { background: rgba(255,255,255,0.02); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+  </style>
+
+  <main class="min-h-screen px-6 py-12" style="background: var(--noir-bg);">
+    <div class="max-w-4xl mx-auto">
+      <!-- Header -->
+      <div class="text-center mb-8">
+        <p class="text-xs tracking-[0.3em] mb-2" style="color: var(--accent-green); font-family: monospace;">◆ TEAM OPERATIONS ◆</p>
+        <h1 class="text-3xl font-bold" style="color: var(--text-primary);">Teams</h1>
+        <p class="text-sm mt-2" style="color: var(--text-dim);">Form a squad. Share the load. Climb the ranks.</p>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="flex gap-2 mb-8 justify-center">
+        <button class="tab active" onclick="showTab('my-team')">My Team</button>
+        <button class="tab" onclick="showTab('create')">Create</button>
+        <button class="tab" onclick="showTab('join')">Join</button>
+        <button class="tab" onclick="showTab('leaderboard')">Leaderboard</button>
+      </div>
+
+      <!-- My Team Tab -->
+      <div id="tab-my-team" class="tab-panel active">
+        <div id="no-team" class="noir-card text-center">
+          <p style="color: var(--text-dim);">You're not in a team yet.</p>
+          <p class="text-sm mt-2" style="color: var(--text-muted);">Create one or join with an invite code.</p>
+        </div>
+        <div id="has-team" style="display: none;">
+          <div class="noir-card mb-4">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h2 id="team-name" class="text-xl font-bold" style="color: var(--text-primary);"></h2>
+                <p id="team-score" class="text-sm" style="color: var(--accent-green); font-family: monospace;"></p>
+              </div>
+              <div class="flex gap-2">
+                <button class="btn btn-outline" onclick="copyInviteCode()" style="font-size:11px;">📋 Copy Code</button>
+                <button class="btn btn-red" onclick="leaveTeam()" style="font-size:11px;">Leave</button>
+              </div>
+            </div>
+            <div id="invite-code" class="code-display mb-4"></div>
+            <p class="text-xs text-center" style="color: var(--text-dim);">Share this code with teammates</p>
+          </div>
+          <div class="noir-card">
+            <h3 class="text-xs uppercase tracking-[0.1em] mb-4" style="color: var(--text-dim); font-family: monospace;">Members</h3>
+            <div id="members-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create Tab -->
+      <div id="tab-create" class="tab-panel">
+        <div class="noir-card max-w-md mx-auto">
+          <h3 class="text-sm uppercase tracking-[0.1em] mb-6" style="color: var(--text-dim); font-family: monospace;">Create New Team</h3>
+          <div style="margin-bottom: 16px;">
+            <label style="font-size: 12px; color: var(--text-dim); display: block; margin-bottom: 6px; font-family: monospace; text-transform: uppercase;">Team Name</label>
+            <input type="text" id="team-name-input" class="input-field" placeholder="3-30 characters">
+          </div>
+          <div class="error-msg" id="create-error"></div>
+          <div class="success-msg" id="create-success"></div>
+          <button class="btn btn-green" style="width: 100%; margin-top: 16px;" onclick="handleCreate()">CREATE TEAM</button>
+        </div>
+      </div>
+
+      <!-- Join Tab -->
+      <div id="tab-join" class="tab-panel">
+        <div class="noir-card max-w-md mx-auto">
+          <h3 class="text-sm uppercase tracking-[0.1em] mb-6" style="color: var(--text-dim); font-family: monospace;">Join a Team</h3>
+          <div style="margin-bottom: 16px;">
+            <label style="font-size: 12px; color: var(--text-dim); display: block; margin-bottom: 6px; font-family: monospace; text-transform: uppercase;">Invite Code</label>
+            <input type="text" id="invite-code-input" class="input-field" placeholder="6-character code" maxlength="6" style="text-align: center; font-family: monospace; font-size: 18px; letter-spacing: 0.2em;">
+          </div>
+          <div class="error-msg" id="join-error"></div>
+          <div class="success-msg" id="join-success"></div>
+          <button class="btn btn-amber" style="width: 100%; margin-top: 16px;" onclick="handleJoin()">JOIN TEAM</button>
+        </div>
+      </div>
+
+      <!-- Leaderboard Tab -->
+      <div id="tab-leaderboard" class="tab-panel">
+        <div class="noir-card">
+          <h3 class="text-sm uppercase tracking-[0.1em] mb-4" style="color: var(--text-dim); font-family: monospace;">Team Rankings</h3>
+          <div id="team-leaderboard"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script is:inline>
+    let authModule, teamsModule;
+
+    function showTab(name) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab-' + name)?.classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    async function init() {
+      authModule = await import('/src/lib/auth.ts');
+      teamsModule = await import('/src/lib/teams.ts');
+      refreshView();
+    }
+
+    function refreshView() {
+      const user = authModule?.getCurrentUser();
+      if (!user) {
+        document.getElementById('no-team').innerHTML = '<p style="color:var(--text-muted);"><a href="/login" style="color:var(--accent-green);">Log in</a> to manage teams.</p>';
+        return;
+      }
+
+      const team = teamsModule.getUserTeam(user.id);
+      if (team) {
+        document.getElementById('no-team').style.display = 'none';
+        document.getElementById('has-team').style.display = 'block';
+        document.getElementById('team-name').textContent = team.name;
+        document.getElementById('invite-code').textContent = team.inviteCode;
+
+        const { totalScore, solvedCount } = teamsModule.getTeamScore(team.id);
+        document.getElementById('team-score').textContent = `${totalScore} pts • ${solvedCount}/30 solved`;
+
+        const members = teamsModule.getTeamMembers(team.id);
+        const list = document.getElementById('members-list');
+        list.innerHTML = members.map(m => `
+          <div class="team-member">
+            <div>
+              <span style="color: var(--text-primary);">${m.username}</span>
+              <span class="role-badge" style="background: ${m.role === 'captain' ? 'rgba(255,170,0,0.15)' : 'rgba(100,116,139,0.15)'}; color: ${m.role === 'captain' ? 'var(--accent-amber)' : 'var(--text-dim)'}; margin-left: 8px;">
+                ${m.role === 'captain' ? '👑 CAPTAIN' : 'MEMBER'}
+              </span>
+            </div>
+            ${user.id === team.captainId && m.userId !== user.id ? `
+              <button class="btn btn-outline" style="font-size:10px;padding:4px 8px;" onclick="removeMember('${m.userId}')">Remove</button>
+            ` : ''}
+          </div>
+        `).join('');
+      } else {
+        document.getElementById('no-team').style.display = 'block';
+        document.getElementById('has-team').style.display = 'none';
+      }
+
+      // Team leaderboard
+      const lb = teamsModule.getTeamLeaderboard();
+      const lbEl = document.getElementById('team-leaderboard');
+      if (lb.length === 0) {
+        lbEl.innerHTML = '<p style="color:var(--text-dim);text-align:center;padding:20px;">No teams yet. Be the first!</p>';
+      } else {
+        lbEl.innerHTML = lb.map(t => `
+          <div class="lb-row">
+            <span style="font-family:monospace;color:${t.rank <= 3 ? 'var(--accent-amber)' : 'var(--text-dim)'};width:30px;">
+              ${t.rank <= 3 ? ['🥇','🥈','🥉'][t.rank-1] : '#'+t.rank}
+            </span>
+            <div style="flex:1;">
+              <span style="color:var(--text-primary);">${t.teamName}</span>
+              <span style="color:var(--text-dim);font-size:11px;margin-left:8px;">${t.memberCount} members</span>
+            </div>
+            <span style="font-family:monospace;color:var(--accent-green);font-weight:700;">${t.totalScore}</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    async function handleCreate() {
+      document.getElementById('create-error').textContent = '';
+      document.getElementById('create-success').textContent = '';
+      const user = authModule?.getCurrentUser();
+      if (!user) { document.getElementById('create-error').textContent = 'Log in first'; return; }
+
+      const name = document.getElementById('team-name-input').value.trim();
+      const result = teamsModule.createTeam(name, user.id, user.username);
+      if (result.success) {
+        document.getElementById('create-success').textContent = `Team "${result.team.name}" created!`;
+        document.getElementById('team-name-input').value = '';
+        refreshView();
+      } else {
+        document.getElementById('create-error').textContent = result.error;
+      }
+    }
+
+    async function handleJoin() {
+      document.getElementById('join-error').textContent = '';
+      document.getElementById('join-success').textContent = '';
+      const user = authModule?.getCurrentUser();
+      if (!user) { document.getElementById('join-error').textContent = 'Log in first'; return; }
+
+      const code = document.getElementById('invite-code-input').value.trim().toUpperCase();
+      const result = teamsModule.joinTeam(code, user.id, user.username);
+      if (result.success) {
+        document.getElementById('join-success').textContent = `Joined "${result.team.name}"!`;
+        document.getElementById('invite-code-input').value = '';
+        refreshView();
+      } else {
+        document.getElementById('join-error').textContent = result.error;
+      }
+    }
+
+    function leaveTeam() {
+      if (!confirm('Leave this team?')) return;
+      const user = authModule?.getCurrentUser();
+      if (!user) return;
+      const result = teamsModule.leaveTeam(user.id);
+      if (!result.success) alert(result.error);
+      refreshView();
+    }
+
+    function copyInviteCode() {
+      const team = teamsModule.getUserTeam(authModule?.getCurrentUser()?.id);
+      if (team) {
+        navigator.clipboard?.writeText(team.inviteCode);
+      }
+    }
+
+    function removeMember(targetId) {
+      if (!confirm('Remove this member?')) return;
+      const user = authModule?.getCurrentUser();
+      if (!user) return;
+      const result = teamsModule.removeMember(user.id, targetId);
+      if (!result.success) alert(result.error);
+      refreshView();
+    }
+
+    init();
+  </script>
+</Layout>

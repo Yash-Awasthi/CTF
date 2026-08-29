@@ -1,0 +1,244 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Login — Case 71-C">
+  <style>
+    :root {
+      --noir-bg: #0a0e1a;
+      --noir-card: #0f1629;
+      --noir-border: #1e293b;
+      --accent-green: #00ff88;
+      --accent-red: #ff4444;
+      --text-primary: #e2e8f0;
+      --text-muted: #64748b;
+      --text-dim: #475569;
+    }
+
+    body { background: var(--noir-bg); font-family: 'Inter', system-ui, sans-serif; }
+
+    .auth-card {
+      background: var(--noir-card);
+      border: 1px solid var(--noir-border);
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 420px;
+    }
+    .input-field {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--noir-border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+    .input-field:focus { border-color: var(--accent-green); }
+    .input-field::placeholder { color: var(--text-dim); }
+    .input-field.error { border-color: var(--accent-red); }
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      background: var(--accent-green);
+      color: #0a0e1a;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, box-shadow 0.2s;
+      letter-spacing: 0.05em;
+    }
+    .btn-primary:hover { opacity: 0.9; box-shadow: 0 0 20px rgba(0,255,136,0.3); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .toggle-link {
+      color: var(--accent-green);
+      cursor: pointer;
+      font-size: 13px;
+      text-decoration: underline;
+      background: none;
+      border: none;
+    }
+    .error-msg {
+      color: var(--accent-red);
+      font-size: 12px;
+      margin-top: 4px;
+      min-height: 16px;
+    }
+    .form-group { margin-bottom: 16px; }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .success-msg {
+      color: var(--accent-green);
+      font-size: 13px;
+      text-align: center;
+      padding: 12px;
+      border: 1px solid rgba(0,255,136,0.3);
+      border-radius: 8px;
+      background: rgba(0,255,136,0.05);
+    }
+    @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .auth-card { animation: fade-in 0.3s ease-out; }
+  </style>
+
+  <main class="min-h-screen flex items-center justify-center px-6" style="background: var(--noir-bg);">
+    <div class="auth-card">
+      <!-- Login Form -->
+      <div id="login-form">
+        <div class="text-center mb-8">
+          <p class="text-xs tracking-[0.3em] mb-2" style="color: var(--accent-green); font-family: monospace;">◆ AUTHENTICATE ◆</p>
+          <h1 class="text-2xl font-bold" style="color: var(--text-primary);">Case 71-C</h1>
+          <p class="text-sm mt-2" style="color: var(--text-dim);">Sign in to continue your investigation</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input type="text" id="login-username" class="input-field" placeholder="Enter your username" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="login-password" class="input-field" placeholder="Enter your password" autocomplete="current-password">
+        </div>
+        <div class="error-msg" id="login-error"></div>
+
+        <button class="btn-primary mt-4" id="login-btn" onclick="handleLogin()">SIGN IN</button>
+
+        <div class="text-center mt-6">
+          <span style="color: var(--text-dim); font-size: 13px;">New investigator? </span>
+          <button class="toggle-link" onclick="showRegister()">Create account</button>
+        </div>
+      </div>
+
+      <!-- Register Form -->
+      <div id="register-form" style="display: none;">
+        <div class="text-center mb-8">
+          <p class="text-xs tracking-[0.3em] mb-2" style="color: var(--accent-green); font-family: monospace;">◆ ENROLL ◆</p>
+          <h1 class="text-2xl font-bold" style="color: var(--text-primary);">Join the Investigation</h1>
+          <p class="text-sm mt-2" style="color: var(--text-dim);">Create your detective profile</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input type="text" id="reg-username" class="input-field" placeholder="3-20 chars, letters/numbers/_" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" id="reg-email" class="input-field" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="reg-password" class="input-field" placeholder="8+ chars, mixed case + number" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <input type="password" id="reg-confirm" class="input-field" placeholder="Repeat your password" autocomplete="new-password">
+        </div>
+        <div class="error-msg" id="reg-error"></div>
+        <div id="reg-success" class="success-msg" style="display: none;"></div>
+
+        <button class="btn-primary mt-4" id="reg-btn" onclick="handleRegister()">CREATE ACCOUNT</button>
+
+        <div class="text-center mt-6">
+          <span style="color: var(--text-dim); font-size: 13px;">Already an investigator? </span>
+          <button class="toggle-link" onclick="showLogin()">Sign in</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script is:inline>
+    function showLogin() {
+      document.getElementById('login-form').style.display = 'block';
+      document.getElementById('register-form').style.display = 'none';
+    }
+    function showRegister() {
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('register-form').style.display = 'block';
+    }
+
+    function showError(id, msg) {
+      const el = document.getElementById(id);
+      el.textContent = msg;
+      el.previousElementSibling?.classList?.add('error');
+    }
+    function clearError(id) {
+      const el = document.getElementById(id);
+      el.textContent = '';
+    }
+
+    async function handleLogin() {
+      clearError('login-error');
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      if (!username || !password) {
+        showError('login-error', 'Please fill in all fields');
+        return;
+      }
+
+      // Import auth module dynamically
+      const { login } = await import('/src/lib/auth.ts');
+      const result = await login(username, password);
+
+      if (result.success) {
+        window.location.href = '/challenges';
+      } else {
+        showError('login-error', result.error || 'Login failed');
+      }
+    }
+
+    async function handleRegister() {
+      clearError('reg-error');
+      document.getElementById('reg-success').style.display = 'none';
+      const username = document.getElementById('reg-username').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const confirm = document.getElementById('reg-confirm').value;
+
+      if (!username || !email || !password || !confirm) {
+        showError('reg-error', 'Please fill in all fields');
+        return;
+      }
+      if (password !== confirm) {
+        showError('reg-error', 'Passwords do not match');
+        return;
+      }
+
+      const { register } = await import('/src/lib/auth.ts');
+      const result = await register(username, email, password);
+
+      if (result.success) {
+        const successEl = document.getElementById('reg-success');
+        successEl.textContent = `Account created! Welcome, ${username}. Redirecting to login...`;
+        successEl.style.display = 'block';
+        setTimeout(() => showLogin(), 1500);
+      } else {
+        showError('reg-error', result.error || 'Registration failed');
+      }
+    }
+
+    // Enter key support
+    document.getElementById('login-password')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') handleLogin();
+    });
+    document.getElementById('reg-confirm')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') handleRegister();
+    });
+
+    // Check if already logged in
+    import('/src/lib/auth.ts').then(({ getCurrentSession }) => {
+      if (getCurrentSession()) window.location.href = '/challenges';
+    });
+  </script>
+</Layout>

@@ -1,0 +1,437 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getAllChallenges } from '../lib/challenges';
+
+const challenges = getAllChallenges().map(m => ({
+  slot: m.metadata.slot,
+  title: m.metadata.title,
+  tier: m.metadata.tier,
+  basePoints: m.metadata.basePoints,
+  attributionEnabled: m.metadata.attributionEnabled,
+  hintCount: m.hints.length,
+}));
+
+const tierColors: Record<string, string> = {
+  easy: '#00ff88',
+  medium: '#ffaa00',
+  hard: '#ff4444',
+  capstone: '#a855f7',
+};
+
+const tierLabels: Record<string, string> = {
+  easy: 'EASY',
+  medium: 'MEDIUM',
+  hard: 'HARD',
+  capstone: 'CAPSTONE',
+};
+
+const mockLeaderboard = [
+  { rank: 1, name: 'Detective Noir', score: 2850, solved: 27 },
+  { rank: 2, name: 'Phantom Lens', score: 2640, solved: 25 },
+  { rank: 3, name: 'Red Thread', score: 2410, solved: 23 },
+  { rank: 4, name: 'Cold Case Files', score: 2180, solved: 21 },
+  { rank: 5, name: 'The Archivist', score: 1950, solved: 19 },
+];
+---
+
+<Layout title="Challenge Hub — Case 71-C">
+  <style>
+    :root {
+      --noir-bg: #0a0e1a;
+      --noir-surface: #111827;
+      --noir-card: #0f1629;
+      --noir-border: #1e293b;
+      --noir-purple: #1a0a2e;
+      --noir-purple-light: #2d1650;
+      --accent-green: #00ff88;
+      --accent-amber: #ffaa00;
+      --accent-red: #ff4444;
+      --accent-purple: #a855f7;
+      --accent-cyan: #06b6d4;
+      --text-primary: #e2e8f0;
+      --text-muted: #64748b;
+      --text-dim: #475569;
+    }
+
+    @keyframes typewriter {
+      from { width: 0; }
+      to { width: 100%; }
+    }
+
+    .noir-title {
+      will-change: width;
+    }
+
+    @keyframes blink-caret {
+      from, to { border-color: transparent; }
+      50% { border-color: var(--accent-green); }
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    @keyframes fill-bar {
+      from { width: 0%; }
+    }
+
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes scan-line {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(100vh); }
+    }
+
+    body {
+      background: var(--noir-bg);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    .noir-title {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      overflow: hidden;
+      white-space: nowrap;
+      border-right: 2px solid var(--accent-green);
+      animation: typewriter 2.5s steps(30) 0.5s forwards,
+                 blink-caret 0.75s step-end infinite;
+      width: 0;
+      display: inline-block;
+    }
+
+    .scan-line {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent-green), transparent);
+      opacity: 0.15;
+      animation: scan-line 8s linear infinite;
+      pointer-events: none;
+      z-index: 100;
+      will-change: transform;
+    }
+
+    .challenge-card {
+      background: var(--noir-card);
+      border: 1px solid var(--noir-border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  border-color 0.3s,
+                  box-shadow 0.3s;
+      will-change: transform;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .challenge-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--tier-color, var(--accent-green));
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .challenge-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--tier-color, var(--accent-green));
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                  0 0 20px color-mix(in srgb, var(--tier-color, var(--accent-green)) 15%, transparent);
+    }
+
+    .challenge-card:hover::before {
+      opacity: 1;
+    }
+
+    .challenge-card.expanded {
+      border-color: var(--tier-color, var(--accent-green));
+      background: linear-gradient(135deg, var(--noir-card), var(--noir-purple));
+    }
+
+    .tier-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .slot-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1;
+      opacity: 0.12;
+      position: absolute;
+      top: 0.75rem;
+      right: 1rem;
+    }
+
+    .progress-fill {
+      animation: fill-bar 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    .leaderboard-row {
+      transition: background 0.2s;
+    }
+
+    .leaderboard-row:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .card-details {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                  opacity 0.3s,
+                  margin 0.3s;
+      opacity: 0;
+      margin-top: 0;
+    }
+
+    .challenge-card.expanded .card-details {
+      max-height: 200px;
+      opacity: 1;
+      margin-top: 1rem;
+    }
+
+    .start-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      transition: background 0.2s, box-shadow 0.2s;
+      border: 1px solid var(--tier-color, var(--accent-green));
+      color: var(--tier-color, var(--accent-green));
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .start-btn:hover {
+      background: color-mix(in srgb, var(--tier-color, var(--accent-green)) 15%, transparent);
+      box-shadow: 0 0 16px color-mix(in srgb, var(--tier-color, var(--accent-green)) 25%, transparent);
+    }
+
+    .grid-bg {
+      background-image:
+        radial-gradient(circle at 20% 50%, rgba(26, 10, 46, 0.4) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(0, 255, 136, 0.03) 0%, transparent 40%);
+    }
+
+    .stat-glow {
+      text-shadow: 0 0 20px var(--accent-green);
+    }
+
+    .challenge-card:focus-visible,
+    .start-btn:focus-visible {
+      outline: 2px solid var(--accent-green);
+      outline-offset: 2px;
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .noir-title { animation: none; width: 100%; border-right: none; }
+      .scan-line { animation: none; display: none; }
+      .progress-fill { animation: none; }
+      .challenge-card { transition: none; }
+      .card-details { transition: none; }
+    }
+  </style>
+
+  <div class="scan-line"></div>
+
+  <main class="min-h-screen grid-bg" style="background: var(--noir-bg);">
+    <!-- Header -->
+    <header class="relative px-6 pt-16 pb-12 text-center">
+      <div class="max-w-4xl mx-auto">
+        <p class="text-xs uppercase tracking-[0.4em] mb-4" style="color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
+          ◆ CLASSIFIED INVESTIGATION ◆
+        </p>
+        <h1 class="text-4xl md:text-5xl font-bold mb-4">
+          <span class="noir-title" style="color: var(--text-primary);">CASE 71-C</span>
+        </h1>
+        <p class="text-lg mt-6 max-w-xl mx-auto" style="color: var(--text-muted);">
+          30 cold cases. One truth buried beneath decades of silence.<br/>
+          Each file unlocked by the one before it.
+        </p>
+
+        <!-- Stats bar -->
+        <div class="flex items-center justify-center gap-8 mt-8 text-sm" style="font-family: 'JetBrains Mono', monospace;">
+          <div class="text-center">
+            <div class="text-2xl font-bold stat-glow" style="color: var(--accent-green);">0</div>
+            <div style="color: var(--text-dim);">SOLVED</div>
+          </div>
+          <div class="w-px h-8" style="background: var(--noir-border);"></div>
+          <div class="text-center">
+            <div class="text-2xl font-bold" style="color: var(--accent-amber);">30</div>
+            <div style="color: var(--text-dim);">CASES</div>
+          </div>
+          <div class="w-px h-8" style="background: var(--noir-border);"></div>
+          <div class="text-center">
+            <div class="text-2xl font-bold" style="color: var(--text-muted);">—</div>
+            <div style="color: var(--text-dim);">YOUR RANK</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Progress bar -->
+    <section class="px-6 pb-8">
+      <div class="max-w-4xl mx-auto">
+        <div class="flex items-center justify-between mb-2 text-xs" style="font-family: 'JetBrains Mono', monospace; color: var(--text-dim);">
+          <span>INVESTIGATION PROGRESS</span>
+          <span style="color: var(--accent-green);">0%</span>
+        </div>
+        <div class="h-1.5 rounded-full overflow-hidden" style="background: var(--noir-border);">
+          <div class="progress-fill h-full rounded-full" style="width: 0%; background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan));"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Challenge grid -->
+    <section class="px-6 pb-16">
+      <div class="max-w-6xl mx-auto">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-1.5 h-6 rounded-full" style="background: var(--accent-green);"></div>
+          <h2 class="text-sm uppercase tracking-[0.2em] font-semibold" style="color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
+            CASE FILES
+          </h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="challenge-grid">
+          {challenges.map((c) => (
+            <div
+              class="challenge-card"
+              style={`--tier-color: ${tierColors[c.tier]}; animation: fade-in-up 0.5s ease-out ${c.slot * 0.05}s both;`}
+              data-slot={c.slot}
+              tabindex="0"
+              role="button"
+              aria-label={`Case ${c.slot}: ${c.title}. Press Enter to expand.`}
+              onclick={`toggleCard(${c.slot})`}
+              onkeydown={`if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCard(${c.slot})}}`
+            >
+              <div class="slot-number" style={`color: ${tierColors[c.tier]};`}>
+                {String(c.slot).padStart(2, '0')}
+              </div>
+
+              <div class="flex items-start justify-between mb-3">
+                <span class="tier-badge" style={`background: ${tierColors[c.tier]}15; color: ${tierColors[c.tier]};`}>
+                  {tierLabels[c.tier]}
+                </span>
+                <span class="text-xs" style="color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">
+                  {c.basePoints} pts
+                </span>
+              </div>
+
+              <h3 class="text-base font-semibold mb-2 pr-8" style="color: var(--text-primary);">
+                {c.title}
+              </h3>
+
+              <div class="flex items-center gap-3 text-xs" style="color: var(--text-dim);">
+                <span class="flex items-center gap-1">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/>
+                  </svg>
+                  {c.hintCount} hints
+                </span>
+                {c.attributionEnabled && (
+                  <span class="flex items-center gap-1" style="color: var(--accent-cyan);">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    attribution
+                  </span>
+                )}
+              </div>
+
+              <div class="card-details">
+                <p class="text-sm mb-3" style="color: var(--text-muted);">
+                  Case #{c.slot} of the Victor Vale investigation. 
+                  Your answer unlocks the next file in the chain.
+                </p>
+                <button
+                  class="start-btn"
+                  style={`--tier-color: ${tierColors[c.tier]};`}
+                  aria-label={`Start investigation for Case ${c.slot}: ${c.title}`}
+                  onclick={`event.stopPropagation(); window.location.href = '/case/${c.slot}';`}
+                >
+                  START INVESTIGATION
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Leaderboard -->
+    <section class="px-6 pb-20">
+      <div class="max-w-2xl mx-auto">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-1.5 h-6 rounded-full" style="background: var(--accent-amber);"></div>
+          <h2 class="text-sm uppercase tracking-[0.2em] font-semibold" style="color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
+            TOP INVESTIGATORS
+          </h2>
+        </div>
+
+        <div class="rounded-xl overflow-hidden" style="background: var(--noir-card); border: 1px solid var(--noir-border);">
+          {mockLeaderboard.map((entry) => (
+            <div class="leaderboard-row flex items-center gap-4 px-5 py-3.5"
+                 style={`border-bottom: 1px solid var(--noir-border); ${entry.rank === 1 ? 'background: linear-gradient(90deg, rgba(0,255,136,0.05), transparent);' : ''}`}>
+              <span class="text-lg font-bold w-8 text-center"
+                    style={`font-family: 'JetBrains Mono', monospace; color: ${entry.rank <= 3 ? 'var(--accent-amber)' : 'var(--text-dim)'};`}>
+                {entry.rank <= 3 ? ['🥇', '🥈', '🥉'][entry.rank - 1] : `#${entry.rank}`}
+              </span>
+              <div class="flex-1 min-w-0">
+                <div class="font-medium truncate" style="color: var(--text-primary);">{entry.name}</div>
+                <div class="text-xs mt-0.5" style="color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">
+                  {entry.solved}/30 cases
+                </div>
+              </div>
+              <span class="text-sm font-bold" style="color: var(--accent-green); font-family: 'JetBrains Mono', monospace;">
+                {entry.score.toLocaleString()}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="px-6 pb-12 text-center">
+      <p class="text-xs" style="color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">
+        CASE 71-C ◆ DEPARTMENT OF COLD CASES ◆ CLASSIFICATION: CONFIDENTIAL
+      </p>
+    </footer>
+  </main>
+
+  <script is:inline>
+    function toggleCard(slot) {
+      const card = document.querySelector(`[data-slot="${slot}"]`);
+      if (!card) return;
+      const wasExpanded = card.classList.contains('expanded');
+      document.querySelectorAll('.challenge-card.expanded').forEach(c => c.classList.remove('expanded'));
+      if (!wasExpanded) card.classList.add('expanded');
+    }
+  </script>
+</Layout>

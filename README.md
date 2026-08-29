@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/Node-≥22-green.svg)](https://nodejs.org)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-orange.svg)](https://workers.cloudflare.com)
-[![Vitest](https://img.shields.io/badge/Tests-1230+-brightgreen.svg)](#testing)
+[![Vitest](https://img.shields.io/badge/Tests-582-brightgreen.svg)](#testing)
 
 **Case Files** is a browser-based CTF platform where 30 sequential challenges unfold an AI-narrated investigation story. Each player gets **cryptographically unique** challenge content — same puzzle structure, different names, dates, and filenames — so copied answers betray their source.
 
@@ -25,6 +25,22 @@ Built for classroom competitions with 40+ simultaneous players. Zero infrastruct
 | 📊 **Milli-Point Precision** | Integer-only scoring — no floating-point drift |
 | 🔑 **Rate-Limited Auth** | HMAC-hashed IPs, per-roll login limits, no permanent lockouts |
 | 📦 **Static Replay** | Post-event archive that works without any backend |
+| 🌑 **Noir Challenge Hub** | Dark, mystery-themed landing page with animated challenge grid |
+
+---
+
+## 🌑 Challenge Hub
+
+The challenge hub (`/challenges`) is a noir-themed investigation dashboard:
+
+- **Animated challenge grid** — 30 cards with tier color-coding (easy/medium/hard/capstone)
+- **Click-to-expand** — reveals case description and "Start Investigation" button
+- **Progress bar** — tracks investigation completion with animated fill
+- **Leaderboard** — top investigators ranked by score and cases solved
+- **Responsive** — 1-column mobile, 2-column tablet, 3-column desktop
+- **Accessible** — respects `prefers-reduced-motion`, keyboard navigable
+
+Design: deep blue/purple palette (#0a0e1a, #1a0a2e), green accents for solved states, amber for hints, scanning line animation, typewriter title effect.
 
 ---
 
@@ -131,17 +147,25 @@ normalizedAnswer → rollNumber
 
 ## 🔐 Authentication
 
+**Roll-Number Mode** (classroom events):
 - **Roll-number login** — username = password = roll number
 - **One active session per participant** — new login revokes old session
 - **Rate limiting** — 10 failures / 5 min per roll and per IP (HMAC-hashed)
 - **12-hour sessions** — auto-expire, no inactivity logout
+
+**Account Mode** (open events):
+- **Registration** — username (3-20 chars) + email + password
+- **Password hashing** — PBKDF2 + SHA-256 (100K iterations) via Web Crypto API
+- **Session tokens** — 24-hour localStorage tokens
+- **Leaderboard** — ranked by points, ties broken by join date
+- **Login page** — noir-themed at `/login` with register/login toggle
 
 ---
 
 ## 🧪 Testing
 
 ```bash
-pnpm test          # Vitest unit tests (1230+ tests)
+pnpm test          # Vitest unit tests (582 tests)
 pnpm test:e2e      # Playwright end-to-end
 ```
 
@@ -208,12 +232,47 @@ Excludes disqualified participants. Public rolls are unmasked in results.
 
 ---
 
+## 👥 Team Mode
+
+Form teams of 2-5 investigators to tackle challenges collaboratively.
+
+| Feature | Description |
+|---------|-------------|
+| **Create team** | Choose a name (3-30 chars), get a 6-character invite code |
+| **Join team** | Enter invite code or share it |
+| **Team roles** | Captain (can manage members) + Member |
+| **Team scoring** | Best score per challenge counts once across team |
+| **Team leaderboard** | Ranked by total team score |
+| **Captain actions** | Promote, remove members, disband team |
+
+Team scoring formula: sum of best individual scores per challenge. If two teammates solve the same challenge, only the higher score counts.
+
+---
+
 ## 🗺️ Roadmap
 
 - [ ] Production challenge content (30 real puzzles)
-- [ ] Team mode (multi-player per entry)
+- [x] Team mode (multi-player per entry)
 - [ ] Custom event creation UI
 - [ ] Webhook integrations (Discord, Slack)
+
+---
+
+## 🛠️ Admin Dashboard
+
+The admin dashboard (`/admin`) provides event management:
+
+| Tab | Features |
+|-----|----------|
+| 📋 **Challenges** | List/edit all 30 challenges, filter by tier, toggle attribution |
+| 🏆 **Leaderboard** | Participant rankings with search, score, solves, hints |
+| 📊 **Statistics** | Solves-per-challenge bar chart, solve time distribution, tier breakdown, hint usage rates |
+| ⏱️ **Timeline** | Event lifecycle events (creation, solves, status changes) |
+| ⚙️ **Settings** | Time decay, hint penalties, flag format, rate limits, authentication |
+
+Design: dark noir theme matching the challenge hub, CSS-only charts, responsive grid.
+
+All data is client-side mock for now — wire to D1 API when backend is ready.
 
 ---
 
