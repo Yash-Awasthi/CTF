@@ -1,0 +1,427 @@
+---
+/**
+ * GET /{event}/archive/{path}
+ *
+ * Hidden workshop page handler for Q5 — The Workshop.
+ *
+ * Handles the path discovered via robots.txt Disallow:
+ *   /{event}/archive/BPHA-{archiveToken}-workshop/
+ *
+ * The page renders a full historical article about Ashwick Figureworks
+ * (Josiah Marrow's workshop, 1871–1889), styled as a page from the
+ * Pembridge Local Heritage amateur history site.
+ *
+ * Access control:
+ *   - Requires authenticated participant for this event.
+ *   - Requires Q5 to be unlocked (currentChallenge >= 5).
+ *   - Validates that {path} matches this participant's archivePath.
+ *   - All other paths (including path collisions by other participants)
+ *     return 404.
+ *
+ * This page does NOT use the shared Blackwood Layout — it renders as a
+ * page on the Pembridge Local Heritage site (distinct visual identity).
+ * A discreet "Return to investigation" link is included at the bottom.
+ *
+ * Q6 lead: the workshop article references the Ashwick Trades Directory
+ * with sequential entry identifiers starting at D-001.
+ */
+import { createDb } from '../../../lib/db/client';
+import { getEnv } from '../../../lib/runtime';
+import { ensureCurrentEventState } from '../../../lib/event/state';
+import { canAccessCompetition } from '../../../lib/event/access';
+import {
+	getPublicChallengeData,
+	getEventRoster,
+	canAccessChallenge,
+} from '../../../lib/challenges';
+
+export const prerender = false;
+
+const slug = Astro.params.event!;
+const rawPath = Astro.params.path ?? '';
+// Normalize: strip trailing slash, lower-case for comparison.
+const requestedPath = rawPath.replace(/\/$/, '');
+
+const auth = Astro.locals.auth;
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+if (!auth || auth.event.slug !== slug) {
+	return Astro.redirect(`/${slug}/login`);
+}
+
+// ── Event state ───────────────────────────────────────────────────────────────
+const db = createDb(getEnv().DB);
+const now = new Date();
+const event = await ensureCurrentEventState(db, auth.event, now);
+
+if (!canAccessCompetition(event, now)) {
+	return Astro.redirect(`/${slug}/home`);
+}
+
+// ── Q5 progression gate ───────────────────────────────────────────────────────
+if (!canAccessChallenge(auth.participant, 5)) {
+	return new Response('Not found', { status: 404 });
+}
+
+// ── Validate path against participant's archive path ──────────────────────────
+const roster = await getEventRoster(db, event.id);
+const view = await getPublicChallengeData(
+	{ env: getEnv(), event, rollNumber: auth.participant.rollNumber, roster },
+	5,
+);
+const pub = view.publicData as { archivePath: string };
+const expectedPath = pub.archivePath; // e.g. "BPHA-1847-workshop"
+
+if (requestedPath !== expectedPath) {
+	return new Response('Not found', { status: 404 });
+}
+---
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Ashwick Figureworks — Pembridge Local Heritage</title>
+	<style>
+		/* Pembridge Local Heritage site — workshop sub-page */
+		*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+		body {
+			background: #f4f0e8;
+			color: #2c2820;
+			font-family: Georgia, 'Times New Roman', serif;
+			font-size: 16px;
+			line-height: 1.7;
+		}
+
+		.site-header {
+			background: #e8e2d4;
+			border-bottom: 2px solid #c8c0b0;
+			padding: 12px 0;
+		}
+		.site-header-inner {
+			max-width: 720px;
+			margin: 0 auto;
+			padding: 0 24px;
+		}
+		.site-title {
+			font-size: 18px;
+			font-weight: bold;
+			letter-spacing: 0.04em;
+			color: #3a3020;
+		}
+		.site-subtitle {
+			font-size: 11px;
+			color: #7a6e5a;
+			margin-top: 2px;
+			letter-spacing: 0.05em;
+		}
+
+		.site-nav {
+			background: #ddd8c8;
+			border-bottom: 1px solid #c8c0b0;
+			padding: 6px 0;
+		}
+		.site-nav-inner {
+			max-width: 720px;
+			margin: 0 auto;
+			padding: 0 24px;
+			display: flex;
+			gap: 20px;
+			flex-wrap: wrap;
+		}
+		.site-nav a {
+			font-size: 12px;
+			font-family: Arial, Helvetica, sans-serif;
+			color: #5a4a2a;
+			text-decoration: none;
+			letter-spacing: 0.03em;
+		}
+		.site-nav a:hover { text-decoration: underline; }
+
+		.breadcrumb {
+			max-width: 720px;
+			margin: 16px auto 0;
+			padding: 0 24px;
+			font-size: 11px;
+			font-family: Arial, Helvetica, sans-serif;
+			color: #8a7e6a;
+		}
+		.breadcrumb a { color: #5a4a2a; text-decoration: none; }
+		.breadcrumb a:hover { text-decoration: underline; }
+
+		main {
+			max-width: 720px;
+			margin: 24px auto 48px;
+			padding: 0 24px;
+		}
+
+		.archive-badge {
+			display: inline-block;
+			font-family: Arial, Helvetica, sans-serif;
+			font-size: 10px;
+			letter-spacing: 0.12em;
+			text-transform: uppercase;
+			color: #7a6e5a;
+			border: 1px solid #c8c0b0;
+			padding: 2px 8px;
+			margin-bottom: 16px;
+			background: #ede8da;
+		}
+
+		h1 {
+			font-size: 28px;
+			font-weight: bold;
+			letter-spacing: -0.01em;
+			color: #1e1a14;
+			margin-bottom: 4px;
+			line-height: 1.2;
+		}
+		.article-subtitle {
+			font-size: 14px;
+			color: #6a5e4a;
+			margin-bottom: 20px;
+			font-style: italic;
+		}
+
+		.article-meta {
+			font-family: Arial, Helvetica, sans-serif;
+			font-size: 11px;
+			color: #8a7e6a;
+			border-top: 1px solid #c8c0b0;
+			border-bottom: 1px solid #c8c0b0;
+			padding: 8px 0;
+			margin-bottom: 28px;
+			display: flex;
+			gap: 16px;
+			flex-wrap: wrap;
+		}
+
+		article p {
+			margin-bottom: 18px;
+			color: #2c2820;
+		}
+
+		article h2 {
+			font-size: 17px;
+			font-weight: bold;
+			color: #2c2820;
+			margin: 32px 0 12px;
+			border-bottom: 1px solid #c8c0b0;
+			padding-bottom: 6px;
+		}
+
+		.archival-note {
+			background: #ede8da;
+			border-left: 3px solid #c8c0b0;
+			padding: 12px 16px;
+			margin: 24px 0;
+			font-size: 13px;
+			color: #5a4a2a;
+		}
+		.archival-note p { margin-bottom: 6px; color: #5a4a2a; }
+		.archival-note p:last-child { margin-bottom: 0; }
+
+		.source-list {
+			list-style: none;
+			margin: 0;
+			padding: 0;
+		}
+		.source-list li {
+			font-size: 13px;
+			color: #5a4a2a;
+			padding: 4px 0;
+			border-bottom: 1px solid #ddd8c8;
+		}
+		.source-list li:last-child { border-bottom: none; }
+
+		.return-link {
+			display: block;
+			margin-top: 48px;
+			padding-top: 24px;
+			border-top: 1px solid #c8c0b0;
+			font-family: Arial, Helvetica, sans-serif;
+			font-size: 11px;
+			color: #7a6e5a;
+			text-decoration: none;
+		}
+		.return-link:hover { color: #3a3020; text-decoration: underline; }
+
+		.site-footer {
+			background: #ddd8c8;
+			border-top: 1px solid #c8c0b0;
+			padding: 14px 0;
+			margin-top: 48px;
+		}
+		.site-footer-inner {
+			max-width: 720px;
+			margin: 0 auto;
+			padding: 0 24px;
+			font-family: Arial, Helvetica, sans-serif;
+			font-size: 11px;
+			color: #7a6e5a;
+		}
+	</style>
+</head>
+<body>
+
+	<header class="site-header" role="banner">
+		<div class="site-header-inner">
+			<p class="site-title">Pembridge Local Heritage</p>
+			<p class="site-subtitle">
+				A record of Pembridge's history — compiled and maintained by E. Holt (retired)
+			</p>
+		</div>
+	</header>
+
+	<nav class="site-nav" aria-label="Site navigation">
+		<div class="site-nav-inner">
+			<a href={`/${slug}/challenge/5`}>← Home</a>
+			<a href={`/${slug}/challenge/5`}>About Pembridge</a>
+			<a href={`/${slug}/challenge/5`}>Trades &amp; Craftsmen</a>
+			<a href={`/${slug}/challenge/5`}>Sources</a>
+		</div>
+	</nav>
+
+	<nav aria-label="Breadcrumb" class="breadcrumb">
+		<a href={`/${slug}/challenge/5`}>Home</a>
+		&rsaquo;
+		<a href={`/${slug}/challenge/5`}>Trades &amp; Craftsmen</a>
+		&rsaquo;
+		Ashwick Figureworks
+	</nav>
+
+	<main id="main-content">
+		<div class="archive-badge" aria-label="Archive reference">
+			BPHA Archive &mdash; Trades &amp; Craftsmen Record
+		</div>
+
+		<h1>Ashwick Figureworks</h1>
+		<p class="article-subtitle">Josiah Marrow &mdash; Craftsman &amp; Proprietor (1871–1889)</p>
+
+		<div class="article-meta" role="note" aria-label="Article information">
+			<span>Compiled: E. Holt, 2008</span>
+			<span>Sources: Pembridge rate books; county trade directory (1874); estate probate record (1889)</span>
+			<span>Archive ref: {expectedPath}</span>
+		</div>
+
+		<article aria-label="Workshop history article">
+
+			<p>
+				The workshop operating under the name <strong>Ashwick Figureworks</strong> was
+				established by Josiah Marrow at premises in the Ashwick Industrial Quarter,
+				Pembridge, in 1871. Rate book entries for that year record a lease on
+				a workshop lot at the eastern frontage of the quarter — the same property
+				that appears in the 1889 transfer deed held by Pembridge Municipal Council
+				following Marrow's death.
+			</p>
+
+			<p>
+				Marrow described his trade in early correspondence as "the production of
+				commission figures and articulated representations in wood and composite
+				materials." Contemporary records suggest the workshop produced custom pieces
+				to private order rather than maintaining a standard retail stock. Trade
+				directory notices from 1874 identify the Ashwick Figureworks under the
+				"Trades: Artisan" category, noting commission work "for private households
+				and estate collections."
+			</p>
+
+			<h2>Local Reputation</h2>
+
+			<p>
+				Accounts of Marrow's standing in Pembridge are limited and somewhat
+				contradictory. A brief notice in a local trade circular from 1876 describes
+				him as "a craftsman of considerable technical skill and unusual precision."
+				A letter recovered from a private estate archive (not fully catalogued as of
+				this writing) refers to the figureworks as "producing likenesses of
+				a peculiar fidelity."
+			</p>
+
+			<p>
+				Marrow appears to have been socially reclusive. Business correspondence
+				was conducted primarily through a third party during the workshop's later
+				years. There is no record of him attending civic or trade association
+				meetings, which was unusual for a proprietor of comparable standing.
+			</p>
+
+			<h2>Workshop Records</h2>
+
+			<div class="archival-note" role="note">
+				<p>
+					<strong>Archival note (E. Holt, 2008):</strong> Records from the Ashwick
+					Figureworks are incomplete. A cellar flood in the early 1890s — after
+					Marrow's death and during the property's period of municipal custody —
+					destroyed a portion of the original commission ledgers.
+				</p>
+				<p>
+					What survives includes fragments of correspondence, rate book entries,
+					a partial client list from 1871–1885, and the 1889 probate inventory.
+					The probate inventory is held by the county record office; the other
+					materials were donated to the district archive in 1967 by the estate of
+					a former municipal clerk.
+				</p>
+			</div>
+
+			<p>
+				A partial client list from 1871 to approximately 1885 was indexed in
+				the <em>Ashwick Trades Directory</em>, a district-level reference produced
+				by the historical records office to document commercial relationships of the
+				period. Entries were assigned sequential identifiers beginning at D-001.
+				Some entries remain accessible through the district archive service; others
+				are marked restricted or lost.
+			</p>
+
+			<h2>The 1889 Inquiry and Workshop Closure</h2>
+
+			<p>
+				In the summer of 1889, Constable Thaddeus Grieve opened a brief inquiry
+				into the workshop's business practices. Contemporary documentation of the
+				inquiry is sparse — the relevant constabulary file is listed as
+				"incomplete" in the county archive catalogue. Grieve is recorded as
+				having visited the premises on at least two occasions. No formal charge
+				or finding was recorded.
+			</p>
+
+			<p>
+				Josiah Marrow died in November 1889. The cause of death was recorded as
+				natural. The Ashwick Figureworks ceased operation at the same time; the
+				workshop lot and attached dwelling passed to Pembridge Municipal Council
+				by estate dissolution, as documented in the 1889 transfer deed held in
+				the council's property archive.
+			</p>
+
+			<p>
+				No successor operator took on the Ashwick Figureworks name or premises.
+				The workshop inventory — including tools, materials, and several
+				unfinished commission pieces — was catalogued by council officers in
+				early 1890, then placed into municipal storage. The inventory is recorded
+				in the probate register but its present location is unknown.
+			</p>
+
+			<h2>Sources</h2>
+
+			<ul class="source-list" aria-label="Sources consulted">
+				<li>Pembridge rate books, 1870–1892 (county record office)</li>
+				<li>Ashwick Trades Directory, Artisan Register, 1874 (district archive)</li>
+				<li>Probate record: Marrow, J., November 1889 (county probate registry)</li>
+				<li>Property transfer deed, 14 Nov 1889 (Pembridge Municipal Council archive)</li>
+				<li>Estate donation: papers of W. Fenwick, retired municipal clerk, 1967</li>
+				<li>Constabulary inquiry register, 1889 — listed incomplete (county archive)</li>
+			</ul>
+
+		</article>
+
+		<a href={`/${slug}/challenge/5`} class="return-link">
+			&larr; Return to Blackwood Investigation System
+		</a>
+	</main>
+
+	<footer class="site-footer" role="contentinfo">
+		<div class="site-footer-inner">
+			<p>Pembridge Local Heritage &mdash; maintained by E. Holt (retired school librarian)</p>
+			<p>Last updated: March 2009 &mdash; Not commercially maintained &mdash; Errors and omissions regretted</p>
+		</div>
+	</footer>
+
+</body>
+</html>

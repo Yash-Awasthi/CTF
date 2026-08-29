@@ -5,13 +5,13 @@
  * without changing this file's shape.
  */
 import { RegistryError } from './errors';
-import { PLACEHOLDER_CHALLENGES } from './placeholders';
+import { REAL_CHALLENGES } from './real-challenges';
 import type { ChallengeModule } from './types';
 
 /** Expected slots: exactly 1..30. */
 export const TOTAL_SLOTS = 30;
 
-const MODULES: readonly ChallengeModule[] = PLACEHOLDER_CHALLENGES;
+const MODULES: readonly ChallengeModule[] = REAL_CHALLENGES;
 
 /**
  * Validate registry invariants. Throws RegistryError on the first violation.

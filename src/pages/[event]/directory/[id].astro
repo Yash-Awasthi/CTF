@@ -1,0 +1,289 @@
+---
+/**
+ * GET /{event}/directory/{id}
+ *
+ * Ashwick Trades Directory — individual entry handler for Q6.
+ *
+ * This route serves ONLY the participant's suppressed entry (hiddenEntryId
+ * from their Q6 publicData). All other IDs return 404.
+ *
+ * The suppressed entry reveals:
+ *   - Contact: AUGUSTUS VALE (the Q6 answer)
+ *   - Estate: Vale House, Northern Quarter, Pembridge
+ *   - Document: contact-{id}-provenance.cts  ← Q29 anomaly (.cts extension)
+ *
+ * Q29 note: the .cts extension on the associated document is the locked Q6
+ * secondary anomaly. In-world reason: ".cts" (Catalogue Transfer Sheet) was
+ * a proprietary format used by the BPHA digitisation project for provenance
+ * documents — unusual because standard archive materials export as .pdf.
+ * The participant notices this at Q6; its significance emerges at Q29.
+ *
+ * Access control:
+ *   - Requires authenticated participant for this event.
+ *   - Requires Q6 to be unlocked (currentChallenge >= 6).
+ *   - Validates {id} matches this participant's hiddenEntryId.
+ *   - Returns 404 for any non-matching ID.
+ *
+ * Visual design: Ashwick Trades Directory aesthetic — distinct from Blackwood
+ * (different from Q5 Pembridge Local Heritage). Uses a plain archival
+ * index-card appearance: cream paper, tabular metadata, institutional tone.
+ */
+import { createDb } from '../../../lib/db/client';
+import { getEnv } from '../../../lib/runtime';
+import { ensureCurrentEventState } from '../../../lib/event/state';
+import { canAccessCompetition } from '../../../lib/event/access';
+import {
+	getPublicChallengeData,
+	getEventRoster,
+	canAccessChallenge,
+} from '../../../lib/challenges';
+import type { Q6Public } from '../../../../challenges/06/index';
+
+export const prerender = false;
+
+const slug = Astro.params.event!;
+const requestedId = (Astro.params.id ?? '').toUpperCase().trim();
+
+const auth = Astro.locals.auth;
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+if (!auth || auth.event.slug !== slug) {
+	return Astro.redirect(`/${slug}/login`);
+}
+
+// ── Event state ───────────────────────────────────────────────────────────────
+const db = createDb(getEnv().DB);
+const now = new Date();
+const event = await ensureCurrentEventState(db, auth.event, now);
+
+if (!canAccessCompetition(event, now)) {
+	return Astro.redirect(`/${slug}/home`);
+}
+
+// ── Q6 progression gate ───────────────────────────────────────────────────────
+if (!canAccessChallenge(auth.participant, 6)) {
+	return new Response('Not found', { status: 404 });
+}
+
+// ── Validate ID against participant's hidden entry ────────────────────────────
+const roster = await getEventRoster(db, event.id);
+const view = await getPublicChallengeData(
+	{ env: getEnv(), event, rollNumber: auth.participant.rollNumber, roster },
+	6,
+);
+const pub = view.publicData as Q6Public;
+const expectedId = pub.hiddenEntryId.toUpperCase();
+
+if (requestedId !== expectedId) {
+	return new Response('Not found', { status: 404 });
+}
+
+// The .cts filename is the Q29 anomaly — do not rename or change extension.
+const ctsFilename = `contact-${requestedId.toLowerCase()}-provenance.cts`;
+---
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Entry {requestedId} — Ashwick Trades Directory</title>
+	<style>
+		/* Ashwick Trades Directory — suppressed entry view */
+		*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+		body {
+			background: #f0ece0;
+			color: #252015;
+			font-family: 'Courier New', Courier, monospace;
+			font-size: 14px;
+			line-height: 1.5;
+			padding: 40px 24px 60px;
+		}
+
+		.page-frame {
+			max-width: 680px;
+			margin: 0 auto;
+			border: 1px solid #b8b0a0;
+			background: #faf8f2;
+			padding: 0;
+		}
+
+		.directory-banner {
+			background: #2c2820;
+			color: #e8e2d4;
+			padding: 12px 20px;
+			display: flex;
+			align-items: baseline;
+			justify-content: space-between;
+			gap: 16px;
+		}
+		.directory-banner h1 {
+			font-size: 12px;
+			font-weight: normal;
+			letter-spacing: 0.2em;
+			text-transform: uppercase;
+		}
+		.directory-banner span {
+			font-size: 11px;
+			color: #9a9280;
+			letter-spacing: 0.08em;
+			white-space: nowrap;
+		}
+
+		.status-bar {
+			background: #e8e0c8;
+			border-bottom: 1px solid #b8b0a0;
+			padding: 7px 20px;
+			font-size: 11px;
+			letter-spacing: 0.1em;
+			color: #5a5040;
+		}
+		.status-bar strong {
+			color: #8a1020;
+			letter-spacing: 0.12em;
+		}
+
+		.entry-body {
+			padding: 24px 20px 20px;
+		}
+
+		.entry-id {
+			font-size: 11px;
+			letter-spacing: 0.15em;
+			color: #7a7060;
+			margin-bottom: 16px;
+			text-transform: uppercase;
+		}
+
+		table.entry-fields {
+			width: 100%;
+			border-collapse: collapse;
+		}
+		table.entry-fields tr {
+			border-bottom: 1px solid #ddd8c8;
+		}
+		table.entry-fields tr:last-child {
+			border-bottom: none;
+		}
+		table.entry-fields th {
+			font-size: 10px;
+			letter-spacing: 0.15em;
+			text-transform: uppercase;
+			color: #7a7060;
+			font-weight: normal;
+			text-align: left;
+			padding: 7px 16px 7px 0;
+			width: 140px;
+			vertical-align: top;
+		}
+		table.entry-fields td {
+			font-size: 13px;
+			color: #1e1a10;
+			padding: 7px 0;
+			vertical-align: top;
+		}
+		.name-value {
+			font-size: 15px;
+			font-weight: bold;
+			letter-spacing: 0.04em;
+		}
+		.cts-ref {
+			color: #4a4030;
+			font-style: italic;
+		}
+		.cts-ext {
+			color: #5a1018;
+			font-style: normal;
+		}
+
+		.entry-note {
+			margin-top: 20px;
+			border-top: 1px solid #ddd8c8;
+			padding-top: 14px;
+			font-size: 11px;
+			color: #8a7e6a;
+			letter-spacing: 0.04em;
+		}
+
+		.return-bar {
+			background: #e8e0c8;
+			border-top: 1px solid #b8b0a0;
+			padding: 10px 20px;
+		}
+		.return-bar a {
+			font-size: 11px;
+			letter-spacing: 0.08em;
+			color: #5a5040;
+			text-decoration: none;
+			text-transform: uppercase;
+		}
+		.return-bar a:hover { text-decoration: underline; }
+	</style>
+</head>
+<body>
+<div class="page-frame" role="main">
+
+	<header class="directory-banner" role="banner">
+		<h1>Ashwick Trades Directory</h1>
+		<span>District Archive Service — Pembridge</span>
+	</header>
+
+	<div class="status-bar" role="alert" aria-label="Entry status">
+		Entry status: <strong>NOT IN PUBLIC INDEX</strong>
+		&mdash; Retrieved via direct identifier lookup
+	</div>
+
+	<div class="entry-body">
+		<p class="entry-id" aria-label="Entry identifier">Entry: {requestedId}</p>
+
+		<table class="entry-fields" aria-label="Directory entry details">
+			<tbody>
+				<tr>
+					<th scope="row">Contact</th>
+					<td><span class="name-value">AUGUSTUS VALE</span></td>
+				</tr>
+				<tr>
+					<th scope="row">Category</th>
+					<td>Estate — Commission client</td>
+				</tr>
+				<tr>
+					<th scope="row">Estate</th>
+					<td>Vale House, Northern Quarter, Pembridge</td>
+				</tr>
+				<tr>
+					<th scope="row">Trade ref.</th>
+					<td>Commission pieces for private collection, 1878–1884</td>
+				</tr>
+				<tr>
+					<th scope="row">Correspondence</th>
+					<td>Successor correspondence noted: estate of S. Vale (reference pending at time of digitisation)</td>
+				</tr>
+				<tr>
+					<th scope="row">Document</th>
+					<td>
+						<span class="cts-ref">
+							{ctsFilename.replace(/\.cts$/, '')}<span class="cts-ext">.cts</span>
+						</span>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">Index status</th>
+					<td>Removed from public index — archival review flag, 2014. Entry retained in full archive.</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<p class="entry-note">
+			ASHWICK TRADES DIRECTORY — DISTRICT ARCHIVE SERVICE, PEMBRIDGE &mdash;
+			Digitised records may be incomplete. See archive office for originals.
+			Identifier: {requestedId} &mdash; Generated: BPHA digitisation project, 2004.
+		</p>
+	</div>
+
+	<nav class="return-bar" aria-label="Navigation">
+		<a href={`/${slug}/challenge/6`}>← Return to directory index</a>
+	</nav>
+
+</div>
+</body>
+</html>

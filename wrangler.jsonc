@@ -15,7 +15,7 @@
 		{
 			"binding": "DB",
 			"database_name": "case-files-db",
-			"database_id": "PLACEHOLDER_SET_AFTER_wrangler_d1_create",
+			"database_id": "9e58723d-67f8-42f6-8750-4cd1ccd507ca",
 			"migrations_dir": "migrations"
 		}
 	],

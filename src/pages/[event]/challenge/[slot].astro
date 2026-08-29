@@ -1,4 +1,21 @@
 ---
+/**
+ * Challenge page — serves Q1–Q30.
+ *
+ * Q1 ("the-assignment"):   institutional memo layout — participant confirms
+ *   their codename to accept the case assignment.
+ *
+ * Q2 ("eleven-years-cold"): institutional case-file layout — Mira Castellan's
+ *   official disappearance record. An evidence item is suppressed from the
+ *   rendered view but referenced in an auto-generated HTML comment. Technique:
+ *   View Source / DevTools inspection.
+ *
+ * Q3–Q30: standard dossier card — case-file header, briefing block, hints,
+ *   and submission form.
+ *
+ * All layouts share the nav bar, progression line, and client script.
+ * The script reads optional data-msg-* form attributes for per-challenge copy.
+ */
 import Layout from '../../../layouts/Layout.astro';
 import { and, eq } from 'drizzle-orm';
 import { createDb } from '../../../lib/db/client';
@@ -15,27 +32,37 @@ import {
 	type PublicChallengeData,
 } from '../../../lib/challenges';
 import { getRevealedHints, MAX_HINTS } from '../../../lib/hints';
+import type { Q1Public } from '../../../../challenges/01/index';
+import type { Q2Public } from '../../../../challenges/02/index';
+import type { Q3Public } from '../../../../challenges/03/index';
+import type { Q4Public } from '../../../../challenges/04/index';
+import type { Q5Public } from '../../../../challenges/05/index';
+import type { Q6Public, DirectoryEntry } from '../../../../challenges/06/index';
+import type { Q7Public } from '../../../../challenges/07/index';
+import type { Q8Public } from '../../../../challenges/08/index';
+import type { Q9Public } from '../../../../challenges/09/index';
+import type { Q11Public } from '../../../../challenges/11/index';
 
 export const prerender = false;
 
+// ── Auth ──────────────────────────────────────────────────────────────────────
 const slug = Astro.params.event!;
 const auth = Astro.locals.auth;
 
-// Protected + event-scoped.
 if (!auth || auth.event.slug !== slug) {
 	return Astro.redirect(`/${slug}/login`);
 }
 
+// ── Event state ───────────────────────────────────────────────────────────────
 const db = createDb(getEnv().DB);
 const now = new Date();
 const event = await ensureCurrentEventState(db, auth.event, now);
 
-// Centralized event access policy: challenges are playable only while LIVE.
 if (!canAccessCompetition(event, now)) {
 	return Astro.redirect(`/${slug}/home`);
 }
 
-// Validate the slot; invalid → 404.
+// ── Slot resolution ───────────────────────────────────────────────────────────
 let slot: number;
 try {
 	slot = parseSlot(Astro.params.slot);
@@ -44,16 +71,14 @@ try {
 	throw e;
 }
 
-// Progression guard — a locked future slot redirects to the current challenge.
 const status = getChallengeAccessStatus(auth.participant, slot);
 if (status === 'locked') {
 	return Astro.redirect(`/${slug}/challenge/${auth.participant.currentChallenge}`);
 }
 
-// Roster (roll asc) needed for attribution-enabled slots; cheap at this scale.
+// ── Challenge data ────────────────────────────────────────────────────────────
 const roster = await getEventRoster(db, event.id);
 
-// PUBLIC data only — private answer/validation material never crosses this line.
 let view: PublicChallengeData;
 try {
 	view = await getPublicChallengeData(
@@ -61,157 +86,3300 @@ try {
 		slot,
 	);
 } catch {
-	// Never leak generation internals to the participant.
 	return new Response('Challenge temporarily unavailable', { status: 500 });
 }
 
-const pub = view.publicData as { prompt: string; token: string };
-const roll = auth.participant.rollNumber;
-
-// Already-revealed hints (server-side) so they survive refresh/re-login.
+// ── Hints ─────────────────────────────────────────────────────────────────────
 const challengeRow = await db
 	.select({ id: challenges.id })
 	.from(challenges)
 	.where(and(eq(challenges.eventId, event.id), eq(challenges.slot, slot)))
 	.get();
+
 const revealedHints = challengeRow
 	? await getRevealedHints(db, event.id, auth.participant.id, challengeRow.id, slot)
 	: [];
 
-const isCurrent = status === 'current';
-const isSolved = status === 'solved';
-const nextHintNumber = revealedHints.length + 1; // 1..2, or 3 when exhausted
+// ── Derived state ─────────────────────────────────────────────────────────────
+const isCurrent   = status === 'current';
+const isSolved    = status === 'solved';
+const nextHint    = revealedHints.length + 1;
+const roll        = auth.participant.rollNumber;
+const slotLabel   = String(view.slot).padStart(2, '0');
+const progressPct = Math.round((view.slot / 30) * 100);
+
+// ── Layout discriminants ──────────────────────────────────────────────────────
+const isQ1 = view.key === 'the-assignment';
+const isQ2 = view.key === 'eleven-years-cold';
+const isQ3 = view.key === 'the-last-notebook';
+const isQ4 = view.key === 'the-estate-record';
+const isQ5 = view.key === 'marrow-house';
+const isQ6 = view.key === 'the-directory';
+const isQ7 = view.key === 'the-seventh-figure';
+const isQ8 = view.key === 'lot-47';
+const isQ9  = view.key === 'the-catalogue';
+const isQ11 = view.key === 'verified';
+
+// Q12–Q30 discriminants
+const isQ12 = view.key === 'the-file-clerk';
+const isQ13 = view.key === 'the-holt-collection';
+const isQ14 = view.key === 'the-pre-vale-dates';
+const isQ15 = view.key === 'the-memo';
+const isQ16 = view.key === 'there-were-six';
+const isQ17 = view.key === 'the-dead-website';
+const isQ18 = view.key === 'for-you';
+const isQ19 = view.key === 'the-same-file';
+const isQ20 = view.key === 'mira-remembered-too';
+const isQ21 = view.key === 'access-granted';
+const isQ22 = view.key === 'the-alibi';
+const isQ23 = view.key === 'miras-last-recording';
+const isQ24 = view.key === 'case-closed';
+const isQ25 = view.key === '1963';
+const isQ26 = view.key === 'daniel-reyes-again';
+const isQ27 = view.key === 'stop-looking-for-people';
+const isQ28 = view.key === 'the-ledger';
+const isQ29 = view.key === 'the-continuity';
+const isQ30 = view.key === 'the-subject';
+
+// Shell group membership
+// Shell A — Archive / System Terminal (Q12, Q16, Q17, Q21, Q22)
+const isShellA = isQ12 || isQ16 || isQ17 || isQ21 || isQ22;
+// Shell B — Document Examination (Q13, Q14, Q15, Q18, Q19, Q27)
+const isShellB = isQ13 || isQ14 || isQ15 || isQ18 || isQ19 || isQ27;
+// Shell C — Forensic Evidence (Q20, Q23, Q25, Q26)
+const isShellC = isQ20 || isQ23 || isQ25 || isQ26;
+// Shell D — Case Synthesis Board (Q24)
+const isShellD = isQ24;
+// Shell E — The Ledger (Q28)
+const isShellE = isQ28;
+// Shell F — THE CONTINUITY (Q29, Q30)
+const isShellF = isQ29 || isQ30;
+
+const isCustomQ12to30 = isShellA || isShellB || isShellC || isShellD || isShellE || isShellF;
+
+// Per-challenge UI metadata for custom shells
+type QMeta = {
+	systemLabel: string;
+	sourceRef:   string;
+	promptLabel: string;
+	placeholder: string;
+	msgVerifying: string;
+	msgCorrect:   string;
+	msgIncorrect: string;
+	solvedMsg:    string;
+};
+const QMETA: Record<string, QMeta> = {
+	'the-file-clerk':          { systemLabel: 'Vale Archive File System',                       sourceRef: 'Investigator file access · Case 71-C',            promptLabel: 'Archive Listing',          placeholder: 'Active file reference (e.g. vale-estate-inventory)',        msgVerifying: 'Checking archive index…',                       msgCorrect: 'File reference confirmed. Archive entry locked.',                        msgIncorrect: 'Reference not found. Check the active file listing.',                              solvedMsg: 'File reference confirmed. Archive entry locked.' },
+	'the-holt-collection':     { systemLabel: 'Blackwood Evidence Management',                  sourceRef: 'Document EVD-71C-HOLT · Ownership history',        promptLabel: 'Recovered Document',       placeholder: 'Name of original 1948 owner',                               msgVerifying: 'Cross-referencing ownership records…',          msgCorrect: 'Owner identified. Provenance record filed.',                            msgIncorrect: 'Name not confirmed. Check the restored title carefully.',                          solvedMsg: 'Original owner confirmed. This document record is now read-only.' },
+	'the-pre-vale-dates':      { systemLabel: 'Blackwood Evidence Management',                  sourceRef: 'Ledger cipher · Decoded acquisition dates',        promptLabel: 'Cipher Document',          placeholder: 'Pre-Vale acquisition date (YYYY-MM-DD)',                    msgVerifying: 'Verifying date against the ledger…',            msgCorrect: 'Date confirmed. Ledger entry filed.',                                   msgIncorrect: 'Date not recognised. Check your cipher decode.',                                   solvedMsg: 'Date confirmed. This ledger entry is now read-only.' },
+	'the-memo':                { systemLabel: 'Blackwood Evidence Management',                  sourceRef: 'MEMO-published.html · Version comparison',         promptLabel: 'Document',                 placeholder: 'Year buried in the source (e.g. 2001)',                     msgVerifying: 'Verifying year against source record…',         msgCorrect: 'Year confirmed. Archive discrepancy filed.',                            msgIncorrect: 'Year not confirmed. Check all versions of the memo.',                              solvedMsg: 'Version discrepancy confirmed. This record is now read-only.' },
+	'there-were-six':          { systemLabel: 'Vale Archive Photograph Record',                 sourceRef: 'Photograph comparison · Case 71-C',               promptLabel: 'Photograph Analysis',      placeholder: 'EXIF modification timestamp (YYYY:MM:DD HH:MM:SS)',         msgVerifying: 'Verifying against photograph metadata…',        msgCorrect: 'Timestamp confirmed. Photograph alteration logged.',             msgIncorrect: 'Timestamp not confirmed. Check the EXIF data on the current image.', solvedMsg: 'Alteration timestamp confirmed. This photograph record is now read-only.' },
+	'the-dead-website':        { systemLabel: 'Web Archive — Vale Estate Site',                 sourceRef: 'Last-Modified header · Archive retrieval',         promptLabel: 'Archive Response',         placeholder: 'Last-Modified date (YYYY-MM-DD)',                           msgVerifying: 'Checking archive header…',                      msgCorrect: 'Date confirmed. Archive record closed.',                                msgIncorrect: 'Date not confirmed. Check the Last-Modified header precisely.',                    solvedMsg: 'Last-Modified date confirmed. This archive record is now read-only.' },
+	'for-you':                 { systemLabel: 'Blackwood Evidence Management',                  sourceRef: 'Recovered voicemail · Forensic audio transcript',  promptLabel: 'Voicemail Transcript',     placeholder: 'Phrase embedded in the recording (capitals)',               msgVerifying: 'Cross-referencing audio record…',               msgCorrect: 'Phrase confirmed. Audio evidence filed.',                               msgIncorrect: 'Phrase not recognised. Check the voicemail transcript carefully.',                 solvedMsg: 'Spoken phrase confirmed. This audio record is now read-only.' },
+	'the-same-file':           { systemLabel: 'Blackwood Evidence Management',                  sourceRef: 'MEMO-published.html · v1 vs v2 comparison',       promptLabel: 'Comparison Report',        placeholder: 'Statement altered between versions',                        msgVerifying: 'Verifying against document record…',            msgCorrect: 'Statement confirmed. Archive discrepancy logged.',                      msgIncorrect: 'Statement not confirmed. Compare v1 and v2 of the memo carefully.',                solvedMsg: 'Altered statement confirmed. This comparison record is now read-only.' },
+	'mira-remembered-too':     { systemLabel: 'Blackwood Forensic Evidence Unit',               sourceRef: "Cipher artifact · Mira's recovered notes",         promptLabel: 'Cipher Artifact',          placeholder: 'Decoded cipher message (capitals)',                          msgVerifying: 'Verifying cipher decode…',                      msgCorrect: 'Message confirmed. Cipher artifact filed.',                             msgIncorrect: 'Message not confirmed. Check your key and decode again.',                          solvedMsg: 'Cipher message confirmed. This artifact record is now read-only.' },
+	'access-granted':          { systemLabel: 'Vale Archive Portal — Audit Log',                sourceRef: 'SQLi result · audit_log table · Case 71-C',        promptLabel: 'Injected Query Result',    placeholder: 'Timestamp of elevated write action (YYYY-MM-DD HH:MM)',    msgVerifying: 'Matching against audit record…',                msgCorrect: 'Timestamp confirmed. Audit log filed.',                                 msgIncorrect: 'Timestamp not recognised. Check the injected result precisely.',                   solvedMsg: 'Audit timestamp confirmed. This log entry is now read-only.' },
+	'the-alibi':               { systemLabel: 'Transit + Building Access Cross-Reference',      sourceRef: 'Alibi verification · Case 71-C',                   promptLabel: 'Cross-Reference Output',   placeholder: 'Location confirmed during the write window',                msgVerifying: 'Cross-referencing access records…',             msgCorrect: 'Location confirmed. Alibi destroyed. Log filed.',                       msgIncorrect: 'Location not confirmed. Cross-reference both record sets.',                        solvedMsg: 'Location confirmed. This cross-reference is now read-only.' },
+	'miras-last-recording':    { systemLabel: 'Blackwood Forensic Evidence Unit',               sourceRef: 'Audio evidence · mira-recording-2015-05.wav',      promptLabel: 'Forensic Audio Report',    placeholder: 'Name recovered from the audio segment',                    msgVerifying: 'Verifying against forensic audio report…',     msgCorrect: 'Name confirmed. Audio evidence filed.',                                 msgIncorrect: 'Name not confirmed. Apply the forensic filter and listen again.',                  solvedMsg: 'Audio evidence confirmed. This forensic record is now read-only.' },
+	'case-closed':             { systemLabel: 'Blackwood Bureau — Case Board',                  sourceRef: 'Synthesis · Case 71-C · All evidence threads',     promptLabel: 'Case Board',               placeholder: 'Full name of person responsible',                           msgVerifying: 'Filing case conclusion with the Bureau…',       msgCorrect: 'Case closed. Record filed with the Bureau.',                            msgIncorrect: 'Name not confirmed. All four evidence threads must agree.',                        solvedMsg: 'Case conclusion filed. This board is now read-only.' },
+	'1963':                    { systemLabel: 'Blackwood Forensic Evidence Unit',               sourceRef: 'Photograph provenance · Three-source verification',promptLabel: 'Verification Report',      placeholder: 'Year the photograph dates to',                              msgVerifying: 'Verifying against three independent sources…',  msgCorrect: 'Year confirmed. Photograph evidence filed.',                            msgIncorrect: 'Year not confirmed. All three sources must agree.',                                solvedMsg: 'Date confirmed. This photograph record is now read-only.' },
+	'daniel-reyes-again':      { systemLabel: 'Blackwood Bureau — Personnel Archive',           sourceRef: 'Enumeration result · Case 71-C',                   promptLabel: 'Search Result',            placeholder: 'Number of distinct records',                                msgVerifying: 'Counting distinct records…',                    msgCorrect: 'Count confirmed. Personnel anomaly logged.',                            msgIncorrect: 'Count not confirmed. Count distinct records, not distinct mentions.',              solvedMsg: 'Record count confirmed. This archive entry is now read-only.' },
+	'stop-looking-for-people': { systemLabel: 'Blackwood Evidence Management',                  sourceRef: "Mira Castellan · Notebook final page (v3)",        promptLabel: 'Notebook — Final Page',    placeholder: 'Second sentence from the final note (start: FOLLOW…)',     msgVerifying: "Filing Mira's instruction…",                    msgCorrect: 'Instruction confirmed. Notebook entry filed.',                          msgIncorrect: 'Instruction not confirmed. Submit the second sentence exactly.',                   solvedMsg: 'Final instruction confirmed. This notebook entry is now read-only.' },
+	'the-ledger':              { systemLabel: 'The Ledger — Historical Records Database',       sourceRef: 'Access via Blackwood Case 71-C',                   promptLabel: 'Database Output',          placeholder: 'Role currently unassigned in Cycle 6',                     msgVerifying: 'Querying Ledger record…',                       msgCorrect: 'Role confirmed. Ledger entry sealed.',                                  msgIncorrect: "Role not confirmed. Identify the PENDING role that fits the Investigator's structural position.", solvedMsg: 'Role confirmed. The Ledger record is now sealed and read-only.' },
+	'the-continuity':          { systemLabel: 'Blackwood Evidence Correlation Terminal',        sourceRef: 'Restricted access — Senior Investigator only',     promptLabel: 'Terminal Output',          placeholder: 'Name of the system',                                        msgVerifying: 'Filing system identification…',                 msgCorrect: 'System identified. Case continuity resolved.',                          msgIncorrect: 'System not identified. Assemble the doctrine and infer the name from the TC prefix.', solvedMsg: 'System identified. Continuity resolved. This terminal is now read-only.' },
+	'the-subject':             { systemLabel: 'THE CONTINUITY',                                 sourceRef: 'Final record — Cycle 6, current',                  promptLabel: 'Final Query',              placeholder: 'Your investigator codename',                                msgVerifying: 'Querying Continuity record…',                   msgCorrect: 'Identity confirmed. The Continuity record is complete.',                msgIncorrect: 'Codename not confirmed. Look at what you were told before the case began.', solvedMsg: 'Identity confirmed. The Continuity record is complete.' },
+};
+const qm: QMeta | null = isCustomQ12to30 ? (QMETA[view.key] ?? null) : null;
+// Shared prompt+token view for all custom Q12-Q30 shells
+type GenericPub = { prompt: string; token: string };
+const cp = isCustomQ12to30 ? (view.publicData as GenericPub) : null;
+// Q18 typed accessor — includes phraseB64 for TTS player
+type Q18GenericPub = { prompt: string; token: string; phraseB64: string };
+const q18pub = isQ18 ? (view.publicData as Q18GenericPub) : null;
+
+const q1  = isQ1  ? (view.publicData as Q1Public)  : null;
+const q2  = isQ2  ? (view.publicData as Q2Public)  : null;
+const q3  = isQ3  ? (view.publicData as Q3Public)  : null;
+const q4  = isQ4  ? (view.publicData as Q4Public)  : null;
+const q5  = isQ5  ? (view.publicData as Q5Public)  : null;
+const q6  = isQ6  ? (view.publicData as Q6Public)  : null;
+const q7  = isQ7  ? (view.publicData as Q7Public)  : null;
+const q8  = isQ8  ? (view.publicData as Q8Public)  : null;
+const q9  = isQ9  ? (view.publicData as Q9Public)  : null;
+const q11 = isQ11 ? (view.publicData as Q11Public) : null;
+
+// Generic public data shape for Q10 only (prompt + token).
+// Q11 and Q12–Q30 have their own custom layouts (excluded here).
+const gp = (!isQ1 && !isQ2 && !isQ3 && !isQ4 && !isQ5 && !isQ6 && !isQ7 && !isQ8 && !isQ9 && !isQ11 && !isCustomQ12to30) ? (view.publicData as GenericPub) : null;
+
+// ── Q2 hidden archive comment ─────────────────────────────────────────────────
+// The reconciliation note is injected into the page via set:html so it
+// appears in the delivered HTML source and DevTools, but is not rendered
+// visually. Participants discover it by inspecting the page.
+// EVD-71C-017 is the suppressed evidence reference; it is the Q2 answer.
+const q2ArchiveNote = isQ2
+	? [
+		'<!--',
+		'  ARCHIVE SYSTEM \u2014 RECONCILIATION NOTE (auto-generated)',
+		'  Case 71-C: 1 evidence item omitted from rendered display.',
+		'  Reference: EVD-71C-017 | Type: personal materials | Classification: RESTRICTED',
+		'  Item suppressed pending classification review.',
+		'  To request access: case-archive [internal routing only].',
+		'-->',
+	  ].join('\n')
+	: '';
+
+// ── Generic tier colours (Q3–Q30) ─────────────────────────────────────────────
+const TIER_STYLE = {
+	easy:     { badge: 'bg-emerald-950/60 text-emerald-400  border-emerald-800/50' },
+	medium:   { badge: 'bg-amber-950/60   text-amber-400    border-amber-800/50'   },
+	hard:     { badge: 'bg-red-950/60     text-red-400      border-red-800/50'     },
+	capstone: { badge: 'bg-neutral-900    text-neutral-100  border-neutral-500'    },
+} as const;
+const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 ---
 
-<Layout title={`${event.name} — Challenge ${view.slot}`}>
-	<main
-		class="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-4 px-6"
-		data-challenge
-		data-slug={slug}
-		data-slot={view.slot}
-	>
-		<div class="flex items-center justify-between">
-			<a href={`/${slug}/home`} class="text-xs text-neutral-500 hover:text-neutral-300">← Home</a>
-			<span class="text-xs uppercase tracking-[0.3em] text-emerald-400">
-				Slot {view.slot} · {view.tier}
+<Layout title={`Case 71-C · Q${slotLabel} — ${view.title}`}>
+<div class="relative min-h-screen bg-neutral-950 text-neutral-100">
+
+	<!-- ── Shared navigation bar ──────────────────────────────────────────── -->
+	<nav class="sticky top-0 z-20 border-b border-neutral-800/70 bg-neutral-950/95 backdrop-blur-sm">
+		<div class="mx-auto flex h-10 max-w-3xl items-center justify-between px-5">
+
+			<a href={`/${slug}/home`}
+			   class="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.15em] text-neutral-600 transition-colors hover:text-neutral-400 uppercase">
+				← Bureau
+			</a>
+
+			<div class="flex items-center gap-3 font-mono text-[10px] tracking-[0.2em]">
+				<span class="text-neutral-700">CASE</span>
+				<span class="text-neutral-500">71-C</span>
+				<span class="text-neutral-800">·</span>
+				<span class="text-neutral-700">Q{slotLabel} / 30</span>
+			</div>
+
+			<span class="font-mono text-[10px] tracking-[0.1em] text-neutral-700">
+				INV-{roll}
 			</span>
 		</div>
+		<!-- Case progress line -->
+		<div class="h-px w-full bg-neutral-800">
+			<div class="h-full bg-neutral-600/50 transition-all duration-700"
+			     style={`width: ${progressPct}%`}></div>
+		</div>
+	</nav>
 
-		<h1 class="text-2xl font-semibold">{view.title}</h1>
-		<p class="text-neutral-400">{pub.prompt}</p>
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+	<!-- Q1 — INSTITUTIONAL ASSIGNMENT MEMO                                   -->
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
 
-		<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm text-neutral-400">
-			<dt>Investigator</dt><dd class="text-neutral-100">{roll}</dd>
-			<dt>Status</dt><dd class="text-neutral-100" data-status>{status}</dd>
-			<dt>Points</dt><dd class="text-neutral-100">{view.basePoints}</dd>
-			<dt>Token</dt><dd class="font-mono text-neutral-100">{pub.token}</dd>
-		</dl>
+	{isQ1 && q1 && (
+		<main
+			class="mx-auto w-full max-w-2xl px-4 py-10"
+			data-challenge
+			data-slug={slug}
+			data-slot={view.slot}
+		>
+			<div class="overflow-hidden rounded border border-neutral-800 bg-neutral-900">
 
-		{isSolved && (
-			<p class="rounded bg-neutral-800 px-3 py-2 text-sm text-emerald-300">
-				Solved — read-only. This challenge can no longer be scored.
-			</p>
-		)}
+				<!-- Bureau letterhead -->
+				<div class="border-b border-neutral-800 px-7 py-5">
+					<p class="font-mono text-xs font-medium tracking-[0.3em] text-neutral-300 uppercase">
+						Blackwood Investigative Bureau
+					</p>
+					<p class="mt-1 font-mono text-[10px] tracking-[0.2em] text-neutral-600 uppercase">
+						Case Management Division &nbsp;·&nbsp; Internal System
+					</p>
+				</div>
 
-		{/* Hints: revealed ones persist; the next can be requested in order. */}
-		<section class="flex flex-col gap-2" data-hints>
-			<h2 class="text-xs uppercase tracking-widest text-neutral-500">Hints</h2>
-			<ul class="flex flex-col gap-1 text-sm text-amber-300" data-hint-list>
-				{revealedHints.map((h) => (
-					<li data-hint-number={h.hintNumber}>Hint {h.hintNumber}: {h.text}</li>
-				))}
-			</ul>
-			{isCurrent && nextHintNumber <= MAX_HINTS && (
-				<button
-					type="button"
-					data-hint-button
-					data-next-hint={nextHintNumber}
-					class="self-start rounded border border-amber-500/40 px-3 py-1 text-xs text-amber-300 hover:bg-amber-500/10"
+				<!-- Memo header -->
+				<div class="border-b border-neutral-800 px-7 py-6">
+					<p class="mb-5 font-mono text-[10px] tracking-[0.3em] text-neutral-600 uppercase">
+						Internal Memorandum
+					</p>
+
+					<dl class="grid grid-cols-[4.5rem_1fr] gap-x-5 gap-y-2">
+						<dt class="font-mono text-[10px] tracking-[0.1em] text-neutral-600 uppercase self-start pt-px">Date</dt>
+						<dd class="font-mono text-xs text-neutral-400">{q1.issuedOn}</dd>
+						<dt class="font-mono text-[10px] tracking-[0.1em] text-neutral-600 uppercase self-start pt-px">Case</dt>
+						<dd class="font-mono text-xs text-neutral-400">71-C &nbsp;—&nbsp; COLD CASE REASSIGNMENT</dd>
+						<dt class="font-mono text-[10px] tracking-[0.1em] text-neutral-600 uppercase self-start pt-px">Session</dt>
+						<dd class="font-mono text-[11px] tracking-[0.18em] text-neutral-600">{q1.sessionToken}</dd>
+					</dl>
+
+					<div class="my-5 border-t border-neutral-800/60"></div>
+
+					<dl class="grid grid-cols-[4.5rem_1fr] gap-x-5 gap-y-2">
+						<dt class="font-mono text-[10px] tracking-[0.1em] text-neutral-600 uppercase self-start pt-px">To</dt>
+						<dd>
+							<p class="font-mono text-sm font-semibold tracking-[0.12em] text-neutral-100">{q1.designation}</p>
+							<p class="mt-0.5 font-mono text-[10px] text-neutral-600">Investigator &nbsp;/&nbsp; Roll {q1.rollNumber}</p>
+						</dd>
+						<dt class="font-mono text-[10px] tracking-[0.1em] text-neutral-600 uppercase self-start pt-px">From</dt>
+						<dd class="font-mono text-xs text-neutral-500">Case Management Division</dd>
+						<dt class="font-mono text-[10px] tracking-[0.1em] text-neutral-600 uppercase self-start pt-px">Re</dt>
+						<dd class="font-mono text-xs text-neutral-500">Mira Castellan &nbsp;—&nbsp; Missing Persons (Cold Case)</dd>
+					</dl>
+				</div>
+
+				<!-- Memo body -->
+				<div class="border-b border-neutral-800 px-7 py-7 space-y-4">
+					<p class="text-sm leading-relaxed text-neutral-400">
+						This bureau has received administrative direction to reopen file 71-C,
+						originally logged in October 2015. The file concerns the disappearance
+						of Mira Castellan, a freelance investigator contracted to catalogue and
+						appraise the estate of Silas Vale following his death in the early part
+						of this decade.
+					</p>
+					<p class="text-sm leading-relaxed text-neutral-400">
+						Castellan's engagement was routine in scope. She was tasked with
+						documenting a private collection of historical objects — folk craft,
+						archival materials, and estate correspondence accumulated by the Vale
+						family over several decades. Her appraisal proceeded without incident
+						for approximately four months before contact with her ceased entirely.
+					</p>
+					<p class="text-sm leading-relaxed text-neutral-400">
+						The original investigation returned no cause, no evidence of foul play,
+						and no body. The case was classified unsolved and filed as 71-C.
+						It has remained inactive for eleven years.
+					</p>
+					<p class="text-sm leading-relaxed text-neutral-400">
+						You have been assigned as the reviewing investigator. All available case
+						materials are accessible through the standard archive system. Some
+						portions of the original file are incomplete; this is noted where
+						applicable.
+					</p>
+				</div>
+
+				<!-- Subject record -->
+				<div class="border-b border-neutral-800 bg-neutral-950/50 px-7 py-5">
+					<p class="mb-3 font-mono text-[10px] tracking-[0.25em] text-neutral-600 uppercase">Subject Record</p>
+					<dl class="grid grid-cols-[8rem_1fr] gap-x-5 gap-y-1.5">
+						<dt class="font-mono text-[10px] text-neutral-700">Name</dt>
+						<dd class="font-mono text-xs text-neutral-300">{q1.subjectName}</dd>
+						<dt class="font-mono text-[10px] text-neutral-700">Last known</dt>
+						<dd class="font-mono text-xs text-neutral-500">{q1.subjectLastSeen}</dd>
+						<dt class="font-mono text-[10px] text-neutral-700">Status</dt>
+						<dd class="font-mono text-xs text-neutral-600">{q1.subjectStatus}</dd>
+						<dt class="font-mono text-[10px] text-neutral-700">File</dt>
+						<dd class="font-mono text-[10px] text-neutral-700">71-C &nbsp;/&nbsp; BLACKWOOD INVESTIGATIVE BUREAU</dd>
+					</dl>
+				</div>
+
+				<!-- Revealed hints -->
+				<div
+					data-hints
+					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-7 py-4'}
 				>
-					Reveal hint {nextHintNumber} (halves this challenge's score)
-				</button>
-			)}
-		</section>
+					<ul class="space-y-2" data-hint-list>
+						{revealedHints.map((h) => (
+							<li class="flex gap-4" data-hint-number={h.hintNumber}>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
+							</li>
+						))}
+					</ul>
+				</div>
 
-		{isCurrent && (
-			<form class="flex flex-col gap-2" data-submit-form>
-				<input
-					type="text"
-					name="answer"
-					autocomplete="off"
-					placeholder="Your answer"
-					class="rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm"
-				/>
-				<button
-					type="submit"
-					class="rounded bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-emerald-400"
+				<!-- Solved state -->
+				{isSolved && (
+					<div class="px-7 py-5">
+						<p class="font-mono text-[10px] tracking-[0.1em] text-neutral-500">
+							Designation confirmed. Casebook access granted. This assignment record is now read-only.
+						</p>
+					</div>
+				)}
+
+				<!-- Hint request + confirm form -->
+				{isCurrent && (
+					<div class="px-7 py-6 space-y-5">
+						{nextHint <= MAX_HINTS && (
+							<div>
+								<button
+									type="button"
+									data-hint-button
+									data-next-hint={nextHint}
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+								>
+									Request assistance note {nextHint}
+									<span class="ml-1 text-neutral-800">— halves score</span>
+								</button>
+							</div>
+						)}
+						<div>
+							<p class="mb-2.5 font-mono text-[10px] tracking-[0.2em] text-neutral-600 uppercase">
+								Confirm Designation to Accept Assignment
+							</p>
+							<form
+								data-submit-form
+								data-msg-verifying="Verifying with the bureau…"
+								data-msg-correct="Designation confirmed. Casebook access granted."
+								data-msg-incorrect="Designation not recognised. Check the memo header and try again."
+								data-msg-error="System error. Please try again."
+								data-btn-loading="Confirming…"
+							>
+								<div class="flex gap-2">
+									<input
+										type="text"
+										name="answer"
+										autocomplete="off"
+										spellcheck="false"
+										placeholder="Your designation"
+										aria-label="Investigator designation"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+									/>
+									<button
+										type="submit"
+										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100"
+									>
+										Confirm
+									</button>
+								</div>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+							</form>
+						</div>
+					</div>
+				)}
+
+			</div>
+
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+				<span>BLACKWOOD INVESTIGATIVE BUREAU — INTERNAL</span>
+				<span>FILE 71-C</span>
+			</div>
+		</main>
+	)}
+
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+	<!-- Q2 — OFFICIAL CASE FILE: MIRA CASTELLAN                             -->
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+
+	{isQ2 && q2 && (
+		<main
+			class="mx-auto w-full max-w-2xl px-4 py-10"
+			data-challenge
+			data-slug={slug}
+			data-slot={view.slot}
+		>
+			<div class="overflow-hidden rounded border border-neutral-800 bg-neutral-900">
+
+				<!-- Bureau letterhead -->
+				<div class="border-b border-neutral-800 px-7 py-5">
+					<p class="font-mono text-xs font-medium tracking-[0.3em] text-neutral-300 uppercase">
+						Blackwood Investigative Bureau
+					</p>
+					<p class="mt-1 font-mono text-[10px] tracking-[0.2em] text-neutral-600 uppercase">
+						Case Management Division &nbsp;·&nbsp; Official Archive
+					</p>
+				</div>
+
+				<!-- Case header -->
+				<div class="border-b border-neutral-800 px-7 py-6">
+					<p class="mb-4 font-mono text-[10px] tracking-[0.3em] text-neutral-600 uppercase">
+						Official Case Record
+					</p>
+					<dl class="grid grid-cols-[7rem_1fr] gap-x-5 gap-y-2">
+						<dt class="font-mono text-[10px] tracking-[0.1em] text-neutral-600 uppercase self-start pt-px">File number</dt>
+						<dd class="font-mono text-xs text-neutral-300">{q2.caseId}</dd>
+
+						<dt class="font-mono text-[10px] tracking-[0.1em] text-neutral-600 uppercase self-start pt-px">Opened</dt>
+						<dd class="font-mono text-xs text-neutral-400">{q2.filedDate}</dd>
+
+						<dt class="font-mono text-[10px] tracking-[0.1em] text-neutral-600 uppercase self-start pt-px">Closed</dt>
+						<dd class="font-mono text-xs text-neutral-400">{q2.closedDate}</dd>
+
+						<dt class="font-mono text-[10px] tracking-[0.1em] text-neutral-600 uppercase self-start pt-px">Reassigned</dt>
+						<dd class="font-mono text-xs text-neutral-500">{q2.reassignedOn}</dd>
+
+						<dt class="font-mono text-[10px] tracking-[0.1em] text-neutral-600 uppercase self-start pt-px">Status</dt>
+						<dd class="font-mono text-xs text-neutral-500">{q2.caseStatus}</dd>
+					</dl>
+				</div>
+
+				<!-- Subject -->
+				<div class="border-b border-neutral-800 bg-neutral-950/40 px-7 py-5">
+					<p class="mb-3 font-mono text-[10px] tracking-[0.25em] text-neutral-600 uppercase">Subject</p>
+					<dl class="grid grid-cols-[7rem_1fr] gap-x-5 gap-y-1.5">
+						<dt class="font-mono text-[10px] text-neutral-700">Name</dt>
+						<dd class="font-mono text-xs text-neutral-200">{q2.subjectName}</dd>
+
+						<dt class="font-mono text-[10px] text-neutral-700">Born</dt>
+						<dd class="font-mono text-xs text-neutral-500">{q2.subjectYOB}</dd>
+
+						<dt class="font-mono text-[10px] text-neutral-700">Occupation</dt>
+						<dd class="font-mono text-xs text-neutral-500">{q2.subjectOccupation}</dd>
+
+						<dt class="font-mono text-[10px] text-neutral-700">Status</dt>
+						<dd class="font-mono text-xs text-neutral-600">{q2.subjectStatus}</dd>
+					</dl>
+				</div>
+
+				<!-- Incident summary -->
+				<div class="border-b border-neutral-800 px-7 py-6 space-y-4">
+					<p class="font-mono text-[10px] tracking-[0.25em] text-neutral-600 uppercase mb-1">Incident Summary</p>
+					<p class="text-sm leading-relaxed text-neutral-400">
+						Mira Castellan was engaged by the Vale estate executors in June 2015 to
+						catalogue and appraise a private collection assembled by the late Silas
+						Vale over several decades. Castellan had seven years of private practice
+						as a freelance investigator and estate appraiser and was recommended by
+						the contracted auction house for her experience with historical collections.
+					</p>
+					<p class="text-sm leading-relaxed text-neutral-400">
+						Her on-site appraisal proceeded without documented incident for
+						approximately four months. Last confirmed contact with the estate executor
+						was an email on 17 October 2015 in which she noted the initial inventory
+						was nearing completion. Two days later the estate caretaker, H. Gull,
+						reported that she had not returned and was not contactable by phone.
+					</p>
+					<p class="text-sm leading-relaxed text-neutral-400">
+						A Blackwood investigation was opened on 22 October 2015. No evidence of
+						criminal activity or third-party involvement was identified during the
+						active investigation period. One or two minor provenance inconsistencies
+						had been noted by Castellan in her official appraisal correspondence but
+						were not considered significant at the time. The case was closed in March
+						2016 without conclusion.
+					</p>
+				</div>
+
+				<!-- Timeline -->
+				<div class="border-b border-neutral-800 px-7 py-5">
+					<p class="mb-4 font-mono text-[10px] tracking-[0.25em] text-neutral-600 uppercase">Timeline</p>
+					<ol class="space-y-2.5" aria-label="Case timeline">
+						{[
+							{ date: q2.contractStart,  note: 'Contract executed. Estate access granted.' },
+							{ date: '06 JUN 2015',     note: 'On-site appraisal work begins.' },
+							{ date: q2.lastContact,    note: `Last confirmed contact — ${q2.lastContactNote}` },
+							{ date: q2.reportedDate,   note: `Absence reported by ${q2.reportedBy}.` },
+							{ date: q2.filedWith.split(' — ')[1] ?? q2.filedWith, note: 'Case filed with Blackwood Investigative Bureau.' },
+							{ date: q2.closedDate,     note: 'Case administratively closed. No active leads.' },
+						].map(({ date, note }) => (
+							<li class="grid grid-cols-[7.5rem_1fr] gap-x-4">
+								<span class="font-mono text-[10px] text-neutral-600 pt-0.5 shrink-0">{date}</span>
+								<span class="text-xs text-neutral-500 leading-relaxed">{note}</span>
+							</li>
+						))}
+					</ol>
+				</div>
+
+				<!-- Evidence inventory (with suppressed item referenced in source comment) -->
+				<div class="border-b border-neutral-800 px-7 py-5">
+					<p class="mb-4 font-mono text-[10px] tracking-[0.25em] text-neutral-600 uppercase">Evidence Inventory</p>
+					<ul class="space-y-2" aria-label="Recovered evidence">
+						{[
+							'Appraisal contract and engagement letter (executed 04 Jun 2015)',
+							'Work camera — Nikon digital body with SD card (recovered, estate grounds, 22 Oct 2015)',
+							'Laptop computer (recovered, estate office — contents encrypted, inaccessible)',
+							'Appraisal notes — partial official set (associated with laptop)',
+							'Estate correspondence — 3 partial email threads (printed)',
+						].map((item) => (
+							<li class="flex gap-3">
+								<span class="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-neutral-700"></span>
+								<span class="text-xs text-neutral-500 leading-relaxed">{item}</span>
+							</li>
+						))}
+					</ul>
+					<p class="mt-4 font-mono text-[10px] text-neutral-700">
+						This record may be incomplete. Contact the archive office for the full evidence inventory.
+					</p>
+				</div>
+			</div>
+
+			{/* The archive reconciliation comment appears here in the HTML source.
+			    Participants discover EVD-71C-017 by inspecting the page markup. */}
+			<Fragment set:html={q2ArchiveNote} />
+
+			<div class="overflow-hidden rounded border border-neutral-800 bg-neutral-900 mt-0">
+
+				<!-- Case disposition -->
+				<div class="border-b border-neutral-800 bg-neutral-950/40 px-7 py-5">
+					<p class="mb-3 font-mono text-[10px] tracking-[0.25em] text-neutral-600 uppercase">Case Disposition</p>
+					<p class="font-mono text-[10px] tracking-[0.1em] text-neutral-500 mb-2">NO SUSPICIOUS CIRCUMSTANCES</p>
+					<p class="text-xs text-neutral-600 leading-relaxed">{q2.closingNote}</p>
+				</div>
+
+				<!-- Revealed hints -->
+				<div
+					data-hints
+					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-7 py-4'}
 				>
-					Submit
-				</button>
-				<p class="min-h-[1.25rem] text-sm" data-result></p>
-			</form>
-		)}
-	</main>
+					<ul class="space-y-2" data-hint-list>
+						{revealedHints.map((h) => (
+							<li class="flex gap-4" data-hint-number={h.hintNumber}>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
+							</li>
+						))}
+					</ul>
+				</div>
+
+				<!-- Solved state -->
+				{isSolved && (
+					<div class="px-7 py-5">
+						<p class="font-mono text-[10px] tracking-[0.1em] text-neutral-500">
+							Evidence reference accepted. Archive access granted. This record is now read-only.
+						</p>
+					</div>
+				)}
+
+				<!-- Hint request + submit form -->
+				{isCurrent && (
+					<div class="px-7 py-6 space-y-5">
+						{nextHint <= MAX_HINTS && (
+							<div>
+								<button
+									type="button"
+									data-hint-button
+									data-next-hint={nextHint}
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+								>
+									Request assistance note {nextHint}
+									<span class="ml-1 text-neutral-800">— halves score</span>
+								</button>
+							</div>
+						)}
+						<div>
+							<p class="mb-2.5 font-mono text-[10px] tracking-[0.2em] text-neutral-600 uppercase">
+								Submit Evidence Reference
+							</p>
+							<form
+								data-submit-form
+								data-msg-verifying="Searching the archive…"
+								data-msg-correct="Reference confirmed. Archive access granted."
+								data-msg-incorrect="Reference not found. Check the source of this page for the complete evidence record."
+								data-msg-error="System error. Please try again."
+								data-btn-loading="Searching…"
+							>
+								<div class="flex gap-2">
+									<input
+										type="text"
+										name="answer"
+										autocomplete="off"
+										spellcheck="false"
+										placeholder="Evidence reference number"
+										aria-label="Evidence reference number"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+									/>
+									<button
+										type="submit"
+										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100"
+									>
+										Submit
+									</button>
+								</div>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+							</form>
+						</div>
+					</div>
+				)}
+
+			</div>
+
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+				<span>BLACKWOOD INVESTIGATIVE BUREAU — OFFICIAL ARCHIVE</span>
+				<span>FILE 71-C</span>
+			</div>
+		</main>
+	)}
+
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+	<!-- Q3 — EVIDENCE VIEWER: MIRA'S NOTEBOOK (EVD-71C-017)                 -->
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+
+	{isQ3 && q3 && (
+		<main
+			class="mx-auto w-full max-w-2xl px-4 py-10"
+			data-challenge
+			data-slug={slug}
+			data-slot={view.slot}
+		>
+			<div class="overflow-hidden rounded border border-neutral-800 bg-neutral-900">
+
+				<!-- Bureau letterhead -->
+				<div class="border-b border-neutral-800 px-7 py-5">
+					<p class="font-mono text-xs font-medium tracking-[0.3em] text-neutral-300 uppercase">
+						Blackwood Investigative Bureau
+					</p>
+					<p class="mt-1 font-mono text-[10px] tracking-[0.2em] text-neutral-600 uppercase">
+						Evidence Management &nbsp;·&nbsp; Physical Exhibits
+					</p>
+				</div>
+
+				<!-- Evidence header -->
+				<div class="border-b border-neutral-800 px-7 py-6">
+					<p class="mb-4 font-mono text-[10px] tracking-[0.3em] text-neutral-600 uppercase">
+						Evidence Item
+					</p>
+					<dl class="grid grid-cols-[7rem_1fr] gap-x-5 gap-y-2">
+						<dt class="font-mono text-[10px] tracking-[0.1em] text-neutral-600 uppercase self-start pt-px">Reference</dt>
+						<dd class="font-mono text-xs text-neutral-300">{q3.evidenceRef}</dd>
+
+						<dt class="font-mono text-[10px] tracking-[0.1em] text-neutral-600 uppercase self-start pt-px">Type</dt>
+						<dd class="font-mono text-xs text-neutral-500">Personal notebook — handwritten</dd>
+
+						<dt class="font-mono text-[10px] tracking-[0.1em] text-neutral-600 uppercase self-start pt-px">Subject</dt>
+						<dd class="font-mono text-xs text-neutral-500">CASTELLAN, M.</dd>
+
+						<dt class="font-mono text-[10px] tracking-[0.1em] text-neutral-600 uppercase self-start pt-px">Entry date</dt>
+						<dd class="font-mono text-xs text-neutral-500">{q3.notebookDate}</dd>
+
+						<dt class="font-mono text-[10px] tracking-[0.1em] text-neutral-600 uppercase self-start pt-px">Status</dt>
+						<dd class="font-mono text-xs text-neutral-600">RESTRICTED — reviewing investigator access only</dd>
+					</dl>
+				</div>
+
+				<!-- Scan viewer -->
+				<div class="border-b border-neutral-800 bg-neutral-950 px-7 py-6">
+					<p class="mb-3 font-mono text-[10px] tracking-[0.25em] text-neutral-700 uppercase">
+						Scan — page 1 of 1
+					</p>
+
+					<!--
+					  Forensic scan of Mira Castellan's private notebook.
+					  The address near the bottom (streetLine + district) is rendered in
+					  very low-contrast ink (#bdb3a9 on #ede7da). It is present in the
+					  SVG DOM and readable by inspecting the text nodes in DevTools.
+					  Applying a CSS contrast filter (filter: contrast(10)) to the
+					  #notebook-scan element makes the faded text visually legible.
+					  "THE" is underlined every time it appears in the visible notes.
+					-->
+					<svg
+						id="notebook-scan"
+						viewBox="0 0 540 400"
+						xmlns="http://www.w3.org/2000/svg"
+						class="w-full rounded shadow-lg"
+						aria-label="Scanned notebook page — evidence item EVD-71C-017"
+					>
+						<!-- Paper background -->
+						<rect width="540" height="400" fill="#ede7da"/>
+
+						<!-- Ruled lines -->
+						<line x1="0" y1="44"  x2="540" y2="44"  stroke="#d8d0c4" stroke-width="0.5"/>
+						<line x1="0" y1="66"  x2="540" y2="66"  stroke="#d8d0c4" stroke-width="0.5"/>
+						<line x1="0" y1="88"  x2="540" y2="88"  stroke="#d8d0c4" stroke-width="0.5"/>
+						<line x1="0" y1="110" x2="540" y2="110" stroke="#d8d0c4" stroke-width="0.5"/>
+						<line x1="0" y1="132" x2="540" y2="132" stroke="#d8d0c4" stroke-width="0.5"/>
+						<line x1="0" y1="154" x2="540" y2="154" stroke="#d8d0c4" stroke-width="0.5"/>
+						<line x1="0" y1="176" x2="540" y2="176" stroke="#d8d0c4" stroke-width="0.5"/>
+						<line x1="0" y1="198" x2="540" y2="198" stroke="#d8d0c4" stroke-width="0.5"/>
+						<line x1="0" y1="220" x2="540" y2="220" stroke="#d8d0c4" stroke-width="0.5"/>
+						<line x1="0" y1="242" x2="540" y2="242" stroke="#d8d0c4" stroke-width="0.5"/>
+						<line x1="0" y1="264" x2="540" y2="264" stroke="#d8d0c4" stroke-width="0.5"/>
+						<line x1="0" y1="286" x2="540" y2="286" stroke="#d8d0c4" stroke-width="0.5"/>
+						<line x1="0" y1="308" x2="540" y2="308" stroke="#d8d0c4" stroke-width="0.5"/>
+						<line x1="0" y1="330" x2="540" y2="330" stroke="#d8d0c4" stroke-width="0.5"/>
+						<line x1="0" y1="352" x2="540" y2="352" stroke="#d8d0c4" stroke-width="0.5"/>
+						<line x1="0" y1="374" x2="540" y2="374" stroke="#d8d0c4" stroke-width="0.5"/>
+
+						<!-- Left margin rule -->
+						<line x1="52" y1="0" x2="52" y2="400" stroke="#e0b8b0" stroke-width="0.7"/>
+
+						<!-- Visible notebook text (dark ink: #2c2925) -->
+						<text font-family="Georgia, 'Times New Roman', serif" font-size="13" fill="#2c2925">
+
+							<!-- Date + location heading -->
+							<tspan x="64" y="38" font-style="italic" font-size="11" fill="#4a4540">Oct 2015 — Vale estate, catalogue day 14</tspan>
+
+							<!-- Lot entry -->
+							<tspan x="64" dy="22">Object log:  Lot 47  /  Doll #6  /  workshop records</tspan>
+
+							<!-- Blank ruled gap -->
+							<tspan x="64" dy="44"><tspan text-decoration="underline">THE</tspan> collection is not what it appears.</tspan>
+
+							<tspan x="64" dy="22"><tspan text-decoration="underline">THE</tspan> anomaly: chain breaks at 1878.</tspan>
+
+							<!-- Strikethrough entry -->
+							<tspan x="64" dy="22">Lot 47 — <tspan text-decoration="line-through" fill="#5a534d">catalogued correctly</tspan>  SEE AGAIN</tspan>
+
+							<!-- Gap -->
+							<tspan x="64" dy="44">If anything happens — send to:</tspan>
+
+						</text>
+
+						<!-- Faded address (ink barely distinguishable from paper) -->
+						<!-- streetLine and district are in the DOM — inspect or apply contrast filter -->
+						<text
+							font-family="Georgia, 'Times New Roman', serif"
+							font-size="13"
+							fill="#bdb3a9"
+							aria-label="Faded address text"
+						>
+							<tspan x="64" y="302">{q3.streetLine},</tspan>
+							<tspan x="64" dy="22">{q3.district}</tspan>
+						</text>
+
+						<!-- Final visible note -->
+						<text font-family="Georgia, 'Times New Roman', serif" font-size="13" fill="#2c2925">
+							<tspan x="64" y="368"><tspan text-decoration="underline">THE</tspan> files are incomplete. Follow the objects.</tspan>
+						</text>
+
+					</svg>
+
+					<p class="mt-3 font-mono text-[9px] tracking-[0.15em] text-neutral-700 uppercase">
+						Forensic scan · EVD-71C-017 · Original held in secure evidence storage
+					</p>
+				</div>
+
+				<!-- Revealed hints -->
+				<div
+					data-hints
+					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-7 py-4'}
+				>
+					<ul class="space-y-2" data-hint-list>
+						{revealedHints.map((h) => (
+							<li class="flex gap-4" data-hint-number={h.hintNumber}>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
+							</li>
+						))}
+					</ul>
+				</div>
+
+				<!-- Solved state -->
+				{isSolved && (
+					<div class="px-7 py-5">
+						<p class="font-mono text-[10px] tracking-[0.1em] text-neutral-500">
+							Address confirmed. Evidence processed. This exhibit record is now read-only.
+						</p>
+					</div>
+				)}
+
+				<!-- Hint request + submit form -->
+				{isCurrent && (
+					<div class="px-7 py-6 space-y-5">
+						{nextHint <= MAX_HINTS && (
+							<div>
+								<button
+									type="button"
+									data-hint-button
+									data-next-hint={nextHint}
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+								>
+									Request assistance note {nextHint}
+									<span class="ml-1 text-neutral-800">— halves score</span>
+								</button>
+							</div>
+						)}
+						<div>
+							<p class="mb-2.5 font-mono text-[10px] tracking-[0.2em] text-neutral-600 uppercase">
+								Submit Address
+							</p>
+							<form
+								data-submit-form
+								data-msg-verifying="Cross-referencing with the archive…"
+								data-msg-correct="Address confirmed. Evidence record updated."
+								data-msg-incorrect="Address not recognised. Examine the notebook scan more carefully."
+								data-msg-error="System error. Please try again."
+								data-btn-loading="Checking…"
+							>
+								<div class="flex gap-2">
+									<input
+										type="text"
+										name="answer"
+										autocomplete="off"
+										spellcheck="false"
+										placeholder="Street number, road name, district"
+										aria-label="Address from the notebook"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+									/>
+									<button
+										type="submit"
+										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100"
+									>
+										Submit
+									</button>
+								</div>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+							</form>
+						</div>
+					</div>
+				)}
+
+			</div>
+
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+				<span>BLACKWOOD INVESTIGATIVE BUREAU — EVIDENCE MANAGEMENT</span>
+				<span>FILE 71-C</span>
+			</div>
+		</main>
+	)}
+
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+	<!-- Q4 — PEMBRIDGE MUNICIPAL LAND REGISTRY                              -->
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+
+	{isQ4 && q4 && (
+		<main
+			class="mx-auto w-full max-w-2xl px-4 py-10"
+			data-challenge
+			data-slug={slug}
+			data-slot={view.slot}
+		>
+			<div class="overflow-hidden rounded border border-neutral-800 bg-neutral-900">
+
+				<!-- Registry portal header -->
+				<div class="border-b border-neutral-800 bg-neutral-950/60 px-7 py-5">
+					<p class="font-mono text-xs font-medium tracking-[0.25em] text-neutral-400 uppercase">
+						Pembridge District — Land &amp; Property Registry
+					</p>
+					<p class="mt-1 font-mono text-[10px] tracking-[0.18em] text-neutral-600 uppercase">
+						Public Records Search &nbsp;·&nbsp; Digitised Archive (1800–1999)
+					</p>
+				</div>
+
+				<!-- Search context bar -->
+				<div class="border-b border-neutral-800 bg-neutral-950/30 px-7 py-3">
+					<div class="flex flex-wrap items-center gap-x-5 gap-y-1">
+						<span class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase">Query</span>
+						<span class="font-mono text-[10px] text-neutral-600">Address reference: EVD-71C-017</span>
+						<span class="ml-auto font-mono text-[10px] text-neutral-700">1 record found</span>
+					</div>
+				</div>
+
+				<!-- Property summary -->
+				<div class="border-b border-neutral-800 px-7 py-6">
+					<p class="mb-4 font-mono text-[10px] tracking-[0.25em] text-neutral-600 uppercase">Property Record</p>
+					<dl class="grid grid-cols-[8.5rem_1fr] gap-x-5 gap-y-2">
+						<dt class="font-mono text-[10px] tracking-[0.08em] text-neutral-600 uppercase self-start pt-px">Location</dt>
+						<dd class="font-mono text-xs text-neutral-300">Ashwick Industrial Quarter, Pembridge</dd>
+
+						<dt class="font-mono text-[10px] tracking-[0.08em] text-neutral-600 uppercase self-start pt-px">Property type</dt>
+						<dd class="font-mono text-xs text-neutral-500">Workshop lot with attached dwelling</dd>
+
+						<dt class="font-mono text-[10px] tracking-[0.08em] text-neutral-600 uppercase self-start pt-px">Transfer date</dt>
+						<dd class="font-mono text-xs text-neutral-500">14 November 1889</dd>
+
+						<dt class="font-mono text-[10px] tracking-[0.08em] text-neutral-600 uppercase self-start pt-px">Transfer type</dt>
+						<dd class="font-mono text-xs text-neutral-500">Estate dissolution — death of registered owner</dd>
+
+						<dt class="font-mono text-[10px] tracking-[0.08em] text-neutral-600 uppercase self-start pt-px">Record status</dt>
+						<dd class="font-mono text-[10px] text-neutral-700">Digitised — original held in county archive</dd>
+					</dl>
+				</div>
+
+				<!-- Deed reference + document contents -->
+				<div class="border-b border-neutral-800 px-7 py-6">
+					<p class="mb-4 font-mono text-[10px] tracking-[0.25em] text-neutral-600 uppercase">Original Instrument</p>
+
+					<!-- Filename / document reference card -->
+					<div class="mb-5 rounded border border-neutral-800 bg-neutral-950 px-4 py-3">
+						<p class="mb-1.5 font-mono text-[10px] tracking-[0.12em] text-neutral-700 uppercase">Document file</p>
+						<code class="break-all font-mono text-xs text-neutral-400">{q4.deedFilename}</code>
+					</div>
+
+					<!-- Scanned deed (archival paper appearance) -->
+					<div class="rounded border border-neutral-700/30 bg-[#f2ece0] px-6 py-6 text-neutral-900">
+
+						<!-- Deed heading -->
+						<p class="mb-1 text-center font-mono text-[11px] font-semibold tracking-[0.2em] text-neutral-800 uppercase">
+							Pembridge Municipal Registry
+						</p>
+						<p class="mb-0.5 text-center font-mono text-[10px] tracking-[0.15em] text-neutral-600 uppercase">
+							Property Transfer Record
+						</p>
+						<p class="mb-5 text-center font-mono text-[9px] tracking-[0.1em] text-neutral-500">
+							Instrument recorded: 14 November 1889 &nbsp;·&nbsp; Accession: {q4.accessionRef}
+						</p>
+
+						<div class="mb-5 border-t border-neutral-400/40"></div>
+
+						<!-- Deed body text -->
+						<p class="mb-3 text-[12px] leading-relaxed text-neutral-700">
+							Know all persons by these presents that the hereinafter described
+							property, situate in the Parish of Pembridge, County District, being
+							the workshop lot designated Ashwick Industrial Quarter (eastern
+							frontage, Lot 3), together with attached dwelling thereon erected,
+							is hereby transferred to the custody of Pembridge Municipal Council
+							by reason of the dissolution of the estate of the registered owner,
+							said owner having died without a surviving heir of majority.
+						</p>
+						<p class="mb-5 text-[12px] leading-relaxed text-neutral-700">
+							The estate contents and workshop materials are recorded under
+							separate inventory. Provenance of workshop objects is noted as
+							requiring independent verification prior to any disposition.
+							See attached inventory schedule.
+						</p>
+
+						<div class="mb-5 border-t border-neutral-400/40"></div>
+
+						<!-- Registry index table -->
+						<p class="mb-3 font-mono text-[10px] tracking-[0.18em] text-neutral-600 uppercase">
+							Registry Index — Persons on Record at Time of Transfer
+						</p>
+						<table class="w-full border-collapse font-mono text-[11px]">
+							<thead>
+								<tr class="border-b border-neutral-400/30">
+									<th class="pb-1.5 pr-6 text-left font-normal tracking-[0.08em] text-neutral-500 uppercase text-[9px]">Accession</th>
+									<th class="pb-1.5 text-left font-normal tracking-[0.08em] text-neutral-500 uppercase text-[9px]">Name</th>
+								</tr>
+							</thead>
+							<tbody>
+								{q4.registryIndex.map((entry) => (
+									<tr class="border-b border-neutral-300/20">
+										<td class="py-1.5 pr-6 text-neutral-500">{entry.ref}</td>
+										<td class="py-1.5 text-neutral-700">{entry.name}</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+
+						<p class="mt-4 font-mono text-[9px] tracking-[0.08em] text-neutral-500">
+							Index entries reflect registration status at time of transfer only.
+							Subsequent transfers recorded separately. Estate inventory attached.
+						</p>
+
+					</div>
+				</div>
+
+				<!-- Revealed hints -->
+				<div
+					data-hints
+					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-7 py-4'}
+				>
+					<ul class="space-y-2" data-hint-list>
+						{revealedHints.map((h) => (
+							<li class="flex gap-4" data-hint-number={h.hintNumber}>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
+							</li>
+						))}
+					</ul>
+				</div>
+
+				<!-- Solved state -->
+				{isSolved && (
+					<div class="px-7 py-5">
+						<p class="font-mono text-[10px] tracking-[0.1em] text-neutral-500">
+							Owner identified. Property record filed. This entry is now read-only.
+						</p>
+					</div>
+				)}
+
+				<!-- Hint request + submit form -->
+				{isCurrent && (
+					<div class="px-7 py-6 space-y-5">
+						{nextHint <= MAX_HINTS && (
+							<div>
+								<button
+									type="button"
+									data-hint-button
+									data-next-hint={nextHint}
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+								>
+									Request assistance note {nextHint}
+									<span class="ml-1 text-neutral-800">— halves score</span>
+								</button>
+							</div>
+						)}
+						<div>
+							<p class="mb-2.5 font-mono text-[10px] tracking-[0.2em] text-neutral-600 uppercase">
+								Identify the Registered Owner
+							</p>
+							<form
+								data-submit-form
+								data-msg-verifying="Checking the registry…"
+								data-msg-correct="Owner identified. Record filed."
+								data-msg-incorrect="Name not confirmed. Check the deed reference and registry index."
+								data-msg-error="System error. Please try again."
+								data-btn-loading="Checking…"
+							>
+								<div class="flex gap-2">
+									<input
+										type="text"
+										name="answer"
+										autocomplete="off"
+										spellcheck="false"
+										placeholder="First and last name of the registered owner"
+										aria-label="Registered owner name"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+									/>
+									<button
+										type="submit"
+										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100"
+									>
+										Submit
+									</button>
+								</div>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+							</form>
+						</div>
+					</div>
+				)}
+
+			</div>
+
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+				<span>PEMBRIDGE DISTRICT — LAND &amp; PROPERTY REGISTRY</span>
+				<span>PUBLIC RECORDS</span>
+			</div>
+		</main>
+	)}
+
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+	<!-- Q5 — PEMBRIDGE LOCAL HERITAGE SITE (robots.txt discovery)           -->
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+
+	{isQ5 && q5 && (
+		<main
+			class="mx-auto w-full max-w-2xl px-4 py-10"
+			data-challenge
+			data-slug={slug}
+			data-slot={view.slot}
+		>
+			<!-- Investigation context strip -->
+			<div class="mb-4 flex items-center justify-between font-mono text-[10px] text-neutral-700">
+				<span class="tracking-[0.1em] uppercase">Case 71-C · Q05 Lead</span>
+				<span class="text-neutral-800">INV-{roll}</span>
+			</div>
+
+			<!-- Fake browser frame containing the local-history site -->
+			<div class="overflow-hidden rounded border border-neutral-700/60">
+
+				<!-- Browser chrome (address bar) -->
+				<div class="flex items-center gap-2 border-b border-neutral-700/60 bg-neutral-800 px-3 py-2">
+					<div class="flex gap-1">
+						<span class="h-2.5 w-2.5 rounded-full bg-neutral-600"></span>
+						<span class="h-2.5 w-2.5 rounded-full bg-neutral-600"></span>
+						<span class="h-2.5 w-2.5 rounded-full bg-neutral-600"></span>
+					</div>
+					<code class="flex-1 rounded bg-neutral-700 px-2 py-0.5 font-mono text-[10px] text-neutral-400">
+						/{slug}/archive/
+					</code>
+				</div>
+
+				<!-- Pembridge Local Heritage — site content -->
+				<div style="background: #f4f0e8; color: #2c2820; font-family: Georgia, 'Times New Roman', serif;">
+
+					<!-- Site header -->
+					<div style="background: #e8e2d4; border-bottom: 2px solid #c8c0b0; padding: 12px 24px;">
+						<p style="font-size: 17px; font-weight: bold; letter-spacing: 0.04em; color: #3a3020;">
+							Pembridge Local Heritage
+						</p>
+						<p style="font-size: 11px; color: #7a6e5a; margin-top: 2px; letter-spacing: 0.04em; font-family: Arial, Helvetica, sans-serif;">
+							A record of Pembridge's history — compiled and maintained by E. Holt (retired)
+						</p>
+					</div>
+
+					<!-- Site navigation -->
+					<div style="background: #ddd8c8; border-bottom: 1px solid #c8c0b0; padding: 6px 24px;">
+						<div style="display: flex; gap: 18px; flex-wrap: wrap;">
+							<span style="font-size: 12px; font-family: Arial, Helvetica, sans-serif; color: #5a4a2a; font-weight: bold;">Home</span>
+							<span style="font-size: 12px; font-family: Arial, Helvetica, sans-serif; color: #5a4a2a;">About Pembridge</span>
+							<span style="font-size: 12px; font-family: Arial, Helvetica, sans-serif; color: #5a4a2a;">Notable Residents</span>
+							<span style="font-size: 12px; font-family: Arial, Helvetica, sans-serif; color: #5a4a2a;">Trades &amp; Craftsmen</span>
+							<span style="font-size: 12px; font-family: Arial, Helvetica, sans-serif; color: #5a4a2a;">Sources</span>
+							<span style="font-size: 12px; font-family: Arial, Helvetica, sans-serif; color: #9a8a7a; text-decoration: line-through;" title="Link inactive">Photograph Archive</span>
+						</div>
+					</div>
+
+					<!-- Homepage body -->
+					<div style="padding: 24px; max-width: 100%; font-size: 15px; line-height: 1.7;">
+
+						<p style="font-size: 13px; color: #7a6e5a; font-family: Arial, Helvetica, sans-serif; margin-bottom: 18px;">
+							Last updated: March 2009 &nbsp;&bull;&nbsp; Not commercially maintained
+						</p>
+
+						<p style="margin-bottom: 16px;">
+							This site records the history of Pembridge and its surrounding area. It was
+							assembled from rate books, trade directories, parish records, and private
+							correspondence held at the county archive and donated collections. It is a
+							personal project and is offered without warranty.
+						</p>
+						<p style="margin-bottom: 24px;">
+							Pembridge developed as a small industrial town through the latter half of
+							the nineteenth century, with the Ashwick Industrial Quarter operating as
+							its primary trade district from the 1860s. A number of craftsmen and
+							artisans of regional note worked there during that period.
+						</p>
+
+						<hr style="border: none; border-top: 1px solid #c8c0b0; margin: 20px 0;" />
+
+						<p style="font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #1e1a14;">
+							Trades &amp; Craftsmen — Note on Records
+						</p>
+						<p style="margin-bottom: 16px; font-size: 14px; color: #4a4030;">
+							Several craftsmen operated workshops in the Ashwick Industrial Quarter
+							between 1860 and 1900. Records for this period vary considerably in
+							completeness. A digitisation project undertaken in 2004 (Bremwick-Pembridge
+							Heritage Archive — BPHA) indexed a number of surviving workshop records,
+							though not all materials were cleared for public access at the time.
+						</p>
+						<p style="font-size: 14px; color: #4a4030; font-style: italic;">
+							One record — relating to a workshop in operation from 1871 to 1889 —
+							was indexed by the BPHA project but has not been incorporated into the
+							main site navigation. Contact information for the county archive is
+							listed on the Sources page.
+						</p>
+
+						<hr style="border: none; border-top: 1px solid #c8c0b0; margin: 20px 0;" />
+
+						<p style="font-size: 12px; color: #8a7e6a; font-family: Arial, Helvetica, sans-serif;">
+							<strong>Note on the Photograph Archive:</strong> The photograph section is
+							currently offline due to hosting issues. I hope to restore it in due course.
+							— E.H.
+						</p>
+
+					</div>
+
+					<!-- Site footer -->
+					<div style="background: #ddd8c8; border-top: 1px solid #c8c0b0; padding: 12px 24px;">
+						<p style="font-size: 11px; color: #7a6e5a; font-family: Arial, Helvetica, sans-serif;">
+							Pembridge Local Heritage &mdash; E. Holt (retired school librarian)
+							&mdash; Last updated March 2009 &mdash; Errors and omissions regretted
+						</p>
+					</div>
+
+				</div>
+			</div>
+
+			<!-- Investigation controls (Blackwood shell) -->
+			<div class="mt-4 overflow-hidden rounded border border-neutral-800 bg-neutral-900">
+
+				<!-- Revealed hints -->
+				<div
+					data-hints
+					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-7 py-4'}
+				>
+					<ul class="space-y-2" data-hint-list>
+						{revealedHints.map((h) => (
+							<li class="flex gap-4" data-hint-number={h.hintNumber}>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
+							</li>
+						))}
+					</ul>
+				</div>
+
+				<!-- Solved state -->
+				{isSolved && (
+					<div class="px-7 py-5">
+						<p class="font-mono text-[10px] tracking-[0.1em] text-neutral-500">
+							Workshop identified. Record filed. This entry is now read-only.
+						</p>
+					</div>
+				)}
+
+				<!-- Hint request + submit form -->
+				{isCurrent && (
+					<div class="px-7 py-6 space-y-5">
+						{nextHint <= MAX_HINTS && (
+							<div>
+								<button
+									type="button"
+									data-hint-button
+									data-next-hint={nextHint}
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+								>
+									Request assistance note {nextHint}
+									<span class="ml-1 text-neutral-800">— halves score</span>
+								</button>
+							</div>
+						)}
+						<div>
+							<p class="mb-2.5 font-mono text-[10px] tracking-[0.2em] text-neutral-600 uppercase">
+								Identify the Workshop
+							</p>
+							<form
+								data-submit-form
+								data-msg-verifying="Searching the record…"
+								data-msg-correct="Workshop identified. Record filed."
+								data-msg-incorrect="Name not confirmed. Review the workshop article carefully."
+								data-msg-error="System error. Please try again."
+								data-btn-loading="Checking…"
+							>
+								<div class="flex gap-2">
+									<input
+										type="text"
+										name="answer"
+										autocomplete="off"
+										spellcheck="false"
+										placeholder="Name of the workshop"
+										aria-label="Workshop name"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+									/>
+									<button
+										type="submit"
+										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100"
+									>
+										Submit
+									</button>
+								</div>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+							</form>
+						</div>
+					</div>
+				)}
+
+			</div>
+
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+				<span>BLACKWOOD INVESTIGATIVE BUREAU — EXTERNAL ARCHIVE</span>
+				<span>FILE 71-C</span>
+			</div>
+		</main>
+	)}
+
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+	<!-- Q6 — ASHWICK TRADES DIRECTORY (IDOR enumeration)                    -->
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+
+	{isQ6 && q6 && (
+		<main
+			class="mx-auto w-full max-w-2xl px-4 py-10"
+			data-challenge
+			data-slug={slug}
+			data-slot={view.slot}
+		>
+			<!-- Investigation context strip -->
+			<div class="mb-4 flex items-center justify-between font-mono text-[10px] text-neutral-700">
+				<span class="tracking-[0.1em] uppercase">Case 71-C · Q06 Lead</span>
+				<span class="text-neutral-800">INV-{roll}</span>
+			</div>
+
+			<!-- Directory terminal frame -->
+			<div class="overflow-hidden rounded border border-neutral-700/50" style="background: #f0ece0; color: #2c2820; font-family: 'Courier New', Courier, monospace;">
+
+				<!-- Directory header banner -->
+				<div style="background: #2c2820; color: #d4c8a8; padding: 10px 20px;">
+					<p style="font-size: 13px; letter-spacing: 0.18em; font-weight: bold; text-transform: uppercase;">
+						Ashwick Trades Directory
+					</p>
+					<p style="font-size: 10px; color: #7a6e5a; margin-top: 2px; letter-spacing: 0.1em;">
+						Pembridge District Historical Records Office &nbsp;&middot;&nbsp; Artisan Register (1870–1895)
+					</p>
+				</div>
+
+				<!-- Sub-header / search context -->
+				<div style="background: #e0dace; border-bottom: 1px solid #c8c0b0; padding: 6px 20px; display: flex; justify-content: space-between; align-items: center;">
+					<span style="font-size: 10px; color: #5a4a2a; letter-spacing: 0.08em; text-transform: uppercase;">
+						Public index — partial listing
+					</span>
+					<span style="font-size: 10px; color: #8a7e6a; letter-spacing: 0.06em;">
+						Entries D-001 onwards
+					</span>
+				</div>
+
+				<!-- Directory listing table -->
+				<div style="padding: 20px;">
+					<table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+						<thead>
+							<tr style="border-bottom: 2px solid #c8c0b0;">
+								<th style="text-align: left; padding: 0 16px 6px 0; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #6a5e4a; font-weight: normal; white-space: nowrap;">Ref</th>
+								<th style="text-align: left; padding: 0 16px 6px 0; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #6a5e4a; font-weight: normal;">Name / Trading As</th>
+								<th style="text-align: left; padding: 0 16px 6px 0; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #6a5e4a; font-weight: normal;">Category</th>
+								<th style="text-align: left; padding: 0 0 6px 0; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #6a5e4a; font-weight: normal;">Active</th>
+							</tr>
+						</thead>
+						<tbody>
+							{q6.directoryEntries.map((entry: DirectoryEntry, i: number) => {
+								// Insert the gap marker between index 1 and 2 (after the 2 "before" entries)
+								const showGap = i === 2;
+								return (
+									<>
+										{showGap && (
+											<tr>
+												<td colspan={4} style="padding: 4px 0; color: #9a8e7a; font-size: 10px; letter-spacing: 0.08em; font-style: italic;">
+													— entry not in public index —
+												</td>
+											</tr>
+										)}
+										<tr style={`border-bottom: 1px solid #ddd8c8;`}>
+											<td style="padding: 6px 16px 6px 0; color: #5a4a2a; white-space: nowrap;">{entry.id}</td>
+											<td style="padding: 6px 16px 6px 0; color: #2c2820;">{entry.name}</td>
+											<td style="padding: 6px 16px 6px 0; color: #6a5e4a; font-size: 11px;">{entry.category}</td>
+											<td style="padding: 6px 0; color: #6a5e4a; font-size: 11px;">{entry.years}</td>
+										</tr>
+									</>
+								);
+							})}
+						</tbody>
+					</table>
+
+					<p style="margin-top: 16px; font-size: 10px; color: #8a7e6a; letter-spacing: 0.06em;">
+						Some entries are restricted or absent from this public listing. Access restricted records at:
+						<span style="color: #5a4a2a; font-weight: bold;">/{slug}/directory/D-XXX</span>
+					</p>
+				</div>
+
+				<!-- Directory footer -->
+				<div style="background: #e0dace; border-top: 1px solid #c8c0b0; padding: 8px 20px;">
+					<p style="font-size: 10px; color: #8a7e6a; letter-spacing: 0.06em;">
+						Ashwick Trades Directory &mdash; Pembridge District Records Office &mdash; Digitised 2004 (BPHA project)
+					</p>
+				</div>
+
+			</div>
+
+			<!-- Blackwood investigation controls -->
+			<div class="mt-4 overflow-hidden rounded border border-neutral-800 bg-neutral-900">
+
+				<!-- Revealed hints -->
+				<div
+					data-hints
+					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-7 py-4'}
+				>
+					<ul class="space-y-2" data-hint-list>
+						{revealedHints.map((h) => (
+							<li class="flex gap-4" data-hint-number={h.hintNumber}>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
+							</li>
+						))}
+					</ul>
+				</div>
+
+				<!-- Solved state -->
+				{isSolved && (
+					<div class="px-7 py-5">
+						<p class="font-mono text-[10px] tracking-[0.1em] text-neutral-500">
+							Contact identified. Record filed. This entry is now read-only.
+						</p>
+					</div>
+				)}
+
+				<!-- Hint request + submit form -->
+				{isCurrent && (
+					<div class="px-7 py-6 space-y-5">
+						{nextHint <= MAX_HINTS && (
+							<div>
+								<button
+									type="button"
+									data-hint-button
+									data-next-hint={nextHint}
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+								>
+									Request assistance note {nextHint}
+									<span class="ml-1 text-neutral-800">— halves score</span>
+								</button>
+							</div>
+						)}
+						<div>
+							<p class="mb-2.5 font-mono text-[10px] tracking-[0.2em] text-neutral-600 uppercase">
+								Identify the Suppressed Contact
+							</p>
+							<form
+								data-submit-form
+								data-msg-verifying="Querying the restricted index…"
+								data-msg-correct="Contact identified. Record filed."
+								data-msg-incorrect="Name not confirmed. Check the suppressed directory entry."
+								data-msg-error="System error. Please try again."
+								data-btn-loading="Checking…"
+							>
+								<div class="flex gap-2">
+									<input
+										type="text"
+										name="answer"
+										autocomplete="off"
+										spellcheck="false"
+										placeholder="Full name of the suppressed contact"
+										aria-label="Suppressed contact name"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+									/>
+									<button
+										type="submit"
+										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100"
+									>
+										Submit
+									</button>
+								</div>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+							</form>
+						</div>
+					</div>
+				)}
+
+			</div>
+
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+				<span>ASHWICK TRADES DIRECTORY — PEMBRIDGE DISTRICT RECORDS</span>
+				<span>FILE 71-C</span>
+			</div>
+		</main>
+	)}
+
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+	<!-- Q7 — VALE ESTATE PHOTOGRAPH EVIDENCE VIEWER                         -->
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+
+	{isQ7 && q7 && (
+		<main
+			class="mx-auto w-full max-w-2xl px-4 py-10"
+			data-challenge
+			data-slug={slug}
+			data-slot={view.slot}
+		>
+			<!-- Evidence header -->
+			<div class="mb-4 flex items-center justify-between font-mono text-[10px] text-neutral-700">
+				<span class="tracking-[0.1em] uppercase">Case 71-C · Evidence Item 8</span>
+				<span class="tracking-[0.08em] text-neutral-800">{q7.photoRef} · INV-{roll}</span>
+			</div>
+
+			<div class="overflow-hidden rounded border border-neutral-700/60 bg-neutral-900">
+
+				<!-- Evidence label bar -->
+				<div class="border-b border-neutral-800 bg-neutral-950/70 px-5 py-3">
+					<div class="flex items-center justify-between">
+						<div>
+							<p class="font-mono text-[10px] font-medium tracking-[0.22em] text-neutral-400 uppercase">
+								Blackwood Evidence Viewer
+							</p>
+							<p class="mt-0.5 font-mono text-[10px] tracking-[0.1em] text-neutral-700">
+								Photographic evidence &nbsp;·&nbsp; Vale estate collection &nbsp;·&nbsp; Ref: {q7.photoRef}
+							</p>
+						</div>
+						<span class="rounded border border-neutral-800 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] text-neutral-700 uppercase">
+							Item 8
+						</span>
+					</div>
+				</div>
+
+				<!-- Photograph -->
+				<div class="relative border-b border-neutral-800 bg-neutral-950 p-4">
+
+					<!-- SVG estate photograph — sepia tones, 7 figures, seventh partially behind door frame -->
+					<svg
+						viewBox="0 0 560 370"
+						xmlns="http://www.w3.org/2000/svg"
+						style="width:100%;height:auto;display:block;"
+						aria-label="Historical estate photograph — group of figures in an interior room"
+						role="img"
+					>
+						<defs>
+							<!-- Subtle grain for aged paper feel -->
+							<filter id="q7grain" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+								<feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="4" stitchTiles="stitch" result="noise"/>
+								<feColorMatrix in="noise" type="saturate" values="0" result="grayNoise"/>
+								<feBlend in="SourceGraphic" in2="grayNoise" mode="multiply" result="blended"/>
+								<feComposite in="blended" in2="SourceGraphic" operator="in"/>
+							</filter>
+							<!-- Vignette -->
+							<radialGradient id="q7vig" cx="50%" cy="50%" r="68%" fx="50%" fy="50%">
+								<stop offset="0%" stop-color="transparent"/>
+								<stop offset="100%" stop-color="#0a0804" stop-opacity="0.55"/>
+							</radialGradient>
+							<!-- Aged paper edge -->
+							<linearGradient id="q7edge" x1="0" y1="0" x2="0" y2="1">
+								<stop offset="0%" stop-color="#c8b48a"/>
+								<stop offset="100%" stop-color="#b8a47a"/>
+							</linearGradient>
+						</defs>
+
+						<!-- Photo paper background (sepia) -->
+						<rect width="560" height="370" fill="#bfae8c"/>
+
+						<!-- Interior back wall -->
+						<rect x="18" y="38" width="524" height="268" fill="#a89870"/>
+						<!-- Floor -->
+						<rect x="18" y="285" width="524" height="21" fill="#988a62"/>
+						<!-- Dado rail -->
+						<rect x="18" y="148" width="524" height="3" fill="#887a54" opacity="0.6"/>
+						<!-- Left pilaster -->
+						<rect x="18" y="38" width="3" height="268" fill="#8a7c56"/>
+						<!-- Right door frame / pilaster — partially obscures figure 7 -->
+						<rect x="485" y="38" width="4" height="268" fill="#887650"/>
+						<rect x="539" y="38" width="3" height="268" fill="#8a7c56"/>
+						<!-- Door opening (right side) — lighter warm tone -->
+						<rect x="489" y="40" width="50" height="264" fill="#cfc0a0" opacity="0.45"/>
+
+						<!-- Background shadow band (period interior feel) -->
+						<rect x="18" y="38" width="524" height="60" fill="#9a8c6a" opacity="0.4"/>
+
+						<!-- ─── Figure 1 (leftmost, clearly visible) ─── -->
+						<ellipse cx="72" cy="167" rx="14" ry="15" fill="#2a1c0c"/>
+						<rect x="56" y="182" width="32" height="66" rx="4" fill="#2a1c0c"/>
+						<rect x="53" y="248" width="13" height="30" rx="2" fill="#2a1c0c"/>
+						<rect x="69" y="248" width="13" height="30" rx="2" fill="#2a1c0c"/>
+
+						<!-- ─── Figure 2 ─── -->
+						<ellipse cx="135" cy="163" rx="13" ry="14" fill="#221608"/>
+						<rect x="120" y="177" width="30" height="70" rx="4" fill="#221608"/>
+						<rect x="117" y="247" width="12" height="32" rx="2" fill="#221608"/>
+						<rect x="132" y="247" width="12" height="32" rx="2" fill="#221608"/>
+
+						<!-- ─── Figure 3 ─── -->
+						<ellipse cx="197" cy="160" rx="14" ry="15" fill="#2a1c0c"/>
+						<rect x="181" y="175" width="32" height="72" rx="4" fill="#2a1c0c"/>
+						<rect x="178" y="247" width="13" height="33" rx="2" fill="#2a1c0c"/>
+						<rect x="194" y="247" width="13" height="33" rx="2" fill="#2a1c0c"/>
+
+						<!-- ─── Figure 4 (centre, slightly taller) ─── -->
+						<ellipse cx="269" cy="155" rx="15" ry="16" fill="#1c1006"/>
+						<rect x="252" y="171" width="34" height="76" rx="4" fill="#1c1006"/>
+						<rect x="249" y="247" width="14" height="35" rx="2" fill="#1c1006"/>
+						<rect x="266" y="247" width="14" height="35" rx="2" fill="#1c1006"/>
+
+						<!-- ─── Figure 5 ─── -->
+						<ellipse cx="339" cy="162" rx="13" ry="14" fill="#221608"/>
+						<rect x="324" y="176" width="30" height="70" rx="4" fill="#221608"/>
+						<rect x="321" y="246" width="12" height="32" rx="2" fill="#221608"/>
+						<rect x="336" y="246" width="12" height="32" rx="2" fill="#221608"/>
+
+						<!-- ─── Figure 6 ─── -->
+						<ellipse cx="402" cy="165" rx="13" ry="14" fill="#2a1c0c"/>
+						<rect x="387" y="179" width="30" height="68" rx="4" fill="#2a1c0c"/>
+						<rect x="384" y="247" width="12" height="31" rx="2" fill="#2a1c0c"/>
+						<rect x="399" y="247" width="12" height="31" rx="2" fill="#2a1c0c"/>
+
+						<!-- ─── Figure 7 (partially behind right door frame, slightly smaller) ─── -->
+						<!-- Body and legs behind the frame; only head + left shoulder visible -->
+						<ellipse cx="462" cy="170" rx="11" ry="12" fill="#1a1006" opacity="0.82"/>
+						<rect x="449" y="182" width="26" height="63" rx="3" fill="#1a1006" opacity="0.82"/>
+						<rect x="448" y="245" width="10" height="29" rx="2" fill="#1a1006" opacity="0.82"/>
+						<rect x="461" y="245" width="10" height="29" rx="2" fill="#1a1006" opacity="0.82"/>
+
+						<!-- Door frame occludes right portion of figure 7 -->
+						<rect x="481" y="38" width="8" height="268" fill="#a09070"/>
+
+						<!-- Grain overlay -->
+						<rect width="560" height="370" fill="#bfae8c" filter="url(#q7grain)" opacity="0.28"/>
+
+						<!-- Vignette overlay -->
+						<rect width="560" height="370" fill="url(#q7vig)"/>
+
+					</svg>
+
+					<!-- Photo edge / frame effect -->
+					<div class="pointer-events-none absolute inset-0 rounded-sm shadow-[inset_0_0_18px_rgba(0,0,0,0.55)]"></div>
+				</div>
+
+				<!-- Caption strip (printed on reverse of photograph) -->
+				<div class="border-b border-neutral-800 bg-neutral-950/50 px-5 py-3">
+					<p class="font-mono text-[9px] tracking-[0.14em] text-neutral-600 uppercase mb-1">Caption — printed on reverse</p>
+					<p class="font-mono text-[11px] italic text-neutral-400">
+						&ldquo;Six figures. Pembridge Municipal Archive. Undated.&rdquo;
+					</p>
+				</div>
+
+				<!-- EXIF metadata panel (expandable — participant must open it) -->
+				<div class="border-b border-neutral-800">
+					<details class="group">
+						<summary class="flex cursor-pointer select-none items-center justify-between px-5 py-3 font-mono text-[10px] tracking-[0.18em] text-neutral-600 uppercase transition-colors hover:text-neutral-400 list-none">
+							<span>EXIF Metadata</span>
+							<span class="text-neutral-700 group-open:hidden">▸ Show</span>
+							<span class="text-neutral-700 hidden group-open:inline">▾ Hide</span>
+						</summary>
+						<div class="border-t border-neutral-800/60 bg-neutral-950/30 px-5 py-4">
+							<table class="w-full font-mono text-[11px]">
+								<tbody class="divide-y divide-neutral-800/40">
+									<tr>
+										<td class="py-1.5 pr-6 text-neutral-700 whitespace-nowrap align-top">DateTimeOriginal</td>
+										<td class="py-1.5 text-neutral-400">{q7.exif.dateTimeOriginal}</td>
+									</tr>
+									<tr>
+										<td class="py-1.5 pr-6 text-neutral-700 whitespace-nowrap align-top">ImageDescription</td>
+										<td class="py-1.5 text-neutral-400">{q7.exif.imageDescription}</td>
+									</tr>
+									<tr>
+										<td class="py-1.5 pr-6 text-neutral-700 whitespace-nowrap align-top">GPSAreaInformation</td>
+										<td class="py-1.5 text-neutral-700 italic">[ENCODED — inspect raw file]</td>
+									</tr>
+									<tr>
+										<td class="py-1.5 pr-6 text-neutral-700 whitespace-nowrap align-top">Make</td>
+										<td class="py-1.5 text-neutral-500">{q7.exif.make}</td>
+									</tr>
+									<tr>
+										<td class="py-1.5 pr-6 text-neutral-700 whitespace-nowrap align-top">Software</td>
+										<td class="py-1.5 text-neutral-500">{q7.exif.software}</td>
+									</tr>
+									<tr>
+										<td class="py-1.5 pr-6 text-neutral-700 whitespace-nowrap align-top">Copyright</td>
+										<td class="py-1.5 text-neutral-500">{q7.exif.copyright}</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</details>
+				</div>
+
+				<!-- Q7: download raw SVG for XMP metadata inspection -->
+				<div class="border-b border-neutral-800 px-5 py-3 flex items-center gap-3">
+					<a
+						href="/case/photo/vale-estate"
+						download="vale-estate-photograph.svg"
+						class="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[0.1em] text-neutral-600 uppercase transition-colors hover:text-neutral-400"
+					>
+						↓ Download raw photograph file
+					</a>
+					<span class="font-mono text-[10px] text-neutral-800">— open in a text editor or use exiftool to inspect embedded metadata</span>
+				</div>
+
+				<!-- Revealed hints -->
+				<div
+					data-hints
+					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-5 py-4'}
+				>
+					<ul class="space-y-2" data-hint-list>
+						{revealedHints.map((h) => (
+							<li class="flex gap-4" data-hint-number={h.hintNumber}>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
+							</li>
+						))}
+					</ul>
+				</div>
+
+				<!-- Solved state -->
+				{isSolved && (
+					<div class="px-5 py-5">
+						<p class="font-mono text-[10px] tracking-[0.1em] text-neutral-500">
+							Location confirmed. Photograph evidence filed. This entry is now read-only.
+						</p>
+					</div>
+				)}
+
+				<!-- Hint request + submit form -->
+				{isCurrent && (
+					<div class="px-5 py-6 space-y-5">
+						{nextHint <= MAX_HINTS && (
+							<div>
+								<button
+									type="button"
+									data-hint-button
+									data-next-hint={nextHint}
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+								>
+									Request assistance note {nextHint}
+									<span class="ml-1 text-neutral-800">— halves score</span>
+								</button>
+							</div>
+						)}
+						<div>
+							<p class="mb-2.5 font-mono text-[10px] tracking-[0.2em] text-neutral-600 uppercase">
+								Identify the Source Location
+							</p>
+							<form
+								data-submit-form
+								data-msg-verifying="Consulting the archive metadata…"
+								data-msg-correct="Location confirmed. Archive record filed."
+								data-msg-incorrect="Location not confirmed. Review the image metadata carefully."
+								data-msg-error="System error. Please try again."
+								data-btn-loading="Checking…"
+							>
+								<div class="flex gap-2">
+									<input
+										type="text"
+										name="answer"
+										autocomplete="off"
+										spellcheck="false"
+										placeholder="Source location as recorded in the metadata"
+										aria-label="Photograph source location"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+									/>
+									<button
+										type="submit"
+										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100"
+									>
+										Submit
+									</button>
+								</div>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+							</form>
+						</div>
+					</div>
+				)}
+
+			</div>
+
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+				<span>BLACKWOOD INVESTIGATIVE BUREAU — PHOTOGRAPHIC EVIDENCE</span>
+				<span>FILE 71-C</span>
+			</div>
+		</main>
+	)}
+
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+	<!-- Q8 — SOVEREIGN AUCTION HOUSE LEGACY CATALOGUE (SQLi)                -->
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+
+	{isQ8 && q8 && (
+		<main
+			class="mx-auto w-full max-w-2xl px-4 py-10"
+			data-challenge
+			data-slug={slug}
+			data-slot={view.slot}
+		>
+			<!-- Investigation context strip -->
+			<div class="mb-4 flex items-center justify-between font-mono text-[10px] text-neutral-700">
+				<span class="tracking-[0.1em] uppercase">Case 71-C · Q08 Lead — Auction Archive</span>
+				<span class="text-neutral-800">INV-{roll}</span>
+			</div>
+
+			<!-- Legacy portal frame -->
+			<div class="overflow-hidden rounded border border-neutral-600/40">
+
+				<!-- Portal header (old-school grey-blue aesthetic) -->
+				<div style="background: #2f3640; color: #c8cfd8; padding: 10px 20px;">
+					<div style="display: flex; align-items: baseline; justify-content: space-between;">
+						<div>
+							<p style="font-size: 14px; font-weight: bold; font-family: Arial, Helvetica, sans-serif; letter-spacing: 0.02em;">
+								Sovereign Auction House
+							</p>
+							<p style="font-size: 10px; color: #7a8a98; margin-top: 2px; font-family: Arial, Helvetica, sans-serif; letter-spacing: 0.04em;">
+								Legacy Catalogue System &nbsp;&bull;&nbsp; Archive Access Portal
+							</p>
+						</div>
+						<span style="font-size: 10px; color: #4a5a68; font-family: 'Courier New', monospace;">
+							{q8.catalogueRef}
+						</span>
+					</div>
+				</div>
+
+				<!-- Navigation bar (static, period-accurate) -->
+				<div style="background: #3a4450; border-bottom: 1px solid #2a3440; padding: 5px 20px; display: flex; gap: 20px;">
+					<span style="font-size: 11px; font-family: Arial, sans-serif; color: #8a9aaa; font-weight: bold;">Browse</span>
+					<span style="font-size: 11px; font-family: Arial, sans-serif; color: #5a6a78;">Search</span>
+					<span style="font-size: 11px; font-family: Arial, sans-serif; color: #5a6a78;">About</span>
+					<span style="font-size: 11px; font-family: Arial, sans-serif; color: #5a6a78;">Contact</span>
+				</div>
+
+				<!-- Main catalogue body -->
+				<div style="background: #f2f0ea; color: #1e2028; font-family: Arial, Helvetica, sans-serif;">
+
+					<!-- Page title + estate notice -->
+					<div style="background: #e8e4dc; border-bottom: 1px solid #d0ccc0; padding: 12px 20px;">
+						<p style="font-size: 13px; font-weight: bold; color: #1e2028;">Vale Estate Sale — Catalogue Archive</p>
+						<p style="font-size: 11px; color: #5a5848; margin-top: 2px;">
+							Auction completed. Full lot listing archived for legal and estate reference purposes.
+							This catalogue is maintained under the Sovereign Auction House Records Retention Policy.
+						</p>
+					</div>
+
+					<!-- Search form -->
+					<div style="padding: 14px 20px; border-bottom: 1px solid #d8d4cc;">
+						<p style="font-size: 11px; color: #3a3828; font-weight: bold; margin-bottom: 6px;">Search catalogue:</p>
+						<div style="display: flex; gap: 8px; align-items: center;">
+							<input
+								id="q8-search-input"
+								type="text"
+								placeholder="Enter lot number or keyword…"
+								style="font-size: 12px; font-family: 'Courier New', monospace; border: 1px solid #b0aca0; background: #ffffff; color: #1e2028; padding: 4px 8px; flex: 1; outline: none;"
+							/>
+							<button
+								id="q8-search-btn"
+								style="font-size: 11px; font-family: Arial, sans-serif; background: #2f3640; color: #c8cfd8; border: 1px solid #1e2028; padding: 5px 14px; cursor: pointer; white-space: nowrap;"
+							>
+								Search
+							</button>
+						</div>
+						<p id="q8-search-note" style="font-size: 10px; color: #8a8878; margin-top: 5px;">
+							Displaying public lots only. Some entries may be restricted.
+						</p>
+					</div>
+
+					<!-- Results area -->
+					<div id="q8-results" style="padding: 14px 20px 6px;">
+
+						<!-- Default lot table — always shown initially, replaced by search results -->
+						<div id="q8-lot-table">
+							<p style="font-size: 11px; font-weight: bold; color: #3a3828; margin-bottom: 8px;">
+								Showing 5 of 47 lots &mdash; public index
+							</p>
+							<table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+								<thead>
+									<tr style="background: #dddac8; border-bottom: 2px solid #b0aca0;">
+										<th style="text-align: left; padding: 5px 10px 5px 0; color: #3a3828; font-weight: bold; white-space: nowrap;">Lot #</th>
+										<th style="text-align: left; padding: 5px 10px 5px 0; color: #3a3828; font-weight: bold;">Description</th>
+										<th style="text-align: left; padding: 5px 10px 5px 0; color: #3a3828; font-weight: bold;">Origin</th>
+										<th style="text-align: left; padding: 5px 0 5px 0; color: #3a3828; font-weight: bold;">Status</th>
+									</tr>
+								</thead>
+								<tbody id="q8-lot-tbody">
+									<tr style="border-bottom: 1px solid #d0ccc0;">
+										<td style="padding: 5px 10px 5px 0; color: #4a4838; white-space: nowrap;">44</td>
+										<td style="padding: 5px 10px 5px 0; color: #1e2028;">Oak Writing Table, c.1890</td>
+										<td style="padding: 5px 10px 5px 0; color: #5a5848; font-size: 10px;">ACQUIRED 1912, VALE ESTATE PURCHASE</td>
+										<td style="padding: 5px 0; color: #4a5848; font-size: 10px;">SOLD</td>
+									</tr>
+									<tr style="border-bottom: 1px solid #d0ccc0;">
+										<td style="padding: 5px 10px 5px 0; color: #4a4838; white-space: nowrap;">45</td>
+										<td style="padding: 5px 10px 5px 0; color: #1e2028;">Silver Candelabra (pair)</td>
+										<td style="padding: 5px 10px 5px 0; color: #5a5848; font-size: 10px;">ACQUIRED 1928, PRIVATE COLLECTION</td>
+										<td style="padding: 5px 0; color: #4a5848; font-size: 10px;">SOLD</td>
+									</tr>
+									<tr style="border-bottom: 1px solid #d0ccc0; background: #ede8e0;">
+										<td style="padding: 5px 10px 5px 0; color: #4a4838; font-weight: bold; white-space: nowrap;">46</td>
+										<td style="padding: 5px 10px 5px 0; color: #1e2028;">Oriental Rug, Persian (19th C.)</td>
+										<td style="padding: 5px 10px 5px 0; color: #5a5848; font-size: 10px;">ACQUIRED 1956, ESTATE CLEARANCE</td>
+										<td style="padding: 5px 0; color: #4a5848; font-size: 10px;">SOLD</td>
+									</tr>
+									<tr style="border-bottom: 1px solid #d0ccc0;">
+										<td style="padding: 5px 10px 5px 0; color: #4a4838; white-space: nowrap;">48</td>
+										<td style="padding: 5px 10px 5px 0; color: #1e2028;">Ceramic Vases (set of three)</td>
+										<td style="padding: 5px 10px 5px 0; color: #5a5848; font-size: 10px;">ACQUIRED 1988, PRIVATE PURCHASE</td>
+										<td style="padding: 5px 0; color: #4a5848; font-size: 10px;">SOLD</td>
+									</tr>
+									<tr>
+										<td style="padding: 5px 10px 5px 0; color: #4a4838; white-space: nowrap;">49</td>
+										<td style="padding: 5px 10px 5px 0; color: #1e2028;">Travel Trunk, leather, monogrammed</td>
+										<td style="padding: 5px 10px 5px 0; color: #5a5848; font-size: 10px;">ACQUIRED 1991, CHARITABLE DONATION</td>
+										<td style="padding: 5px 0; color: #7a5848; font-size: 10px;">WITHDRAWN</td>
+									</tr>
+								</tbody>
+							</table>
+							<p style="font-size: 10px; color: #9a9888; margin-top: 10px;">
+								Note: Some catalogue entries are not displayed in the public index.
+								Contact the estate solicitor for full records.
+							</p>
+						</div>
+
+						<!-- Query output / raw result console (hidden until search) -->
+						<div id="q8-console" style="display: none; margin-top: 10px;">
+							<p style="font-size: 10px; font-weight: bold; color: #3a3828; margin-bottom: 4px; font-family: 'Courier New', monospace;">
+								QUERY OUTPUT:
+							</p>
+							<pre id="q8-console-text" style="font-family: 'Courier New', monospace; font-size: 11px; background: #1e2028; color: #c8d0c0; padding: 10px 12px; overflow-x: auto; white-space: pre-wrap; margin: 0; line-height: 1.5;"></pre>
+						</div>
+
+					</div>
+
+					<!-- Portal footer -->
+					<div style="background: #e0dcd0; border-top: 1px solid #c8c4b8; padding: 8px 20px; margin-top: 10px;">
+						<p style="font-size: 10px; color: #7a7868; font-family: Arial, sans-serif;">
+							Sovereign Auction House Archive System &mdash; v3.1.4 &mdash; &copy; 2003 &mdash;
+							All estate records retained for 30 years per regulatory requirement.
+						</p>
+					</div>
+
+				</div>
+			</div>
+
+			<!-- Blackwood investigation controls -->
+			<div class="mt-4 overflow-hidden rounded border border-neutral-800 bg-neutral-900">
+
+				<!-- Revealed hints -->
+				<div
+					data-hints
+					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-7 py-4'}
+				>
+					<ul class="space-y-2" data-hint-list>
+						{revealedHints.map((h) => (
+							<li class="flex gap-4" data-hint-number={h.hintNumber}>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
+							</li>
+						))}
+					</ul>
+				</div>
+
+				<!-- Solved state -->
+				{isSolved && (
+					<div class="px-7 py-5">
+						<p class="font-mono text-[10px] tracking-[0.1em] text-neutral-500">
+							Lot 47 origin confirmed. Catalogue record filed. This entry is now read-only.
+						</p>
+					</div>
+				)}
+
+				<!-- Hint request + submit form -->
+				{isCurrent && (
+					<div class="px-7 py-6 space-y-5">
+						{nextHint <= MAX_HINTS && (
+							<div>
+								<button
+									type="button"
+									data-hint-button
+									data-next-hint={nextHint}
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+								>
+									Request assistance note {nextHint}
+									<span class="ml-1 text-neutral-800">— halves score</span>
+								</button>
+							</div>
+						)}
+						<div>
+							<p class="mb-2.5 font-mono text-[10px] tracking-[0.2em] text-neutral-600 uppercase">
+								Submit Lot 47 Origin
+							</p>
+							<form
+								data-submit-form
+								data-msg-verifying="Checking the catalogue record…"
+								data-msg-correct="Origin confirmed. Lot 47 record filed."
+								data-msg-incorrect="Origin not confirmed. Check the query result for the exact phrase."
+								data-msg-error="System error. Please try again."
+								data-btn-loading="Checking…"
+							>
+								<div class="flex gap-2">
+									<input
+										type="text"
+										name="answer"
+										autocomplete="off"
+										spellcheck="false"
+										placeholder="Lot 47 origin as returned by the catalogue query"
+										aria-label="Lot 47 origin phrase"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+									/>
+									<button
+										type="submit"
+										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100"
+									>
+										Submit
+									</button>
+								</div>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+							</form>
+						</div>
+					</div>
+				)}
+
+			</div>
+
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+				<span>SOVEREIGN AUCTION HOUSE — VALE ESTATE CATALOGUE</span>
+				<span>FILE 71-C</span>
+			</div>
+
+		</main>
+	)}
+
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+	<!-- Q9 — VALE ESTATE ARCHIVE BROWSER                                    -->
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+
+	{isQ9 && q9 && (
+		<main
+			class="mx-auto w-full max-w-2xl px-4 py-10"
+			data-challenge
+			data-slug={slug}
+			data-slot={view.slot}
+		>
+			<!-- Archive download reference header -->
+			<div class="mb-4 flex items-center justify-between font-mono text-[10px] text-neutral-700">
+				<span class="tracking-[0.1em] uppercase">Case 71-C · Evidence Archive</span>
+				<span class="tracking-[0.08em] text-neutral-800">{q9.downloadRef} · INV-{roll}</span>
+			</div>
+
+			<div class="overflow-hidden rounded border border-neutral-700/60 bg-neutral-900">
+
+				<!-- Archive system header -->
+				<div class="border-b border-neutral-800 bg-neutral-950/70 px-5 py-3">
+					<div class="flex items-center justify-between">
+						<div>
+							<p class="font-mono text-[10px] font-medium tracking-[0.22em] text-neutral-400 uppercase">
+								Blackwood Archive System &mdash; Evidence Download
+							</p>
+							<p class="mt-0.5 font-mono text-[10px] tracking-[0.1em] text-neutral-700">
+								Vale estate catalogue &nbsp;&middot;&nbsp; Ref: {q9.downloadRef}
+							</p>
+						</div>
+						<span class="rounded border border-neutral-800 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] text-neutral-700 uppercase">
+							16 files
+						</span>
+					</div>
+				</div>
+
+				<!-- Archive info strip -->
+				<div class="border-b border-neutral-800 bg-neutral-950/30 px-5 py-2">
+					<div class="flex flex-wrap gap-x-5 gap-y-0.5 font-mono text-[10px] text-neutral-700">
+						<span>Source: VALE-ESTATE-2015-04.zip</span>
+						<span>Manifest date: 2015-04-07</span>
+						<span>Case 71-C archival copy</span>
+					</div>
+				</div>
+
+				<!-- File integrity listing -->
+				<div class="border-b border-neutral-800 overflow-x-auto">
+					<table class="w-full min-w-[36rem] font-mono text-[11px]">
+						<thead>
+							<tr class="border-b border-neutral-800/60 bg-neutral-950/40">
+								<th class="px-4 py-2 text-left text-[9px] tracking-[0.15em] text-neutral-700 uppercase font-normal">Path</th>
+								<th class="px-3 py-2 text-right text-[9px] tracking-[0.15em] text-neutral-700 uppercase font-normal whitespace-nowrap">Manifest (B)</th>
+								<th class="px-3 py-2 text-right text-[9px] tracking-[0.15em] text-neutral-700 uppercase font-normal whitespace-nowrap">Actual (B)</th>
+								<th class="px-4 py-2 text-left text-[9px] tracking-[0.15em] text-neutral-700 uppercase font-normal">Status</th>
+							</tr>
+						</thead>
+						<tbody class="divide-y divide-neutral-800/40">
+
+							<!-- MANIFEST.txt -->
+							<tr data-q9-file="MANIFEST.txt"
+							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
+								<td class="px-4 py-2 text-neutral-500">MANIFEST.txt</td>
+								<td class="px-3 py-2 text-right text-neutral-700">2,847</td>
+								<td class="px-3 py-2 text-right text-neutral-700">2,847</td>
+								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
+							</tr>
+
+							<!-- correspondence/ -->
+							<tr class="bg-neutral-950/30">
+								<td class="px-4 py-1.5 text-[9px] tracking-[0.12em] text-neutral-800 uppercase" colspan="4">correspondence/</td>
+							</tr>
+							<tr data-q9-file="correspondence/letter-solicitor-01.pdf"
+							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
+								<td class="pl-8 pr-4 py-2 text-neutral-600">letter-solicitor-01.pdf</td>
+								<td class="px-3 py-2 text-right text-neutral-700">84,291</td>
+								<td class="px-3 py-2 text-right text-neutral-700">84,291</td>
+								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
+							</tr>
+							<tr data-q9-file="correspondence/letter-solicitor-02.pdf"
+							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
+								<td class="pl-8 pr-4 py-2 text-neutral-600">letter-solicitor-02.pdf</td>
+								<td class="px-3 py-2 text-right text-neutral-700">76,188</td>
+								<td class="px-3 py-2 text-right text-neutral-700">76,188</td>
+								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
+							</tr>
+							<tr data-q9-file="correspondence/letter-auctioneer-01.pdf"
+							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
+								<td class="pl-8 pr-4 py-2 text-neutral-600">letter-auctioneer-01.pdf</td>
+								<td class="px-3 py-2 text-right text-neutral-700">91,440</td>
+								<td class="px-3 py-2 text-right text-neutral-700">91,440</td>
+								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
+							</tr>
+
+							<!-- inventory/ -->
+							<tr class="bg-neutral-950/30">
+								<td class="px-4 py-1.5 text-[9px] tracking-[0.12em] text-neutral-800 uppercase" colspan="4">inventory/</td>
+							</tr>
+							<tr data-q9-file="inventory/inventory-furniture.csv"
+							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
+								<td class="pl-8 pr-4 py-2 text-neutral-600">inventory-furniture.csv</td>
+								<td class="px-3 py-2 text-right text-neutral-700">1,247</td>
+								<td class="px-3 py-2 text-right text-neutral-700">1,247</td>
+								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
+							</tr>
+							<tr data-q9-file="inventory/inventory-silverware.csv"
+							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
+								<td class="pl-8 pr-4 py-2 text-neutral-600">inventory-silverware.csv</td>
+								<td class="px-3 py-2 text-right text-neutral-700">892</td>
+								<td class="px-3 py-2 text-right text-neutral-700">892</td>
+								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
+							</tr>
+							<tr data-q9-file="inventory/inventory-textiles.csv"
+							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
+								<td class="pl-8 pr-4 py-2 text-neutral-600">inventory-textiles.csv</td>
+								<td class="px-3 py-2 text-right text-neutral-700">1,044</td>
+								<td class="px-3 py-2 text-right text-neutral-700">1,044</td>
+								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
+							</tr>
+							<tr data-q9-file="inventory/inventory-ceramics.csv"
+							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
+								<td class="pl-8 pr-4 py-2 text-neutral-600">inventory-ceramics.csv</td>
+								<td class="px-3 py-2 text-right text-neutral-700">788</td>
+								<td class="px-3 py-2 text-right text-neutral-700">788</td>
+								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
+							</tr>
+							<!-- The anomalous file — highlighted amber -->
+							<tr data-q9-file="inventory/inventory-dolls-figures.csv"
+							    data-q9-target="1"
+							    class="cursor-pointer select-none transition-colors hover:bg-amber-950/40">
+								<td class="pl-8 pr-4 py-2 text-amber-500/80">inventory-dolls-figures.csv</td>
+								<td class="px-3 py-2 text-right text-neutral-600">4,892</td>
+								<td class="px-3 py-2 text-right text-amber-600 font-medium">5,341</td>
+								<td class="px-4 py-2 text-[10px] text-amber-600">&#9888; MISMATCH</td>
+							</tr>
+
+							<!-- photographs/ -->
+							<tr class="bg-neutral-950/30">
+								<td class="px-4 py-1.5 text-[9px] tracking-[0.12em] text-neutral-800 uppercase" colspan="4">photographs/</td>
+							</tr>
+							<tr data-q9-file="photographs/estate-exterior.jpg"
+							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
+								<td class="pl-8 pr-4 py-2 text-neutral-600">estate-exterior.jpg</td>
+								<td class="px-3 py-2 text-right text-neutral-700">2,847,291</td>
+								<td class="px-3 py-2 text-right text-neutral-700">2,847,291</td>
+								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
+							</tr>
+							<tr data-q9-file="photographs/collection-overview.jpg"
+							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
+								<td class="pl-8 pr-4 py-2 text-neutral-600">collection-overview.jpg</td>
+								<td class="px-3 py-2 text-right text-neutral-700">3,108,442</td>
+								<td class="px-3 py-2 text-right text-neutral-700">3,108,442</td>
+								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
+							</tr>
+							<tr data-q9-file="photographs/interior-library.jpg"
+							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
+								<td class="pl-8 pr-4 py-2 text-neutral-600">interior-library.jpg</td>
+								<td class="px-3 py-2 text-right text-neutral-700">2,219,877</td>
+								<td class="px-3 py-2 text-right text-neutral-700">2,219,877</td>
+								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
+							</tr>
+
+							<!-- receipts/ -->
+							<tr class="bg-neutral-950/30">
+								<td class="px-4 py-1.5 text-[9px] tracking-[0.12em] text-neutral-800 uppercase" colspan="4">receipts/</td>
+							</tr>
+							<tr data-q9-file="receipts/receipt-001-furniture.pdf"
+							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
+								<td class="pl-8 pr-4 py-2 text-neutral-600">receipt-001-furniture.pdf</td>
+								<td class="px-3 py-2 text-right text-neutral-700">48,220</td>
+								<td class="px-3 py-2 text-right text-neutral-700">48,220</td>
+								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
+							</tr>
+							<tr data-q9-file="receipts/receipt-002-general.pdf"
+							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
+								<td class="pl-8 pr-4 py-2 text-neutral-600">receipt-002-general.pdf</td>
+								<td class="px-3 py-2 text-right text-neutral-700">52,884</td>
+								<td class="px-3 py-2 text-right text-neutral-700">52,884</td>
+								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
+							</tr>
+
+							<!-- appraisal/ -->
+							<tr class="bg-neutral-950/30">
+								<td class="px-4 py-1.5 text-[9px] tracking-[0.12em] text-neutral-800 uppercase" colspan="4">appraisal/</td>
+							</tr>
+							<tr data-q9-file="appraisal/appraisal-summary.pdf"
+							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
+								<td class="pl-8 pr-4 py-2 text-neutral-600">appraisal-summary.pdf</td>
+								<td class="px-3 py-2 text-right text-neutral-700">118,844</td>
+								<td class="px-3 py-2 text-right text-neutral-700">118,844</td>
+								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
+							</tr>
+							<tr data-q9-file="appraisal/appraisal-notes.txt"
+							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
+								<td class="pl-8 pr-4 py-2 text-neutral-600">appraisal-notes.txt</td>
+								<td class="px-3 py-2 text-right text-neutral-700">3,891</td>
+								<td class="px-3 py-2 text-right text-neutral-700">3,891</td>
+								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
+							</tr>
+
+						</tbody>
+					</table>
+
+					<p class="px-5 py-2 font-mono text-[9px] text-neutral-800">
+						Click any file to view contents &nbsp;&mdash;&nbsp; 15 of 16 files pass integrity check
+					</p>
+				</div>
+
+				<!-- File viewer (hidden until user clicks a file) -->
+				<div id="q9-viewer" class="hidden border-b border-neutral-800">
+					<div class="flex items-center justify-between border-b border-neutral-800/50 bg-neutral-950/50 px-5 py-2">
+						<p class="font-mono text-[10px] text-neutral-700 uppercase tracking-[0.1em]">
+							Viewing: <span id="q9-viewer-path" class="text-neutral-500 normal-case tracking-normal"></span>
+						</p>
+						<button id="q9-viewer-close"
+						        type="button"
+						        class="font-mono text-[9px] text-neutral-800 uppercase tracking-[0.1em] transition-colors hover:text-neutral-600">
+							Close
+						</button>
+					</div>
+					<div class="bg-neutral-950/20 p-4">
+						<pre id="q9-viewer-content"
+						     class="overflow-x-auto whitespace-pre font-mono text-[10px] leading-relaxed text-neutral-400"></pre>
+						<p id="q9-viewer-note" class="mt-2 font-mono text-[10px]"></p>
+					</div>
+				</div>
+
+				<!-- Hidden entry data attributes (server → client) -->
+				<div
+					id="q9-entry"
+					data-lot-id={String(q9.hiddenEntry.lotId)}
+					data-catalogue-ref={q9.hiddenEntry.catalogueRef}
+					data-item={q9.hiddenEntry.item}
+					data-date-acquired={q9.hiddenEntry.dateAcquired}
+					data-origin={q9.hiddenEntry.origin}
+					data-notes={q9.hiddenEntry.notes}
+					style="display:none"
+					aria-hidden="true">
+				</div>
+
+			</div>
+
+			<!-- Blackwood investigation controls (separate card below the archive) -->
+			<div class="mt-4 overflow-hidden rounded border border-neutral-800 bg-neutral-900">
+
+				<!-- Revealed hints -->
+				<div
+					data-hints
+					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-7 py-4'}
+				>
+					<ul class="space-y-2" data-hint-list>
+						{revealedHints.map((h) => (
+							<li class="flex gap-4" data-hint-number={h.hintNumber}>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
+							</li>
+						))}
+					</ul>
+				</div>
+
+				<!-- Solved state -->
+				{isSolved && (
+					<div class="px-7 py-5">
+						<p class="font-mono text-[10px] tracking-[0.1em] text-neutral-500">
+							Catalogue reference confirmed. Archive record filed. This entry is now read-only.
+						</p>
+					</div>
+				)}
+
+				<!-- Hint request + submit form -->
+				{isCurrent && (
+					<div class="px-7 py-6 space-y-5">
+						{nextHint <= MAX_HINTS && (
+							<div>
+								<button
+									type="button"
+									data-hint-button
+									data-next-hint={nextHint}
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+								>
+									Request assistance note {nextHint}
+									<span class="ml-1 text-neutral-800">&mdash; halves score</span>
+								</button>
+							</div>
+						)}
+						<div>
+							<p class="mb-2.5 font-mono text-[10px] tracking-[0.2em] text-neutral-600 uppercase">
+								Submit Catalogue Reference
+							</p>
+							<form
+								data-submit-form
+								data-msg-verifying="Checking the archive record&hellip;"
+								data-msg-correct="Catalogue reference confirmed. Archive record filed."
+								data-msg-incorrect="Reference not recognised. Check the mismatched file contents carefully."
+								data-msg-error="System error. Please try again."
+								data-btn-loading="Checking&hellip;"
+							>
+								<div class="flex gap-2">
+									<input
+										type="text"
+										name="answer"
+										autocomplete="off"
+										spellcheck="false"
+										placeholder="Catalogue reference from the suppressed entry"
+										aria-label="Catalogue reference from the suppressed Lot 47 entry"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+									/>
+									<button
+										type="submit"
+										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100"
+									>
+										Submit
+									</button>
+								</div>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+							</form>
+						</div>
+					</div>
+				)}
+
+			</div>
+
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+				<span>BLACKWOOD INVESTIGATIVE BUREAU &mdash; EVIDENCE ARCHIVE</span>
+				<span>FILE 71-C</span>
+			</div>
+
+		</main>
+	)}
+
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+	<!-- Q11 — VALE COLLECTION PROVENANCE VERIFICATION SYSTEM                -->
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+
+	{isQ11 && q11 && (
+		<main
+			class="mx-auto w-full max-w-2xl px-4 py-10"
+			data-challenge
+			data-slug={slug}
+			data-slot={view.slot}
+		>
+			<!-- Portal header -->
+			<div class="overflow-hidden rounded border border-neutral-800 bg-neutral-900">
+
+				<div class="border-b border-neutral-800 bg-neutral-950/70 px-5 py-3">
+					<div class="flex items-center justify-between">
+						<div>
+							<p class="font-mono text-[10px] font-medium tracking-[0.22em] text-neutral-400 uppercase">
+								Vale Collection Provenance Verification System
+							</p>
+							<p class="mt-0.5 font-mono text-[10px] tracking-[0.1em] text-neutral-700">
+								Historical ownership records &nbsp;&middot;&nbsp; Blackwood access ref: {q11.recordRef}
+							</p>
+						</div>
+						<span class="rounded border border-neutral-800 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] text-neutral-700 uppercase">
+							Case 71-C
+						</span>
+					</div>
+				</div>
+
+				<!-- Object record header -->
+				<div class="border-b border-neutral-800 bg-neutral-950/30 px-5 py-3">
+					<dl class="grid grid-cols-[9rem_1fr] gap-x-4 gap-y-1 font-mono text-[11px]">
+						<dt class="text-neutral-700">Object</dt>
+						<dd class="text-neutral-400">Doll #6 &mdash; Untitled Figure (Commission)</dd>
+						<dt class="text-neutral-700">Catalogue ID</dt>
+						<dd class="text-neutral-500">VALE-M-1882-047</dd>
+						<dt class="text-neutral-700">Record ref</dt>
+						<dd class="text-neutral-600">{q11.recordRef}</dd>
+						<dt class="text-neutral-700">Query date</dt>
+						<dd class="text-neutral-600">2015-04-09</dd>
+					</dl>
+				</div>
+
+				<!-- Verification status panel (populated by JS) -->
+				<div id="q11-status" class="border-b border-neutral-800 px-5 py-4">
+					<p class="font-mono text-[10px] tracking-[0.15em] text-neutral-700 uppercase">
+						Loading provenance records&hellip;
+					</p>
+				</div>
+
+				<!-- Ownership chain (populated by JS) -->
+				<div id="q11-chain" class="border-b border-neutral-800 px-5 py-5 min-h-[8rem]">
+					<p class="font-mono text-[10px] text-neutral-700">Querying archive&hellip;</p>
+				</div>
+
+				<!-- Re-check control -->
+				<div class="border-b border-neutral-800 bg-neutral-950/20 px-5 py-3 flex items-center justify-between">
+					<p class="font-mono text-[10px] text-neutral-700">
+						Verification scope controlled by browser storage (<code class="text-neutral-600">prov_clearance</code>)
+					</p>
+					<button
+						id="q11-refresh"
+						type="button"
+						class="font-mono text-[10px] tracking-[0.12em] text-neutral-600 uppercase transition-colors hover:text-neutral-400"
+					>
+						Re-check record
+					</button>
+				</div>
+
+				<!-- Revealed hints -->
+				<div
+					data-hints
+					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-5 py-4'}
+				>
+					<ul class="space-y-2" data-hint-list>
+						{revealedHints.map((h) => (
+							<li class="flex gap-4" data-hint-number={h.hintNumber}>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
+							</li>
+						))}
+					</ul>
+				</div>
+
+				<!-- Solved state -->
+				{isSolved && (
+					<div class="px-5 py-5">
+						<p class="font-mono text-[10px] tracking-[0.1em] text-neutral-500">
+							Suppressed owner identified. Provenance record filed. This entry is now read-only.
+						</p>
+					</div>
+				)}
+
+				<!-- Hint request + submit form -->
+				{isCurrent && (
+					<div class="px-5 py-6 space-y-5">
+						{nextHint <= MAX_HINTS && (
+							<div>
+								<button
+									type="button"
+									data-hint-button
+									data-next-hint={nextHint}
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+								>
+									Request assistance note {nextHint}
+									<span class="ml-1 text-neutral-800">&mdash; halves score</span>
+								</button>
+							</div>
+						)}
+						<div>
+							<p class="mb-2.5 font-mono text-[10px] tracking-[0.2em] text-neutral-600 uppercase">
+								Submit Suppressed Owner
+							</p>
+							<form
+								data-submit-form
+								data-msg-verifying="Cross-referencing with archive&hellip;"
+								data-msg-correct="Owner confirmed. Provenance record filed."
+								data-msg-incorrect="Name not confirmed. Check the full provenance chain carefully."
+								data-msg-error="System error. Please try again."
+								data-btn-loading="Checking&hellip;"
+							>
+								<div class="flex gap-2">
+									<input
+										type="text"
+										name="answer"
+										autocomplete="off"
+										spellcheck="false"
+										placeholder="Name of suppressed previous owner"
+										aria-label="Suppressed previous owner name"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+									/>
+									<button
+										type="submit"
+										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100"
+									>
+										Submit
+									</button>
+								</div>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+							</form>
+						</div>
+					</div>
+				)}
+
+			</div>
+
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+				<span>VALE COLLECTION PROVENANCE VERIFICATION SYSTEM</span>
+				<span>FILE 71-C</span>
+			</div>
+		</main>
+	)}
+
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+	<!-- SHELL A — ARCHIVE / SYSTEM TERMINAL (Q12, Q16, Q17, Q21, Q22)       -->
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+
+	{isShellA && cp && qm && (
+		<main class="mx-auto w-full max-w-2xl px-4 py-10" data-challenge data-slug={slug} data-slot={view.slot}>
+			<div class="overflow-hidden rounded border border-neutral-800 bg-neutral-900">
+
+				<!-- System header -->
+				<div class="border-b border-neutral-800 bg-neutral-950/80 px-6 py-4">
+					<div class="flex items-start justify-between gap-4">
+						<div>
+							<p class="font-mono text-[10px] font-medium tracking-[0.25em] text-neutral-300 uppercase">{qm.systemLabel}</p>
+							<p class="mt-0.5 font-mono text-[10px] tracking-[0.1em] text-neutral-700">{qm.sourceRef}</p>
+						</div>
+						<span class="shrink-0 rounded border border-neutral-800 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] text-neutral-700 uppercase">Case 71-C</span>
+					</div>
+				</div>
+
+				<!-- Challenge title strip -->
+				<div class="flex items-center justify-between border-b border-neutral-800 bg-neutral-950/30 px-6 py-3">
+					<div class="flex items-center gap-3">
+						<span class={`rounded border px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] ${ts.badge}`}>{view.tier.toUpperCase()}</span>
+						<span class="font-mono text-[10px] text-neutral-600">{view.basePoints} PTS</span>
+					</div>
+					<div class="text-right">
+						<p class="font-mono text-[9px] tracking-[0.25em] text-neutral-700">CHALLENGE {slotLabel} / 30</p>
+						<p class="font-mono text-xs font-medium text-neutral-400">{view.title}</p>
+					</div>
+				</div>
+
+				<!-- Terminal output block -->
+				<div class="px-6 py-5">
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">{qm.promptLabel}</p>
+					<div class="rounded border border-neutral-800 bg-neutral-950 px-5 py-4">
+						<pre class="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-neutral-300">{cp.prompt}</pre>
+					</div>
+				</div>
+
+				<!-- Q17: clickable link to the live archive site -->
+				{isQ17 && (
+					<div class="px-6 pb-5">
+						<a
+							href="/case/archive/vale-estate"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="inline-flex items-center gap-2 rounded border border-neutral-700/60 bg-neutral-900 px-4 py-2 font-mono text-[11px] text-neutral-400 transition-colors hover:border-neutral-500 hover:text-neutral-200"
+						>
+							→ Open Vale Collection Archive
+							<span class="text-neutral-700">↗</span>
+						</a>
+						<p class="mt-2 font-mono text-[10px] text-neutral-700">
+							Open DevTools (F12) → Network tab after clicking to inspect response headers
+						</p>
+					</div>
+				)}
+
+				<!-- Q16: download link for the altered photograph SVG -->
+				{isQ16 && (
+					<div class="px-6 pb-5">
+						<a
+							href={`/${slug}/case/photo/altered`}
+							download="vale-estate-photograph-current.svg"
+							class="inline-flex items-center gap-2 rounded border border-neutral-700/60 bg-neutral-900 px-4 py-2 font-mono text-[11px] text-neutral-400 transition-colors hover:border-neutral-500 hover:text-neutral-200"
+						>
+							↓ Download current photograph
+						</a>
+						<p class="mt-2 font-mono text-[10px] text-neutral-700">
+							Open in a text editor or DevTools source view to inspect XMP metadata
+						</p>
+					</div>
+				)}
+
+				<!-- Q21: link to the injectable audit log endpoint -->
+				{isQ21 && (
+					<div class="px-6 pb-5">
+						<a
+							href="/api/search/records?q=test"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="inline-flex items-center gap-2 rounded border border-neutral-700/60 bg-neutral-900 px-4 py-2 font-mono text-[11px] text-neutral-400 transition-colors hover:border-neutral-500 hover:text-neutral-200"
+						>
+							→ GET /api/search/records?q=
+							<span class="text-neutral-700">↗</span>
+						</a>
+						<p class="mt-2 font-mono text-[10px] text-neutral-700">
+							Try injecting via the URL — replace the query value with your injection string
+						</p>
+					</div>
+				)}
+
+				<!-- Solved banner -->
+				{isSolved && (
+					<div class="mx-6 mb-4 rounded border border-neutral-800/50 bg-neutral-950/50 px-4 py-2.5">
+						<p class="font-mono text-[10px] text-neutral-600">{qm.solvedMsg}</p>
+					</div>
+				)}
+
+				<!-- Hints -->
+				<div data-hints class={revealedHints.length === 0 ? 'hidden' : 'border-t border-neutral-800 px-6 py-4'}>
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Field Notes</p>
+					<ul class="space-y-2" data-hint-list>
+						{revealedHints.map((h) => (
+							<li class="flex gap-3 rounded border border-neutral-800 bg-neutral-950/60 px-4 py-2.5" data-hint-number={h.hintNumber}>
+								<span class="shrink-0 font-mono text-[9px] text-neutral-700 uppercase pt-0.5">N{h.hintNumber}</span>
+								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
+							</li>
+						))}
+					</ul>
+				</div>
+
+				<!-- Submit / hint -->
+				{isCurrent && (
+					<div class="border-t border-neutral-800 px-6 py-5 space-y-4">
+						{nextHint <= MAX_HINTS && (
+							<button type="button" data-hint-button data-next-hint={nextHint}
+								class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500">
+								Request field note {nextHint}<span class="ml-1 text-neutral-800">— halves score</span>
+							</button>
+						)}
+						<div>
+							<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Submit Finding</p>
+							<form data-submit-form
+								data-msg-verifying={qm.msgVerifying}
+								data-msg-correct={qm.msgCorrect}
+								data-msg-incorrect={qm.msgIncorrect}
+								data-msg-error="System error. Please try again."
+								data-btn-loading="Checking…"
+							>
+								<div class="flex gap-2">
+									<input type="text" name="answer" autocomplete="off" spellcheck="false"
+										placeholder={qm.placeholder} aria-label={qm.placeholder}
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"/>
+									<button type="submit"
+										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100">Submit</button>
+								</div>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+							</form>
+						</div>
+					</div>
+				)}
+
+			</div>
+			<div class="mt-5 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+				<span>{qm.systemLabel.toUpperCase()}</span>
+				<span>FILE 71-C</span>
+			</div>
+		</main>
+	)}
+
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+	<!-- SHELL B — DOCUMENT EXAMINATION (Q13, Q14, Q15, Q18, Q19, Q27)       -->
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+
+	{isShellB && cp && qm && (
+		<main class="mx-auto w-full max-w-2xl px-4 py-10" data-challenge data-slug={slug} data-slot={view.slot}>
+			<div class="overflow-hidden rounded border border-neutral-800 bg-neutral-900">
+
+				<!-- Evidence management header -->
+				<div class="border-b border-neutral-800 px-6 py-4">
+					<div class="flex items-start justify-between gap-4">
+						<div>
+							<p class="font-mono text-[10px] font-medium tracking-[0.25em] text-neutral-300 uppercase">{qm.systemLabel}</p>
+							<p class="mt-0.5 font-mono text-[10px] tracking-[0.1em] text-neutral-700">{qm.sourceRef}</p>
+						</div>
+						<span class="shrink-0 rounded border border-neutral-800 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] text-neutral-700 uppercase">Case 71-C</span>
+					</div>
+				</div>
+
+				<!-- Challenge title strip -->
+				<div class="flex items-center justify-between border-b border-neutral-800 bg-neutral-950/20 px-6 py-3">
+					<div class="flex items-center gap-3">
+						<span class={`rounded border px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] ${ts.badge}`}>{view.tier.toUpperCase()}</span>
+						<span class="font-mono text-[10px] text-neutral-600">{view.basePoints} PTS</span>
+					</div>
+					<div class="text-right">
+						<p class="font-mono text-[9px] tracking-[0.25em] text-neutral-700">CHALLENGE {slotLabel} / 30</p>
+						<p class="font-mono text-xs font-medium text-neutral-400">{view.title}</p>
+					</div>
+				</div>
+
+				<!-- Document label -->
+				<div class="px-6 pt-5 pb-2">
+					<p class="font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">{qm.promptLabel}</p>
+				</div>
+
+				<!-- Aged document block -->
+				<div class="mx-6 mb-5 rounded border border-neutral-700/30 bg-[#f5efe3] px-6 py-6 text-neutral-900">
+					<pre class="whitespace-pre-wrap font-mono text-[11.5px] leading-relaxed text-[#2c2623]">{cp.prompt}</pre>
+				</div>
+
+				<!-- Q13: link to ownership-transfer PDF viewer -->
+				{isQ13 && (
+					<div class="px-6 pb-5 flex flex-wrap gap-3">
+						<a
+							href="/case/pdf/ownership-transfer"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="inline-flex items-center gap-1.5 rounded border border-neutral-700/60 bg-neutral-900 px-3 py-1.5 font-mono text-[10px] text-neutral-400 transition-colors hover:border-neutral-400 hover:text-neutral-200"
+						>
+							↓ Open document — ownership-transfer.pdf ↗
+						</a>
+						<span class="self-center font-mono text-[10px] text-neutral-700">Inspect page source — text layer bypasses visual redaction</span>
+					</div>
+				)}
+
+				<!-- Q19: link to v2 memo -->
+				{isQ19 && (
+					<div class="px-6 pb-5 flex flex-wrap gap-3">
+						<a
+							href="/case/memo/daniel-reyes"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="inline-flex items-center gap-1.5 rounded border border-neutral-700/60 bg-neutral-900 px-3 py-1.5 font-mono text-[10px] text-neutral-500 transition-colors hover:border-neutral-500 hover:text-neutral-300"
+						>
+							v1 (Q15 version) ↗
+						</a>
+						<a
+							href="/case/memo/daniel-reyes-v2"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="inline-flex items-center gap-1.5 rounded border border-neutral-600 bg-neutral-900 px-3 py-1.5 font-mono text-[10px] text-neutral-400 transition-colors hover:border-neutral-400 hover:text-neutral-200"
+						>
+							v2 (current) ↗
+						</a>
+						<span class="self-center font-mono text-[10px] text-neutral-700">Compare — find what changed</span>
+					</div>
+				)}
+
+				<!-- Q18: TTS voicemail player -->
+				{isQ18 && q18pub && (
+					<div class="mx-6 mb-5 rounded border border-neutral-800 bg-neutral-950 px-5 py-4">
+						<div class="flex items-center justify-between mb-3">
+							<span class="font-mono text-[10px] tracking-[0.15em] text-neutral-600 uppercase">Voicemail Playback</span>
+							<span class="font-mono text-[10px] text-neutral-800">8.7s · 440Hz carrier detected</span>
+						</div>
+						<div class="flex items-center gap-3">
+							<button
+								id="q18-play-btn"
+								data-b64={q18pub.phraseB64}
+								class="flex items-center gap-2 rounded border border-neutral-700 bg-neutral-900 px-4 py-2 font-mono text-[11px] text-neutral-400 transition-colors hover:border-neutral-500 hover:text-neutral-200"
+							>
+								&#9654; Play voicemail
+							</button>
+							<span id="q18-status" class="font-mono text-[10px] text-neutral-700"></span>
+						</div>
+						<p class="mt-3 font-mono text-[10px] text-neutral-800">Static present. Listen carefully and submit the exact spoken phrase in capitals.</p>
+					</div>
+				)}
+
+				<!-- Solved banner -->
+				{isSolved && (
+					<div class="mx-6 mb-4 rounded border border-neutral-800/50 bg-neutral-950/50 px-4 py-2.5">
+						<p class="font-mono text-[10px] text-neutral-600">{qm.solvedMsg}</p>
+					</div>
+				)}
+
+				<!-- Hints -->
+				<div data-hints class={revealedHints.length === 0 ? 'hidden' : 'border-t border-neutral-800 px-6 py-4'}>
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Investigator Notes</p>
+					<ul class="space-y-2" data-hint-list>
+						{revealedHints.map((h) => (
+							<li class="flex gap-3 rounded border border-neutral-800 bg-neutral-950/60 px-4 py-2.5" data-hint-number={h.hintNumber}>
+								<span class="shrink-0 font-mono text-[9px] text-neutral-700 uppercase pt-0.5">N{h.hintNumber}</span>
+								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
+							</li>
+						))}
+					</ul>
+				</div>
+
+				<!-- Submit / hint -->
+				{isCurrent && (
+					<div class="border-t border-neutral-800 px-6 py-5 space-y-4">
+						{nextHint <= MAX_HINTS && (
+							<button type="button" data-hint-button data-next-hint={nextHint}
+								class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500">
+								Request assistance note {nextHint}<span class="ml-1 text-neutral-800">— halves score</span>
+							</button>
+						)}
+						<div>
+							<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Submit Finding</p>
+							<form data-submit-form
+								data-msg-verifying={qm.msgVerifying}
+								data-msg-correct={qm.msgCorrect}
+								data-msg-incorrect={qm.msgIncorrect}
+								data-msg-error="System error. Please try again."
+								data-btn-loading="Checking…"
+							>
+								<div class="flex gap-2">
+									<input type="text" name="answer" autocomplete="off" spellcheck="false"
+										placeholder={qm.placeholder} aria-label={qm.placeholder}
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"/>
+									<button type="submit"
+										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100">Submit</button>
+								</div>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+							</form>
+						</div>
+					</div>
+				)}
+
+			</div>
+			<div class="mt-5 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+				<span>BLACKWOOD INVESTIGATIVE BUREAU — EVIDENCE MANAGEMENT</span>
+				<span>FILE 71-C</span>
+			</div>
+		</main>
+	)}
+
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+	<!-- SHELL C — FORENSIC EVIDENCE (Q20, Q23, Q25, Q26)                    -->
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+
+	{isShellC && cp && qm && (
+		<main class="mx-auto w-full max-w-2xl px-4 py-10" data-challenge data-slug={slug} data-slot={view.slot}>
+			<div class="overflow-hidden rounded border border-neutral-800 bg-neutral-900">
+
+				<!-- Forensic unit header -->
+				<div class="border-b border-neutral-800 bg-neutral-950/60 px-6 py-4">
+					<div class="flex items-start justify-between gap-4">
+						<div>
+							<p class="font-mono text-[10px] font-medium tracking-[0.25em] text-neutral-300 uppercase">{qm.systemLabel}</p>
+							<p class="mt-0.5 font-mono text-[10px] tracking-[0.1em] text-neutral-700">{qm.sourceRef}</p>
+						</div>
+						<span class="shrink-0 rounded border border-neutral-800 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] text-neutral-700 uppercase">Case 71-C</span>
+					</div>
+				</div>
+
+				<!-- Challenge title strip -->
+				<div class="flex items-center justify-between border-b border-neutral-800 bg-neutral-950/30 px-6 py-3">
+					<div class="flex items-center gap-3">
+						<span class={`rounded border px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] ${ts.badge}`}>{view.tier.toUpperCase()}</span>
+						<span class="font-mono text-[10px] text-neutral-600">{view.basePoints} PTS</span>
+					</div>
+					<div class="text-right">
+						<p class="font-mono text-[9px] tracking-[0.25em] text-neutral-700">CHALLENGE {slotLabel} / 30</p>
+						<p class="font-mono text-xs font-medium text-neutral-400">{view.title}</p>
+					</div>
+				</div>
+
+				<!-- Forensic report block -->
+				<div class="px-6 py-5">
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">{qm.promptLabel}</p>
+					<div class="rounded border border-neutral-700/60 bg-neutral-950/80 px-5 py-5">
+						<pre class="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-neutral-300">{cp.prompt}</pre>
+					</div>
+				</div>
+
+				<!-- Solved banner -->
+				{isSolved && (
+					<div class="mx-6 mb-4 rounded border border-neutral-800/50 bg-neutral-950/50 px-4 py-2.5">
+						<p class="font-mono text-[10px] text-neutral-600">{qm.solvedMsg}</p>
+					</div>
+				)}
+
+				<!-- Hints -->
+				<div data-hints class={revealedHints.length === 0 ? 'hidden' : 'border-t border-neutral-800 px-6 py-4'}>
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Examiner Notes</p>
+					<ul class="space-y-2" data-hint-list>
+						{revealedHints.map((h) => (
+							<li class="flex gap-3 rounded border border-neutral-800 bg-neutral-950/60 px-4 py-2.5" data-hint-number={h.hintNumber}>
+								<span class="shrink-0 font-mono text-[9px] text-neutral-700 uppercase pt-0.5">N{h.hintNumber}</span>
+								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
+							</li>
+						))}
+					</ul>
+				</div>
+
+				<!-- Submit / hint -->
+				{isCurrent && (
+					<div class="border-t border-neutral-800 px-6 py-5 space-y-4">
+						{nextHint <= MAX_HINTS && (
+							<button type="button" data-hint-button data-next-hint={nextHint}
+								class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500">
+								Request examiner note {nextHint}<span class="ml-1 text-neutral-800">— halves score</span>
+							</button>
+						)}
+						<div>
+							<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Submit Finding</p>
+							<form data-submit-form
+								data-msg-verifying={qm.msgVerifying}
+								data-msg-correct={qm.msgCorrect}
+								data-msg-incorrect={qm.msgIncorrect}
+								data-msg-error="System error. Please try again."
+								data-btn-loading="Checking…"
+							>
+								<div class="flex gap-2">
+									<input type="text" name="answer" autocomplete="off" spellcheck="false"
+										placeholder={qm.placeholder} aria-label={qm.placeholder}
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"/>
+									<button type="submit"
+										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100">Submit</button>
+								</div>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+							</form>
+						</div>
+					</div>
+				)}
+
+			</div>
+			<div class="mt-5 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+				<span>BLACKWOOD INVESTIGATIVE BUREAU — FORENSIC EVIDENCE UNIT</span>
+				<span>FILE 71-C</span>
+			</div>
+		</main>
+	)}
+
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+	<!-- SHELL D — CASE SYNTHESIS BOARD (Q24)                                -->
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+
+	{isShellD && cp && qm && (
+		<main class="mx-auto w-full max-w-2xl px-4 py-10" data-challenge data-slug={slug} data-slot={view.slot}>
+			<div class="overflow-hidden rounded border border-neutral-800 bg-neutral-900">
+
+				<!-- Case board header — slightly elevated presence -->
+				<div class="border-b border-neutral-800 bg-neutral-950 px-6 py-5">
+					<div class="flex items-start justify-between gap-4">
+						<div>
+							<p class="font-mono text-[10px] font-semibold tracking-[0.3em] text-neutral-200 uppercase">{qm.systemLabel}</p>
+							<p class="mt-0.5 font-mono text-[10px] tracking-[0.12em] text-neutral-700">{qm.sourceRef}</p>
+						</div>
+						<div class="text-right shrink-0">
+							<span class={`rounded border px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] ${ts.badge}`}>{view.tier.toUpperCase()}</span>
+							<p class="mt-1 font-mono text-[9px] tracking-[0.25em] text-neutral-700">CHALLENGE {slotLabel} · {view.basePoints} PTS</p>
+						</div>
+					</div>
+					<h1 class="mt-4 text-lg font-semibold tracking-tight text-neutral-100">{view.title}</h1>
+				</div>
+
+				<!-- Case board content -->
+				<div class="px-6 py-5">
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">{qm.promptLabel}</p>
+					<div class="rounded border border-neutral-800 bg-neutral-950/70 px-5 py-5">
+						<pre class="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-neutral-300">{cp.prompt}</pre>
+					</div>
+				</div>
+
+				<!-- Verdict divider -->
+				<div class="flex items-center gap-3 px-6 pb-2">
+					<div class="h-px flex-1 bg-neutral-800"></div>
+					<p class="font-mono text-[9px] tracking-[0.3em] text-neutral-700 uppercase">Verdict</p>
+					<div class="h-px flex-1 bg-neutral-800"></div>
+				</div>
+
+				<!-- Solved banner -->
+				{isSolved && (
+					<div class="mx-6 mb-4 rounded border border-neutral-800/50 bg-neutral-950/50 px-4 py-2.5">
+						<p class="font-mono text-[10px] text-neutral-600">{qm.solvedMsg}</p>
+					</div>
+				)}
+
+				<!-- Hints -->
+				<div data-hints class={revealedHints.length === 0 ? 'hidden' : 'border-t border-neutral-800 px-6 py-4'}>
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Bureau Notes</p>
+					<ul class="space-y-2" data-hint-list>
+						{revealedHints.map((h) => (
+							<li class="flex gap-3 rounded border border-neutral-800 bg-neutral-950/60 px-4 py-2.5" data-hint-number={h.hintNumber}>
+								<span class="shrink-0 font-mono text-[9px] text-neutral-700 uppercase pt-0.5">N{h.hintNumber}</span>
+								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
+							</li>
+						))}
+					</ul>
+				</div>
+
+				<!-- Submit -->
+				{isCurrent && (
+					<div class="border-t border-neutral-800 px-6 py-5 space-y-4">
+						{nextHint <= MAX_HINTS && (
+							<button type="button" data-hint-button data-next-hint={nextHint}
+								class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500">
+								Request bureau note {nextHint}<span class="ml-1 text-neutral-800">— halves score</span>
+							</button>
+						)}
+						<div>
+							<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">File Case Conclusion</p>
+							<form data-submit-form
+								data-msg-verifying={qm.msgVerifying}
+								data-msg-correct={qm.msgCorrect}
+								data-msg-incorrect={qm.msgIncorrect}
+								data-msg-error="System error. Please try again."
+								data-btn-loading="Filing…"
+							>
+								<div class="flex gap-2">
+									<input type="text" name="answer" autocomplete="off" spellcheck="false"
+										placeholder={qm.placeholder} aria-label={qm.placeholder}
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"/>
+									<button type="submit"
+										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100">File</button>
+								</div>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+							</form>
+						</div>
+					</div>
+				)}
+
+			</div>
+			<div class="mt-5 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+				<span>BLACKWOOD INVESTIGATIVE BUREAU — CASE BOARD</span>
+				<span>FILE 71-C</span>
+			</div>
+		</main>
+	)}
+
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+	<!-- SHELL E — THE LEDGER (Q28)                                           -->
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+
+	{isShellE && cp && qm && (
+		<main class="mx-auto w-full max-w-2xl px-4 py-10" data-challenge data-slug={slug} data-slot={view.slot}>
+			<div class="overflow-hidden rounded border border-neutral-800 bg-neutral-900">
+
+				<!-- Ledger header — database terminal style -->
+				<div class="border-b border-neutral-800 bg-neutral-950 px-6 py-4">
+					<div class="flex items-start justify-between gap-4">
+						<div>
+							<p class="font-mono text-[10px] font-semibold tracking-[0.25em] text-neutral-200 uppercase">{qm.systemLabel}</p>
+							<p class="mt-0.5 font-mono text-[10px] tracking-[0.12em] text-neutral-600">
+								{qm.sourceRef}&nbsp;&middot;&nbsp;INV-{roll}
+							</p>
+						</div>
+						<div class="text-right shrink-0">
+							<span class={`rounded border px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] ${ts.badge}`}>{view.tier.toUpperCase()}</span>
+							<p class="mt-1 font-mono text-[9px] tracking-[0.25em] text-neutral-700">{view.basePoints} PTS · CHALLENGE {slotLabel}</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- Access status bar -->
+				<div class="border-b border-neutral-800 bg-neutral-950/40 px-6 py-2.5">
+					<div class="flex items-center gap-5 font-mono text-[10px]">
+						<span class="text-neutral-700">ACCESS</span>
+						<span class="text-neutral-600">CASE 71-C INVESTIGATOR</span>
+						<span class="ml-auto text-neutral-700">SESSION {cp.token}</span>
+					</div>
+				</div>
+
+				<!-- Database output block -->
+				<div class="px-6 py-5">
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">{qm.promptLabel}</p>
+					<div class="rounded border border-neutral-800 bg-neutral-950 px-5 py-5">
+						<pre class="whitespace-pre-wrap font-mono text-[11.5px] leading-relaxed text-neutral-300">{cp.prompt}</pre>
+					</div>
+				</div>
+
+				<!-- Solved banner -->
+				{isSolved && (
+					<div class="mx-6 mb-4 rounded border border-neutral-800/50 bg-neutral-950/50 px-4 py-2.5">
+						<p class="font-mono text-[10px] text-neutral-600">{qm.solvedMsg}</p>
+					</div>
+				)}
+
+				<!-- Hints -->
+				<div data-hints class={revealedHints.length === 0 ? 'hidden' : 'border-t border-neutral-800 px-6 py-4'}>
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Research Notes</p>
+					<ul class="space-y-2" data-hint-list>
+						{revealedHints.map((h) => (
+							<li class="flex gap-3 rounded border border-neutral-800 bg-neutral-950/60 px-4 py-2.5" data-hint-number={h.hintNumber}>
+								<span class="shrink-0 font-mono text-[9px] text-neutral-700 uppercase pt-0.5">N{h.hintNumber}</span>
+								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
+							</li>
+						))}
+					</ul>
+				</div>
+
+				<!-- Submit -->
+				{isCurrent && (
+					<div class="border-t border-neutral-800 px-6 py-5 space-y-4">
+						{nextHint <= MAX_HINTS && (
+							<button type="button" data-hint-button data-next-hint={nextHint}
+								class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500">
+								Request research note {nextHint}<span class="ml-1 text-neutral-800">— halves score</span>
+							</button>
+						)}
+						<div>
+							<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Submit Ledger Query</p>
+							<form data-submit-form
+								data-msg-verifying={qm.msgVerifying}
+								data-msg-correct={qm.msgCorrect}
+								data-msg-incorrect={qm.msgIncorrect}
+								data-msg-error="System error. Please try again."
+								data-btn-loading="Querying…"
+							>
+								<div class="flex gap-2">
+									<input type="text" name="answer" autocomplete="off" spellcheck="false"
+										placeholder={qm.placeholder} aria-label={qm.placeholder}
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"/>
+									<button type="submit"
+										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100">Query</button>
+								</div>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+							</form>
+						</div>
+					</div>
+				)}
+
+			</div>
+			<div class="mt-5 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+				<span>THE LEDGER — HISTORICAL RECORDS DATABASE</span>
+				<span>FILE 71-C</span>
+			</div>
+		</main>
+	)}
+
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+	<!-- SHELL F — THE CONTINUITY (Q29, Q30)                                  -->
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+
+	{isShellF && cp && qm && (
+		<main class="mx-auto w-full max-w-2xl px-4 py-10" data-challenge data-slug={slug} data-slot={view.slot}>
+			<div class={`overflow-hidden rounded border bg-neutral-950 ${isQ30 ? 'border-neutral-600' : 'border-neutral-700/50'}`}>
+
+				{/* Q29 — Blackwood evidence terminal with TC masthead */}
+				{!isQ30 && (
+					<div class="border-b border-neutral-800 px-6 py-5">
+						<p class="font-mono text-[9px] tracking-[0.4em] text-neutral-700 uppercase mb-2">
+							{'━'.repeat(36)}
+						</p>
+						<p class="font-mono text-sm font-semibold tracking-[0.35em] text-neutral-300 uppercase">The Continuity</p>
+						<p class="font-mono text-[9px] tracking-[0.4em] text-neutral-700 uppercase mt-2">
+							{'━'.repeat(36)}
+						</p>
+						<p class="mt-3 font-mono text-[10px] tracking-[0.12em] text-neutral-700">{qm.sourceRef}</p>
+					</div>
+				)}
+
+				{/* Q30 — The system has taken over: minimal case reference only */}
+				{isQ30 && (
+					<div class="border-b border-neutral-700/60 px-6 py-3 flex items-center justify-between">
+						<span class="font-mono text-[9px] tracking-[0.25em] text-neutral-700">FINAL RECORD — CYCLE 6</span>
+						<span class="font-mono text-[9px] tracking-[0.25em] text-neutral-700">CASE 71-C</span>
+					</div>
+				)}
+
+				<!-- Challenge strip -->
+				<div class="flex items-center justify-between border-b border-neutral-800 bg-neutral-950/80 px-6 py-3">
+					<div class="flex items-center gap-3">
+						<span class={`rounded border px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] ${ts.badge}`}>{view.tier.toUpperCase()}</span>
+						<span class="font-mono text-[10px] text-neutral-700">{view.basePoints} PTS</span>
+					</div>
+					<div class="text-right">
+						<p class="font-mono text-[9px] tracking-[0.25em] text-neutral-700">CHALLENGE {slotLabel} / 30</p>
+						<p class="font-mono text-xs font-medium text-neutral-400">{view.title}</p>
+					</div>
+				</div>
+
+				<!-- Terminal output -->
+				<div class={isQ30 ? 'px-6 pt-6 pb-5' : 'px-6 py-5'}>
+					{!isQ30 && (
+						<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">{qm.promptLabel}</p>
+					)}
+					<div class={`rounded border bg-black ${isQ30 ? 'border-neutral-700/60 px-6 py-6' : 'border-neutral-800 px-5 py-5'}`}>
+						<pre class={`whitespace-pre-wrap font-mono leading-relaxed ${isQ30 ? 'text-[13px] text-neutral-100' : 'text-[12px] text-neutral-200'}`}>{cp.prompt}</pre>
+					</div>
+				</div>
+
+				<!-- Solved banner -->
+				{isSolved && (
+					<div class={`mx-6 mb-4 rounded border px-4 py-3 ${isQ30 ? 'border-neutral-600/50 bg-neutral-900/60' : 'border-neutral-800/50 bg-neutral-950/80'}`}>
+						<p class={`font-mono text-[10px] ${isQ30 ? 'text-neutral-400' : 'text-neutral-500'}`}>{qm.solvedMsg}</p>
+					</div>
+				)}
+
+				<!-- Hints -->
+				<div data-hints class={revealedHints.length === 0 ? 'hidden' : 'border-t border-neutral-800 px-6 py-4'}>
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">
+						{isQ30 ? 'Case Notes' : 'Terminal Notes'}
+					</p>
+					<ul class="space-y-2" data-hint-list>
+						{revealedHints.map((h) => (
+							<li class="flex gap-3 rounded border border-neutral-800 bg-black/40 px-4 py-2.5" data-hint-number={h.hintNumber}>
+								<span class="shrink-0 font-mono text-[9px] text-neutral-700 uppercase pt-0.5">N{h.hintNumber}</span>
+								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
+							</li>
+						))}
+					</ul>
+				</div>
+
+				<!-- Submit -->
+				{isCurrent && (
+					<div class="border-t border-neutral-800 px-6 py-5 space-y-4">
+						{nextHint <= MAX_HINTS && (
+							<button type="button" data-hint-button data-next-hint={nextHint}
+								class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500">
+								Request {isQ30 ? 'case note' : 'terminal note'} {nextHint}<span class="ml-1 text-neutral-800">— halves score</span>
+							</button>
+						)}
+						<div>
+							<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">
+								{isQ30 ? 'Response' : 'Terminal Input'}
+							</p>
+							<form data-submit-form
+								data-msg-verifying={qm.msgVerifying}
+								data-msg-correct={qm.msgCorrect}
+								data-msg-incorrect={qm.msgIncorrect}
+								data-msg-error="System error. Please try again."
+								data-btn-loading="Processing…"
+							>
+								<div class="flex gap-2">
+									<input type="text" name="answer" autocomplete="off" spellcheck="false"
+										placeholder={qm.placeholder} aria-label={qm.placeholder}
+										class={`flex-1 rounded border bg-black px-3 py-2 font-mono text-sm placeholder-neutral-800 transition-colors focus:outline-none ${isQ30 ? 'border-neutral-600 text-neutral-100 focus:border-neutral-400' : 'border-neutral-700 text-neutral-200 focus:border-neutral-600'}`}/>
+									<button type="submit"
+										class={`rounded border px-4 py-2 font-mono text-[10px] tracking-[0.15em] uppercase transition-colors ${isQ30 ? 'border-neutral-500 bg-neutral-800 text-neutral-300 hover:border-neutral-300 hover:bg-neutral-700 hover:text-neutral-100' : 'border-neutral-700 bg-neutral-900 text-neutral-400 hover:border-neutral-600 hover:bg-neutral-800 hover:text-neutral-200'}`}>
+										{isQ30 ? 'Submit' : 'Enter'}
+									</button>
+								</div>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+							</form>
+						</div>
+					</div>
+				)}
+
+			</div>
+			<div class="mt-5 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+				<span>THE CONTINUITY</span>
+				<span>FILE 71-C</span>
+			</div>
+		</main>
+	)}
+
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+	<!-- Q10 ONLY — STANDARD DOSSIER CARD                                    -->
+	<!-- ══════════════════════════════════════════════════════════════════════ -->
+
+	{!isQ1 && !isQ2 && !isQ3 && !isQ4 && !isQ5 && !isQ6 && !isQ7 && !isQ8 && !isQ9 && gp && (
+		<main
+			class="mx-auto w-full max-w-3xl px-4 py-10"
+			data-challenge
+			data-slug={slug}
+			data-slot={view.slot}
+		>
+			<article class="overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900/80 shadow-xl">
+
+				<!-- Header: tier badge + title + slot ring -->
+				<header class="flex items-start justify-between border-b border-neutral-800 bg-neutral-900 px-6 py-5">
+					<div class="flex flex-col gap-2">
+						<div class="flex items-center gap-2.5">
+							<span class={`rounded border px-2 py-0.5 font-mono text-[10px] tracking-[0.15em] ${ts.badge}`}>
+								{view.tier.toUpperCase()}
+							</span>
+							<span class="font-mono text-[10px] text-neutral-600 tracking-widest">{view.basePoints} PTS</span>
+						</div>
+						<div>
+							<p class="mb-0.5 font-mono text-[10px] tracking-[0.3em] text-neutral-700">CHALLENGE {slotLabel}</p>
+							<h1 class="text-xl font-semibold tracking-tight text-neutral-100">{view.title}</h1>
+						</div>
+					</div>
+
+					<!-- Circular slot indicator -->
+					<div class="relative flex h-14 w-14 shrink-0 items-center justify-center">
+						<svg class="absolute inset-0 h-14 w-14 -rotate-90" viewBox="0 0 56 56" aria-hidden="true">
+							<circle cx="28" cy="28" r="24" fill="none" stroke="rgb(38 38 38)" stroke-width="1.5"/>
+							<circle cx="28" cy="28" r="24" fill="none" stroke="rgb(82 82 82 / 0.6)" stroke-width="1.5"
+								stroke-dasharray={`${progressPct * 1.508} 150.8`} stroke-linecap="round"/>
+						</svg>
+						<span class="relative font-mono text-sm font-semibold text-neutral-400">{view.slot}</span>
+					</div>
+				</header>
+
+				<!-- Meta strip -->
+				<div class="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-neutral-800 bg-neutral-950/40 px-6 py-3">
+					<div class="flex items-center gap-2 font-mono text-[10px]">
+						<span class="text-neutral-700">STATUS</span>
+						<span data-status class={isSolved ? 'text-neutral-500' : 'text-neutral-600'}>
+							{isSolved ? 'SOLVED' : 'ACTIVE'}
+						</span>
+					</div>
+					<div class="flex items-center gap-2 font-mono text-[10px]">
+						<span class="text-neutral-700">TOKEN</span>
+						<span class="tracking-widest text-neutral-700">{gp.token}</span>
+					</div>
+				</div>
+
+				<!-- Briefing block -->
+				<div class="px-6 py-6">
+					<p class="mb-3 font-mono text-[10px] tracking-[0.3em] text-neutral-700 uppercase">Briefing</p>
+					<div class="rounded border border-neutral-800 bg-neutral-950/60 p-5">
+						<pre class="whitespace-pre-wrap font-mono text-sm leading-relaxed text-neutral-300">{gp.prompt}</pre>
+					</div>
+				</div>
+
+				<!-- Solved banner -->
+				{isSolved && (
+					<div class="mx-6 mb-5 rounded border border-neutral-800/50 bg-neutral-900/60 px-4 py-3">
+						<p class="font-mono text-[10px] text-neutral-600">Finding submitted. This challenge can no longer be scored.</p>
+					</div>
+				)}
+
+				<!-- Hints section -->
+				<section class="border-t border-neutral-800 px-6 py-5" data-hints aria-label="Field assistance">
+					<p class="mb-3 font-mono text-[10px] tracking-[0.3em] text-neutral-700 uppercase">Field Assistance</p>
+					<ul class="mb-3 space-y-2" data-hint-list>
+						{revealedHints.map((h) => (
+							<li class="flex gap-3 rounded border border-neutral-800 bg-neutral-950/60 px-4 py-3" data-hint-number={h.hintNumber}>
+								<span class="mt-0.5 shrink-0 font-mono text-[10px] text-neutral-600 uppercase">H{h.hintNumber}</span>
+								<span class="text-sm text-neutral-400 leading-relaxed">{h.text}</span>
+							</li>
+						))}
+					</ul>
+					{isCurrent && nextHint <= MAX_HINTS && (
+						<button type="button" data-hint-button data-next-hint={nextHint}
+							class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500">
+							Request hint {nextHint}
+							<span class="ml-1 text-neutral-800">— halves this challenge's score</span>
+						</button>
+					)}
+				</section>
+
+				<!-- Submit section -->
+				{isCurrent && (
+					<div class="border-t border-neutral-800 px-6 py-6">
+						<p class="mb-3 font-mono text-[10px] tracking-[0.3em] text-neutral-700 uppercase">Submit Finding</p>
+						<form data-submit-form>
+							<div class="flex gap-3">
+								<input type="text" name="answer" autocomplete="off" spellcheck="false"
+									placeholder="Enter your answer…" aria-label="Your answer"
+									class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-4 py-2.5 text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"/>
+								<button type="submit"
+									class="rounded border border-neutral-700 bg-neutral-800 px-6 py-2.5 text-sm font-medium text-neutral-300 transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100">
+									Submit
+								</button>
+							</div>
+							<p class="mt-3 min-h-[1.25rem] font-mono text-[10px] text-neutral-600" data-result aria-live="polite"></p>
+						</form>
+					</div>
+				)}
+
+			</article>
+
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+				<span>BLACKWOOD INVESTIGATIVE BUREAU</span>
+				<span>FILE 71-C · {new Date().getFullYear()}</span>
+			</div>
+		</main>
+	)}
+
+</div>
+{isQ18 && (
+	<script>
+		(function() {
+			const btn = document.getElementById('q18-play-btn');
+			const status = document.getElementById('q18-status');
+			if (!btn || !status) return;
+			if (!window.speechSynthesis) {
+				status.textContent = 'TTS not supported in this browser.';
+				return;
+			}
+			btn.addEventListener('click', function() {
+				window.speechSynthesis.cancel();
+				const phrase = atob(btn.dataset.b64 || '');
+				if (!phrase) return;
+				const utt = new SpeechSynthesisUtterance(phrase);
+				utt.rate = 0.82;
+				utt.pitch = 0.95;
+				utt.onstart = function() {
+					btn.textContent = '\u23F8 Playing…';
+					status.textContent = 'Recording active…';
+				};
+				utt.onend = function() {
+					btn.textContent = '\u25B6 Play voicemail';
+					status.textContent = 'Playback complete.';
+				};
+				window.speechSynthesis.speak(utt);
+			});
+		})();
+	</script>
+)}
+
 </Layout>
-
-<script>
-	const root = document.querySelector<HTMLElement>('[data-challenge]');
-	if (root) {
-		const slug = root.dataset.slug!;
-		const slot = Number(root.dataset.slot);
-
-		// Hint reveal (one-way, confirm dialog, in order).
-		const hintBtn = root.querySelector<HTMLButtonElement>('[data-hint-button]');
-		const hintList = root.querySelector<HTMLUListElement>('[data-hint-list]');
-		hintBtn?.addEventListener('click', async () => {
-			const n = Number(hintBtn.dataset.nextHint);
-			if (!confirm(`Reveal hint ${n}? This halves your score for this challenge.`)) return;
-			hintBtn.disabled = true;
-			const res = await fetch('/api/hint', {
-				method: 'POST',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ slot, hintNumber: n }),
-			});
-			if (res.ok) {
-				const data = await res.json();
-				const li = document.createElement('li');
-				li.dataset.hintNumber = String(data.hintNumber);
-				li.textContent = `Hint ${data.hintNumber}: ${data.text}`;
-				hintList?.appendChild(li);
-				if (data.hintNumber < 2) {
-					hintBtn.dataset.nextHint = String(data.hintNumber + 1);
-					hintBtn.textContent = `Reveal hint ${data.hintNumber + 1} (halves this challenge's score)`;
-					hintBtn.disabled = false;
-				} else {
-					hintBtn.remove();
-				}
-			} else {
-				hintBtn.disabled = false;
-			}
-		});
-
-		// Answer submission.
-		const form = root.querySelector<HTMLFormElement>('[data-submit-form]');
-		const result = root.querySelector<HTMLElement>('[data-result]');
-		form?.addEventListener('submit', async (e) => {
-			e.preventDefault();
-			const answer = (form.querySelector('input[name="answer"]') as HTMLInputElement).value;
-			if (result) { result.textContent = 'Checking…'; result.className = 'min-h-[1.25rem] text-sm text-neutral-400'; }
-			const res = await fetch('/api/submit', {
-				method: 'POST',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ slot, answer }),
-			});
-			const data = await res.json().catch(() => ({}));
-			if (res.ok && data.correct) {
-				if (result) { result.textContent = 'Correct! Advancing…'; result.className = 'min-h-[1.25rem] text-sm text-emerald-400'; }
-				const next = data.completed ? `/${slug}/home` : `/${slug}/challenge/${data.currentChallenge ?? slot}`;
-				setTimeout(() => { window.location.href = next; }, 600);
-			} else if (res.ok) {
-				if (result) { result.textContent = 'Incorrect. Try again.'; result.className = 'min-h-[1.25rem] text-sm text-red-400'; }
-			} else {
-				if (result) { result.textContent = 'Submission rejected.'; result.className = 'min-h-[1.25rem] text-sm text-red-400'; }
-			}
-		});
-	}
-</script>

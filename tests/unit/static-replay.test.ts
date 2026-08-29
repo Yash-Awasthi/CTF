@@ -41,7 +41,8 @@ describe('sanitized manifest', () => {
 			expect(c.hints).toHaveLength(2);
 			const keys = Object.keys(c).sort();
 			expect(keys).toEqual(['basePoints', 'hints', 'key', 'prompt', 'slot', 'tier', 'title'].sort());
-			expect(JSON.stringify(c)).not.toContain('answer');
+			// Must not contain an "answer" JSON field — the word may appear in hint text.
+			expect(JSON.stringify(c)).not.toContain('"answer":');
 		}
 	});
 });
