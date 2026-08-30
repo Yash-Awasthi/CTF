@@ -1,242 +1,132 @@
 /**
- * Progressive Hint System
- * Synthesized from hack-the-arch, rootthebox, and classquiz patterns
- * 
- * Features:
- * - Progressive hint unlocking with cost deduction
- * - Timer-based automatic reveals
- * - Team-shared hints
- * - Hint usage analytics
+ * CTF Hint System — Progressive hints with cost deduction and team sharing
+ * Inspired by hack-the-arch, rootthebox
  */
 
 export interface Hint {
   id: string;
   challengeId: string;
-  level: number;          // 1 = easiest, higher = more specific
   content: string;
-  cost: number;           // Points deducted when used
-  autoRevealAt: number;   // Timestamp when hint auto-reveals (0 = never)
-  isFree: boolean;        // First hint can be free
-  metadata: {
-    category: string;     // 'nudge', 'direction', 'solution'
-    difficulty: string;   // 'easy', 'medium', 'hard'
-  };
+  cost: number;
+  order: number;
+  category: 'nudge' | 'partial' | 'detailed' | 'solution_adjacent';
+  unlockTime?: number;
+  revealed: boolean;
 }
 
-export interface HintState {
+export interface HintPurchase {
+  hintId: string;
   userId: string;
-  challengeId: string;
-  revealedHints: number[];
-  totalCost: number;
-  lastRevealedAt: number;
+  timestamp: number;
+  cost: number;
   teamId?: string;
 }
 
 export interface HintConfig {
-  maxHintsPerChallenge: number;
   baseCost: number;
-  costMultiplier: number;       // Each subsequent hint costs more
-  freeHintCount: number;        // Number of free hints
-  autoRevealDelay: number;      // Hours before auto-reveal
-  teamSharingEnabled: boolean;
-  rateLimitPerMinute: number;
+  costIncrement: number;
+  maxCost: number;
+  revealTimeMinutes: number;
+  teamShared: boolean;
+  categoryMultipliers: Record<string, number>;
 }
 
-const DEFAULT_CONFIG: HintConfig = {
-  maxHintsPerChallenge: 5,
-  baseCost: 50,
-  costMultiplier: 1.5,
-  freeHintCount: 1,
-  autoRevealDelay: 24,         // 24 hours
-  teamSharingEnabled: true,
-  rateLimitPerMinute: 5
+const DEFAULT_HINT_CONFIG: HintConfig = {
+  baseCost: 25,
+  costIncrement: 10,
+  maxCost: 150,
+  revealTimeMinutes: 30,
+  teamShared: true,
+  categoryMultipliers: {
+    nudge: 0.5,
+    partial: 1.0,
+    detailed: 1.5,
+    solution_adjacent: 2.0,
+  },
 };
 
-/**
- * Calculate hint cost based on level and usage
- */
 export function calculateHintCost(
-  hint: Hint,
-  hintsRevealed: number,
-  config: HintConfig = DEFAULT_CONFIG
+  hintOrder: number,
+  hintsUsed: number,
+  config: HintConfig = DEFAULT_HINT_CONFIG
 ): number {
-  // Free hints
-  if (hint.isFree || hintsRevealed < config.freeHintCount) {
-    return 0;
-  }
-  
-  // Base cost with multiplier for each subsequent hint
-  const cost = config.baseCost * Math.pow(config.costMultiplier, hintsRevealed - config.freeHintCount);
-  
-  // Level discount (harder hints are worth more)
-  const levelDiscount = Math.max(0.5, 1 - (hint.level - 1) * 0.1);
-  
-  // Cap maximum cost at 500 points to prevent overflow
-  const maxCost = 500;
-  return Math.min(maxCost, Math.round(cost * levelDiscount));
+  const baseCost = config.baseCost + (hintOrder - 1) * config.costIncrement;
+  const categoryMultiplier = 1.0;
+  const usagePenalty = hintsUsed * 5;
+  return Math.min(config.maxCost, Math.round((baseCost + usagePenalty) * categoryMultiplier));
 }
 
-/**
- * Get available hints for a challenge
- */
+export function shouldAutoReveal(
+  challengeCreated: number,
+  config: HintConfig = DEFAULT_HINT_CONFIG
+): boolean {
+  const elapsedMinutes = (Date.now() - challengeCreated) / (1000 * 60);
+  return elapsedMinutes >= config.revealTimeMinutes;
+}
+
 export function getAvailableHints(
-  challengeId: string,
   hints: Hint[],
-  state: HintState,
-  currentTime: number
+  userId: string,
+  teamId?: string,
+  purchasedHintIds: string[] = []
 ): Hint[] {
   return hints
-    .filter(h => h.challengeId === challengeId)
-    .filter(h => !state.revealedHints.includes(h.level))
-    .filter(h => h.autoRevealAt === 0 || currentTime >= h.autoRevealAt)
-    .sort((a, b) => a.level - b.level);
+    .filter((hint) => {
+      if (hint.revealed) return true;
+      if (purchasedHintIds.includes(hint.id)) return true;
+      return false;
+    })
+    .sort((a, b) => a.order - b.order);
 }
 
-/**
- * Reveal a hint
- */
-export function revealHint(
+export function purchaseHint(
   hint: Hint,
-  state: HintState,
-  config: HintConfig = DEFAULT_CONFIG
-): { success: boolean; cost: number; newState: HintState; error?: string } {
-  // Check if hint already revealed
-  if (state.revealedHints.includes(hint.level)) {
-    return { success: false, cost: 0, newState: state, error: 'Hint already revealed' };
+  userPoints: number,
+  hintsUsed: number,
+  config: HintConfig = DEFAULT_HINT_CONFIG
+): { success: boolean; cost: number; newPoints: number; error?: string } {
+  const cost = calculateHintCost(hint.order, hintsUsed, config);
+  if (userPoints < cost) {
+    return { success: false, cost, newPoints: userPoints, error: 'Insufficient points' };
   }
-  
-  // Check max hints
-  if (state.revealedHints.length >= config.maxHintsPerChallenge) {
-    return { success: false, cost: 0, newState: state, error: 'Max hints reached' };
-  }
-  
-  // Calculate cost
-  const cost = calculateHintCost(hint, state.revealedHints.length, config);
-  
-  // Update state
-  const newState: HintState = {
-    ...state,
-    revealedHints: [...state.revealedHints, hint.level],
-    totalCost: state.totalCost + cost,
-    lastRevealedAt: Date.now()
+  return { success: true, cost, newPoints: userPoints - cost };
+}
+
+export function generateHintPreview(hint: Hint, maxLength: number = 50): string {
+  if (hint.content.length <= maxLength) return hint.content;
+  return hint.content.substring(0, maxLength) + '...';
+}
+
+export function calculateHintValue(
+  hint: Hint,
+  solveRate: number,
+  hintsUsed: number
+): number {
+  const categoryValue: Record<string, number> = {
+    nudge: 0.3,
+    partial: 0.5,
+    detailed: 0.7,
+    solution_adjacent: 0.9,
   };
-  
-  return { success: true, cost, newState };
+  const baseValue = categoryValue[hint.category] || 0.5;
+  const usageFactor = Math.min(1.0, hintsUsed / 10);
+  const solveRateFactor = solveRate > 0.5 ? 0.8 : 1.2;
+  return Math.round(baseValue * (1 + usageFactor) * solveRateFactor * 100);
 }
 
-/**
- * Check if hints should auto-reveal
- */
-export function checkAutoReveal(
-  hints: Hint[],
-  state: HintState,
-  currentTime: number
-): Hint[] {
-  return hints
-    .filter(h => h.challengeId === state.challengeId)
-    .filter(h => !state.revealedHints.includes(h.level))
-    .filter(h => h.autoRevealAt > 0 && currentTime >= h.autoRevealAt);
-}
-
-/**
- * Get hint statistics for a challenge
- */
-export function getHintStats(
-  challengeId: string,
-  allStates: HintState[]
-): {
-  totalRevealed: number;
-  averageCost: number;
-  mostUsedHint: number;
-  revealRate: number;
-} {
-  const challengeStates = allStates.filter(s => s.challengeId === challengeId);
-  
-  if (challengeStates.length === 0) {
-    return { totalRevealed: 0, averageCost: 0, mostUsedHint: 0, revealRate: 0 };
-  }
-  
-  // Count reveals per hint level
-  const levelCounts: Record<number, number> = {};
-  let totalRevealed = 0;
-  let totalCost = 0;
-  
-  for (const state of challengeStates) {
-    for (const level of state.revealedHints) {
-      levelCounts[level] = (levelCounts[level] || 0) + 1;
-      totalRevealed++;
-      totalCost += state.totalCost;
+export function getHintLeaderboard(
+  purchases: HintPurchase[],
+  hints: Hint[]
+): { userId: string; totalSpent: number; hintsPurchased: number }[] {
+  const userStats: Record<string, { totalSpent: number; hintsPurchased: number }> = {};
+  for (const purchase of purchases) {
+    if (!userStats[purchase.userId]) {
+      userStats[purchase.userId] = { totalSpent: 0, hintsPurchased: 0 };
     }
+    userStats[purchase.userId].totalSpent += purchase.cost;
+    userStats[purchase.userId].hintsPurchased += 1;
   }
-  
-  // Find most used hint
-  const mostUsedHint = Object.entries(levelCounts)
-    .sort(([, a], [, b]) => b - a)[0]?.[0] || 0;
-  
-  return {
-    totalRevealed,
-    averageCost: totalRevealed > 0 ? totalCost / challengeStates.length : 0,
-    mostUsedHint: Number(mostUsedHint),
-    revealRate: challengeStates.length > 0 ? totalRevealed / challengeStates.length : 0
-  };
-}
-
-/**
- * Share hints with team members
- */
-export function shareHintsWithTeam(
-  hint: Hint,
-  teamMembers: string[],
-  sharedBy: string
-): Array<{ userId: string; hint: Hint; sharedBy: string; timestamp: number }> {
-  return teamMembers
-    .filter(id => id !== sharedBy)
-    .map(userId => ({
-      userId,
-      hint,
-      sharedBy,
-      timestamp: Date.now()
-    }));
-}
-
-/**
- * Create hint configuration from challenge data
- */
-export function createHintConfig(challengeData: {
-  difficulty: string;
-  category: string;
-  pointValue: number;
-}): HintConfig {
-  const baseConfig = { ...DEFAULT_CONFIG };
-  
-  // Adjust based on difficulty
-  switch (challengeData.difficulty) {
-    case 'easy':
-      baseConfig.baseCost = 25;
-      baseConfig.freeHintCount = 2;
-      baseConfig.autoRevealDelay = 12;
-      break;
-    case 'medium':
-      baseConfig.baseCost = 50;
-      baseConfig.freeHintCount = 1;
-      baseConfig.autoRevealDelay = 24;
-      break;
-    case 'hard':
-      baseConfig.baseCost = 100;
-      baseConfig.freeHintCount = 0;
-      baseConfig.autoRevealDelay = 48;
-      break;
-    case 'extreme':
-      baseConfig.baseCost = 200;
-      baseConfig.freeHintCount = 0;
-      baseConfig.autoRevealDelay = 72;
-      break;
-  }
-  
-  // Adjust based on point value
-  if (challengeData.pointValue > 500) {
-    baseConfig.costMultiplier = 2.0;
-  }
-  
-  return baseConfig;
+  return Object.entries(userStats)
+    .map(([userId, stats]) => ({ userId, ...stats }))
+    .sort((a, b) => b.totalSpent - a.totalSpent);
 }

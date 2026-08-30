@@ -1,82 +1,195 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { and, eq } from 'drizzle-orm';
-import { beforeEach, describe, expect, it } from 'vitest';
-import { antiCheatEvents, challenges, events, participants, solves } from '../../src/lib/db/schema';
-import { DEV_EVENT, seedEvent } from '../../src/lib/db/seed';
-import { syncChallengeRows } from '../../src/lib/challenges/sync';
-import { getAdminLeaderboard, getPublicLeaderboard, LeaderboardNotPublicError } from '../../src/lib/leaderboard';
-import type { EventRow } from '../../src/lib/auth/types';
+/**
+ * Tests for leaderboard.ts
+ */
+import { describe, it, expect } from 'vitest';
+import {
+  calculateStreak,
+  detectAchievements,
+  generatePlayerLeaderboard,
+  generateTeamLeaderboard,
+  generateCategoryLeaderboard,
+  generateFullLeaderboard,
+  calculateRankChanges,
+  AchievementType,
+  Solve,
+  PlayerEntry,
+} from '../../src/lib/leaderboard';
 
-const MIGRATION_SQL = readdirSync(join(process.cwd(), 'migrations'))
-	.filter((f) => f.endsWith('.sql')).sort()
-	.map((f) => readFileSync(join(process.cwd(), 'migrations', f), 'utf8')).join('\n');
-
-type Db = ReturnType<typeof drizzle>;
-let db: Db;
-let event: EventRow;
-let pids: number[];
-let ch1: number;
-
-beforeEach(async () => {
-	const sqlite = new Database(':memory:');
-	sqlite.pragma('foreign_keys = ON');
-	sqlite.exec(MIGRATION_SQL);
-	db = drizzle(sqlite);
-	const res = await seedEvent(db, DEV_EVENT);
-	await syncChallengeRows(db, res.eventId);
-	event = (await db.select().from(events).where(eq(events.id, res.eventId)).get()) as EventRow;
-	pids = (await db.select({ id: participants.id }).from(participants).where(eq(participants.eventId, event.id)).orderBy(participants.rollNumber).limit(4)).map((p) => p.id);
-	ch1 = (await db.select({ id: challenges.id }).from(challenges).where(and(eq(challenges.eventId, event.id), eq(challenges.slot, 1))).get())!.id;
-});
-
-async function giveScore(pid: number, score: number, solvedAt: Date) {
-	await db.insert(solves).values({ eventId: event.id, participantId: pid, challengeId: ch1, solvedAt, timeFactor: 1000, hintFactor: 1000, finalScore: score });
-	await db.update(participants).set({ score }).where(eq(participants.id, pid));
+function makeSolve(overrides: Partial<Solve> = {}): Solve {
+  return {
+    challenge_id: 'ch1',
+    challenge_title: 'Test Challenge',
+    category: 'crypto',
+    difficulty: 'easy',
+    points: 100,
+    solved_at: '2024-01-15T10:00:00Z',
+    hints_used: 0,
+    time_to_solve: 60,
+    username: 'player1',
+    ...overrides,
+  };
 }
-const T = (s: number) => new Date(Date.UTC(2026, 6, 8, 10, 0, s));
 
-describe('ordering', () => {
-	it('score descending, tie fallback earliest final solve, then roll asc', async () => {
-		await giveScore(pids[0], 100_000, T(50));
-		await giveScore(pids[1], 90_000, T(10)); // tie with pids[2] on score
-		await giveScore(pids[2], 90_000, T(30)); // later final solve → ranks below pids[1]
-		const lb = await getAdminLeaderboard(db, event.id);
-		const nonZero = lb.filter((r) => r.score > 0);
-		expect(nonZero.map((r) => r.participantId)).toEqual([pids[0], pids[1], pids[2]]);
-	});
+describe('calculateStreak', () => {
+  it('returns 0 for empty dates', () => {
+    expect(calculateStreak([])).toBe(0);
+  });
+
+  it('detects single day streak', () => {
+    const today = new Date().toISOString().slice(0, 10);
+    expect(calculateStreak([today])).toBe(1);
+  });
+
+  it('detects multi-day streak', () => {
+    const dates = [];
+    for (let i = 0; i < 5; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      dates.push(d.toISOString().slice(0, 10) + 'T10:00:00Z');
+    }
+    expect(calculateStreak(dates)).toBe(5);
+  });
+
+  it('breaks streak on gap', () => {
+    const today = new Date();
+    const dates = [
+      today.toISOString().slice(0, 10) + 'T10:00:00Z',
+      new Date(today.getTime() - 4 * 86400000).toISOString().slice(0, 10) + 'T10:00:00Z',
+    ];
+    expect(calculateStreak(dates)).toBe(1);
+  });
 });
 
-describe('elimination + strikes', () => {
-	it('admin sees strike counts and eliminated participants', async () => {
-		await giveScore(pids[0], 50_000, T(10));
-		await db.update(participants).set({ status: 'disqualified' }).where(eq(participants.id, pids[0]));
-		await db.insert(antiCheatEvents).values({ eventId: event.id, submitterParticipantId: pids[0], challengeId: ch1, matchedParticipantId: pids[1], submittedAnswer: 'x' });
-		const lb = await getAdminLeaderboard(db, event.id);
-		const row = lb.find((r) => r.participantId === pids[0])!;
-		expect(row.eliminated).toBe(true);
-		expect(row.strikeCount).toBe(1);
-	});
+describe('detectAchievements', () => {
+  it('detects hintless achievement', () => {
+    const solves = Array.from({ length: 5 }, (_, i) =>
+      makeSolve({ challenge_id: `ch${i}`, hints_used: 0 })
+    );
+    const achievements = detectAchievements(solves, solves, {});
+    expect(achievements).toContain(AchievementType.HINTLESS);
+  });
+
+  it('detects versatile achievement', () => {
+    const solves = [
+      makeSolve({ category: 'crypto' }),
+      makeSolve({ category: 'web' }),
+      makeSolve({ category: 'pwn' }),
+    ];
+    const achievements = detectAchievements(solves, solves, {});
+    expect(achievements).toContain(AchievementType.VERSATILE);
+  });
+
+  it('detects speed demon', () => {
+    const solves = [makeSolve({ time_to_solve: 120 })];
+    const achievements = detectAchievements(solves, solves, {});
+    expect(achievements).toContain(AchievementType.SPEED_DEMON);
+  });
+
+  it('detects first blood', () => {
+    const solves = [makeSolve({ username: 'alice' })];
+    const achievements = detectAchievements(solves, solves, {});
+    expect(achievements).toContain(AchievementType.FIRST_BLOOD);
+  });
+
+  it('returns empty for no solves', () => {
+    expect(detectAchievements([], [], {})).toEqual([]);
+  });
 });
 
-describe('public visibility policy', () => {
-	it('throws before RESULTS_PUBLISHED (hidden during READY/LIVE/FROZEN/REVIEW)', async () => {
-		for (const state of ['READY', 'LIVE', 'FROZEN', 'REVIEW'] as const) {
-			const ev = { ...event, state };
-			await expect(getPublicLeaderboard(db, ev)).rejects.toBeInstanceOf(LeaderboardNotPublicError);
-		}
-	});
+describe('generatePlayerLeaderboard', () => {
+  it('ranks by score', () => {
+    const solves = [
+      makeSolve({ username: 'alice', points: 200 }),
+      makeSolve({ username: 'bob', points: 300 }),
+      makeSolve({ username: 'charlie', points: 100 }),
+    ];
+    const board = generatePlayerLeaderboard(solves);
+    expect(board[0].username).toBe('bob');
+    expect(board[0].rank).toBe(1);
+    expect(board[0].score).toBe(300);
+  });
 
-	it('serves unmasked rolls after RESULTS_PUBLISHED, excluding eliminated', async () => {
-		await giveScore(pids[0], 100_000, T(10));
-		await giveScore(pids[1], 80_000, T(20));
-		await db.update(participants).set({ status: 'disqualified' }).where(eq(participants.id, pids[1]));
-		const published = { ...event, state: 'RESULTS_PUBLISHED' as const };
-		const lb = await getPublicLeaderboard(db, published);
-		expect(lb.some((r) => r.participantId === pids[1])).toBe(false); // eliminated excluded
-		const top = lb.find((r) => r.participantId === pids[0])!;
-		expect(top.rollNumber).toBeGreaterThan(25_000_000); // unmasked
-	});
+  it('handles empty solves', () => {
+    expect(generatePlayerLeaderboard([])).toEqual([]);
+  });
+
+  it('counts solves correctly', () => {
+    const solves = [
+      makeSolve({ username: 'alice', challenge_id: 'ch1' }),
+      makeSolve({ username: 'alice', challenge_id: 'ch2' }),
+      makeSolve({ username: 'bob', challenge_id: 'ch1' }),
+    ];
+    const board = generatePlayerLeaderboard(solves);
+    const alice = board.find(e => e.username === 'alice');
+    expect(alice?.solves).toBe(2);
+  });
+});
+
+describe('generateTeamLeaderboard', () => {
+  it('ranks teams by score', () => {
+    const solves = [
+      makeSolve({ username: 'alice', points: 200, challenge_id: 'ch1' }),
+      makeSolve({ username: 'bob', points: 300, challenge_id: 'ch2' }),
+      makeSolve({ username: 'charlie', points: 100, challenge_id: 'ch3' }),
+    ];
+    const teams = { teamA: ['alice', 'bob'], teamB: ['charlie'] };
+    const board = generateTeamLeaderboard(solves, teams);
+    expect(board[0].team_name).toBe('teamA');
+    expect(board[0].total_score).toBe(500);
+  });
+
+  it('deduplicates challenge scores', () => {
+    const solves = [
+      makeSolve({ username: 'alice', points: 200, challenge_id: 'ch1' }),
+      makeSolve({ username: 'bob', points: 150, challenge_id: 'ch1' }),
+    ];
+    const teams = { teamA: ['alice', 'bob'] };
+    const board = generateTeamLeaderboard(solves, teams);
+    expect(board[0].total_score).toBe(200);
+  });
+});
+
+describe('generateCategoryLeaderboard', () => {
+  it('groups by category', () => {
+    const solves = [
+      makeSolve({ category: 'crypto', points: 100 }),
+      makeSolve({ category: 'crypto', points: 200 }),
+      makeSolve({ category: 'web', points: 150 }),
+    ];
+    const board = generateCategoryLeaderboard(solves);
+    expect(board.length).toBe(2);
+    expect(board[0].category).toBe('crypto');
+    expect(board[0].total_solves).toBe(2);
+  });
+});
+
+describe('generateFullLeaderboard', () => {
+  it('combines all views', () => {
+    const solves = [
+      makeSolve({ username: 'alice', points: 200, challenge_id: 'ch1' }),
+      makeSolve({ username: 'bob', points: 300, challenge_id: 'ch2' }),
+    ];
+    const teams = { teamA: ['alice'], teamB: ['bob'] };
+    const board = generateFullLeaderboard(solves, teams);
+    expect(board.total_players).toBe(2);
+    expect(board.total_teams).toBe(2);
+    expect(board.entries.length).toBe(2);
+    expect(board.teams.length).toBe(2);
+  });
+});
+
+describe('calculateRankChanges', () => {
+  it('detects rank improvement', () => {
+    const previous: PlayerEntry[] = [
+      { rank: 2, username: 'alice', team: '', score: 200, solves: 2, last_solve: '', streak: 0, achievements: [], rank_change: 0 },
+      { rank: 1, username: 'bob', team: '', score: 300, solves: 3, last_solve: '', streak: 0, achievements: [], rank_change: 0 },
+    ];
+    const current: PlayerEntry[] = [
+      { rank: 1, username: 'alice', team: '', score: 400, solves: 4, last_solve: '', streak: 0, achievements: [], rank_change: 0 },
+      { rank: 2, username: 'bob', team: '', score: 300, solves: 3, last_solve: '', streak: 0, achievements: [], rank_change: 0 },
+    ];
+    const updated = calculateRankChanges(current, previous);
+    expect(updated[0].rank_change).toBe(1);
+    expect(updated[1].rank_change).toBe(-1);
+  });
 });
