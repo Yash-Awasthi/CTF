@@ -66,6 +66,8 @@ const challenge: ChallengeModule<Public, Private> = {
 			'  WITNESS      : COMPLETE',
 			'  SUCCESSOR    : PENDING',
 			'',
+			'  NOTE: the subject is always the last person to read the file.',
+			'',
 			'━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
 			'',
 			'FINAL QUERY',

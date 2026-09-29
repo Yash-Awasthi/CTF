@@ -13,15 +13,19 @@
  */
 import type { APIRoute } from 'astro';
 import { gateArtifact } from '../../../lib/challenges/artifact-gate';
+import { GET as memoV2 } from './_v2';
 import { createDb } from '../../../lib/db/client';
 import { getEnv } from '../../../lib/runtime';
 import { generateChallengeForParticipant, getEventRoster } from '../../../lib/challenges';
 
 export const prerender = false;
 
-export const GET: APIRoute = async ({ locals }) => {
+export const GET: APIRoute = async (context) => {
+	const { locals } = context;
 	const denied = await gateArtifact(locals.auth, 15);
 	if (denied) return denied;
+	// Same address, different content once the player reaches Q19.
+	if (locals.auth!.participant.currentChallenge >= 19) return memoV2(context);
 	const auth = locals.auth!;
 	const { instance } = await generateChallengeForParticipant(
 		{ env: getEnv(), event: auth.event, rollNumber: auth.participant.rollNumber, roster: await getEventRoster(createDb(getEnv().DB), auth.event.id) },

@@ -10,7 +10,6 @@
  * Q29 contribution: none
  * Mutable: v2 of Q15's MEMO-published.html.
  */
-import { exactMatch } from '../../src/lib/challenges/validators';
 import { ALPHABETS } from '../../src/lib/crypto/constants';
 import type { ChallengeModule, GeneratedChallenge } from '../../src/lib/challenges/types';
 
@@ -34,11 +33,11 @@ const challenge: ChallengeModule<Public, Private> = {
 	hints: [
 		{
 			order: 1,
-			text: "Same name doesn't mean same file. Check if the content hash or file size has changed since you first accessed it.",
+			text: 'Your Q15 page still quotes what the published memo used to claim about when he was engaged. Find where the memo made that claim.',
 		},
 		{
 			order: 2,
-			text: "Compare against what you read at Q15. One sentence in the published memo is different. That changed sentence is what you submit.",
+			text: 'The opening paragraph was rewritten. Submit its new first sentence.',
 		},
 	],
 
@@ -46,21 +45,16 @@ const challenge: ChallengeModule<Public, Private> = {
 		const token = await ctx.rng.string(8, ALPHABETS.upper);
 
 		const prompt = [
-			'DANIEL\'S ARCHIVE — MEMO FILE (RE-ACCESSED)',
+			"DANIEL'S ARCHIVE — MEMO FILE (RE-ACCESSED)",
 			'',
-			'After the voicemail, I returned to the memo.',
-			'Same address. Different content.',
+			'After the voicemail, you open the memo again.',
+			'Same address:  /case/memo/daniel-reyes',
 			'',
-			'Current version: /case/memo/daniel-reyes-v2',
+			'The file has not been renamed. Nobody has told you it changed.',
+			'Your Q15 notes record what the published memo claimed then.',
 			'',
-			'Compare it against what you read at Q15.',
-			'The opening paragraph has been rewritten.',
-			'The draft comment block from the earlier version — gone.',
-			'',
-			'Someone updated this file while this investigation was active.',
-			'',
-			'What is the first sentence of the current version\'s opening paragraph?',
-			'(Submit the full sentence, exactly as written.)',
+			'One sentence of the published text now says something else.',
+			'Submit the sentence that replaced it, exactly as it now reads.',
 		].join('\n');
 
 		return {
@@ -73,7 +67,9 @@ const challenge: ChallengeModule<Public, Private> = {
 	},
 
 	validate(instance, normalizedAnswer) {
-		return exactMatch(normalizedAnswer, instance.privateData.answer);
+		// Copied from the page the sentence may carry a line break; the full stop is optional.
+		const clean = (s: string) => s.replace(/\s+/g, ' ').replace(/\.$/, '').toLowerCase();
+		return { correct: clean(normalizedAnswer) === clean(instance.privateData.answer) };
 	},
 };
 

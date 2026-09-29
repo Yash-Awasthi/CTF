@@ -3,8 +3,8 @@
  *
  * The Bureau personnel archive is numbered P-0001 to P-0400 in order of engagement.
  * Its search index only shows the 2015 Reyes file, but every file can be opened by
- * number. Enumerating them turns up three more "REYES, DANIEL" files from 1952, 1968
- * and 1986: same age on every photograph, same handwriting metrics. Decoys share
+ * number. Enumerating them turns up three more "REYES, DANIEL" files from 1952, 1971
+ * and 1994 (one per cycle): same age on every photograph, same handwriting metrics. Decoys share
  * part of the name. "Daniel Reyes" is not a person. It's a role.
  *
  * Artifacts (served by /{event}/evidence/26/{name}): index.txt and P-NNNN.txt.
@@ -30,7 +30,7 @@ export interface Q26Private {
 }
 
 export const FILES = 400;
-const REYES_YEARS = [1952, 1968, 1986, 2015];
+const REYES_YEARS = [1952, 1971, 1994, 2015];
 const DECOY_NAMES = ['REYES, DOROTHY', 'REYNOLDS, DANIEL', 'REYES, DAVID', 'RAYES, DANIELLE'];
 const FIRST = ['ARTHUR', 'MARGARET', 'HAROLD', 'EDITH', 'LEONARD', 'IRENE', 'WALTER', 'JOAN', 'PETER', 'SUSAN', 'GRAHAM', 'NORA', 'COLIN', 'RUTH', 'MARTIN', 'CLAIRE'];
 const LAST = ['ASHBY', 'BRENNAN', 'CROFT', 'DALLOWAY', 'ELLIS', 'FENWICK', 'GARROD', 'HOLLIS', 'IVES', 'JARVIS', 'KEMBLE', 'LOWRY', 'MARSH', 'NOLAN', 'OAKES', 'PRYCE', 'QUINLAN', 'RUDD', 'SAXBY', 'TALBOT'];
@@ -65,7 +65,13 @@ function record(n: number, name: string, role: string, photo: string, hand: stri
 export function buildFile(p: Q26Private, n: number): string {
 	const r = p.reyes.indexOf(n);
 	if (r >= 0) {
-		return record(n, 'REYES, DANIEL', r === 3 ? 'Archive researcher (contract) — Vale estate' : 'Provenance researcher (contract)',
+		const roles = [
+			'Provenance researcher (contract) — assisting the Ilves inquiry (child missing, 1952)',
+			'Provenance researcher (contract) — private collection sales',
+			'Cataloguing assistant (contract) — Vale acquisitions',
+			'Archive researcher (contract) — Vale estate',
+		];
+		return record(n, 'REYES, DANIEL', roles[r],
 			'male, approx. 30–40', 'stroke angle 17°, loop ratio 0.44, rightward slant',
 			r === 3 ? 'Active' : 'Contract ended — no forwarding address', REYES_YEARS[r]);
 	}

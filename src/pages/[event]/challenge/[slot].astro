@@ -33,6 +33,8 @@ import {
 	type PublicChallengeData,
 } from '../../../lib/challenges';
 import { getRevealedHints, MAX_HINTS } from '../../../lib/hints';
+import { getCodename } from '../../../../challenges/shared/codenames';
+import { CASEBOOK } from '../../../../challenges/shared/casebook';
 import type { Q1Public } from '../../../../challenges/01/index';
 import type { Q2Public } from '../../../../challenges/02/index';
 import type { Q3Public } from '../../../../challenges/03/index';
@@ -43,6 +45,7 @@ import type { Q7Public } from '../../../../challenges/07/index';
 import type { Q8Public } from '../../../../challenges/08/index';
 import type { Q9Public } from '../../../../challenges/09/index';
 import type { Q11Public } from '../../../../challenges/11/index';
+import type { Q28Public } from '../../../../challenges/28/index';
 
 export const prerender = false;
 
@@ -106,6 +109,18 @@ const isCurrent   = status === 'current';
 const isSolved    = status === 'solved';
 const nextHint    = revealedHints.length + 1;
 const roll        = auth.participant.rollNumber;
+const codename    = getCodename(roll);
+// Once Q29 is solved the bureau's chrome gives way to the Continuity's, on every page.
+const continuity  = auth.participant.currentChallenge >= 30;
+// Mira's notebook (Q3) gains lines once the player has read her later pages.
+const pageChanged20 = auth.participant.currentChallenge >= 20;
+const pageChanged27 = auth.participant.currentChallenge >= 27;
+const Q30_KNOWN = JSON.stringify({
+	'mira castellan': 'MIRA CASTELLAN — Cycle 5. Record closed.',
+	'daniel reyes': 'DANIEL REYES — a role, not a subject.',
+	'silas vale': 'SILAS VALE — Collector, Cycle 4. Deceased.',
+	'josiah marrow': 'JOSIAH MARROW — Collector, Cycle 1. Deceased.',
+});
 const slotLabel   = String(view.slot).padStart(2, '0');
 const progressPct = Math.round((view.slot / 30) * 100);
 
@@ -129,6 +144,10 @@ const EVIDENCE: Record<number, EvidenceFile[]> = {
 		{ name: 'register.svg', label: 'Missing persons register, 1978 — surviving photographs', kind: 'image' },
 	],
 	18: [{ name: 'voicemail.wav', label: 'Investigation line — unplayed voicemail', kind: 'audio' }],
+	22: [
+		{ name: 'access-log.csv', label: 'Estate door controller — export, night of 2–3 Oct 2015', kind: 'link' },
+		{ name: 'card-register.csv', label: 'Estate access card register', kind: 'link' },
+	],
 	23: [{ name: 'mira-recording-2015-05.wav', label: "Mira's tape, digitised — 0:45", kind: 'audio' }],
 	25: [{ name: 'annex-photograph-114.png', label: 'Annex item 114 — Bureau scan of the print', kind: 'image' }],
 	26: [{ name: 'index.txt', label: "Personnel search — 'Daniel Reyes'", kind: 'link' }],
@@ -199,10 +218,10 @@ const QMETA: Record<string, QMeta> = {
 	'case-closed':             { systemLabel: 'Blackwood Bureau — Case Board',                  sourceRef: 'Synthesis · Case 71-C · All evidence threads',     promptLabel: 'Case Board',               placeholder: 'Full name of person responsible',                           msgVerifying: 'Filing case conclusion with the Bureau…',       msgCorrect: 'Case closed. Record filed with the Bureau.',                            msgIncorrect: 'Name not confirmed. All four evidence threads must agree.',                        solvedMsg: 'Case conclusion filed. This board is now read-only.' },
 	'three-sources':           { systemLabel: 'Blackwood Forensic Evidence Unit',               sourceRef: 'Photograph provenance · Three-source verification',promptLabel: 'Verification Report',      placeholder: 'Date the photograph was taken (YYYY-MM-DD)',                msgVerifying: 'Verifying against three independent sources…',  msgCorrect: 'Date confirmed. Photograph evidence filed.',                            msgIncorrect: 'Date not confirmed. All three sources must agree.',                                solvedMsg: 'Date confirmed. This photograph record is now read-only.' },
 	'daniel-reyes-again':      { systemLabel: 'Blackwood Bureau — Personnel Archive',           sourceRef: 'Enumeration result · Case 71-C',                   promptLabel: 'Search Result',            placeholder: 'Personnel files (P-NNNN, comma-separated)',                 msgVerifying: 'Checking personnel files…',                     msgCorrect: 'Files confirmed. Personnel anomaly logged.',                            msgIncorrect: 'Not confirmed. Every Daniel Reyes file, and nothing else.',                        solvedMsg: 'Personnel files confirmed. This archive entry is now read-only.' },
-	'stop-looking-for-people': { systemLabel: 'Blackwood Evidence Management',                  sourceRef: "Mira Castellan · Notebook final page (v3)",        promptLabel: 'Notebook — Final Page',    placeholder: 'Second sentence from the final note (start: FOLLOW…)',     msgVerifying: "Filing Mira's instruction…",                    msgCorrect: 'Instruction confirmed. Notebook entry filed.',                          msgIncorrect: 'Instruction not confirmed. Submit the second sentence exactly.',                   solvedMsg: 'Final instruction confirmed. This notebook entry is now read-only.' },
-	'the-ledger':              { systemLabel: 'The Ledger — Historical Records Database',       sourceRef: 'Access via Blackwood Case 71-C',                   promptLabel: 'Database Output',          placeholder: 'Role Daniel Reyes holds in every cycle',                    msgVerifying: 'Querying Ledger record…',                       msgCorrect: 'Role confirmed. Ledger entry sealed.',                                  msgIncorrect: 'Role not confirmed. Check which role is never filled by anyone but him.', solvedMsg: 'Role confirmed. The Ledger record is now sealed and read-only.' },
-	'the-continuity':          { systemLabel: 'Blackwood Evidence Correlation Terminal',        sourceRef: 'Restricted access — Senior Investigator only',     promptLabel: 'Terminal Output',          placeholder: 'Name of the system',                                        msgVerifying: 'Filing system identification…',                 msgCorrect: 'System identified. Case continuity resolved.',                          msgIncorrect: 'System not identified. Assemble the doctrine and infer the name from the TC prefix.', solvedMsg: 'System identified. Continuity resolved. This terminal is now read-only.' },
-	'the-subject':             { systemLabel: 'THE CONTINUITY',                                 sourceRef: 'Final record — Cycle 6, current',                  promptLabel: 'Final Query',              placeholder: 'Your investigator codename',                                msgVerifying: 'Querying Continuity record…',                   msgCorrect: 'Identity confirmed. The Continuity record is complete.',                msgIncorrect: 'Codename not confirmed. Look at what you were told before the case began.', solvedMsg: 'Identity confirmed. The Continuity record is complete.' },
+	'stop-looking-for-people': { systemLabel: 'Blackwood Evidence Management',                  sourceRef: "Mira Castellan · Notebook final page (v3)",        promptLabel: 'Notebook — Final Page',    placeholder: 'Her instruction to the next investigator',                msgVerifying: "Filing Mira's instruction…",                    msgCorrect: 'Instruction confirmed. Notebook entry filed.',                          msgIncorrect: 'Instruction not confirmed. Submit the second sentence exactly.',                   solvedMsg: 'Final instruction confirmed. This notebook entry is now read-only.' },
+	'the-ledger':              { systemLabel: 'The Ledger — Historical Records Database',       sourceRef: 'Access via Blackwood Case 71-C',                   promptLabel: 'Database Output',          placeholder: 'Reference of the open role (TC-…)',                        msgVerifying: 'Querying Ledger record…',                       msgCorrect: 'Reference accepted. Your row is open.',                                  msgIncorrect: 'The Ledger issued no such reference.', solvedMsg: 'Reference accepted. The Ledger record is now read-only.' },
+	'the-continuity':          { systemLabel: 'Blackwood Evidence Correlation Terminal',        sourceRef: 'Restricted access — Senior Investigator only',     promptLabel: 'Terminal Output',          placeholder: 'Name of the system',                                        msgVerifying: 'Filing system identification…',                 msgCorrect: 'IDENTIFIED.',                          msgIncorrect: 'System not identified. Assemble the doctrine and infer the name from the TC prefix.', solvedMsg: 'System identified. Continuity resolved. This terminal is now read-only.' },
+	'the-subject':             { systemLabel: 'THE CONTINUITY',                                 sourceRef: 'Final record — Cycle 6, current',                  promptLabel: 'Final Query',              placeholder: 'Name',                                                      msgVerifying: 'Querying Continuity record…',                   msgCorrect: 'Identity confirmed. The Continuity record is complete.',                msgIncorrect: 'No subject by that name in the current record.', solvedMsg: 'Identity confirmed. The Continuity record is complete.' },
 };
 const qm: QMeta | null = isCustomQ12to30 ? (QMETA[view.key] ?? null) : null;
 // Shared prompt+token view for all custom Q12-Q30 shells
@@ -219,6 +238,7 @@ const q7  = isQ7  ? (view.publicData as Q7Public)  : null;
 const q8  = isQ8  ? (view.publicData as Q8Public)  : null;
 const q9  = isQ9  ? (view.publicData as Q9Public)  : null;
 const q11 = isQ11 ? (view.publicData as Q11Public) : null;
+const q28 = isQ28 ? (view.publicData as Q28Public) : null;
 
 // Generic public data shape for Q10 only (prompt + token).
 // Q11 and Q12–Q30 have their own custom layouts (excluded here).
@@ -260,18 +280,18 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 			<a href={`/${slug}/home`}
 			   class="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.15em] text-neutral-600 transition-colors hover:text-neutral-400 uppercase">
-				← Bureau
+				{continuity ? '← Record' : '← Bureau'}
 			</a>
 
 			<div class="flex items-center gap-3 font-mono text-[10px] tracking-[0.2em]">
-				<span class="text-neutral-700">CASE</span>
+				<span class="text-neutral-700">{continuity ? 'CONTINUITY' : 'CASE'}</span>
 				<span class="text-neutral-500">71-C</span>
 				<span class="text-neutral-800">·</span>
 				<span class="text-neutral-700">Q{slotLabel} / 30</span>
 			</div>
 
-			<span class="font-mono text-[10px] tracking-[0.1em] text-neutral-700">
-				INV-{roll}
+			<span class="font-mono text-[10px] tracking-[0.1em] text-neutral-700" title="Investigator designation">
+				INV-{roll}<span class="text-neutral-800"> · {codename}</span>
 			</span>
 		</div>
 		<!-- Case progress line -->
@@ -280,6 +300,12 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 			     style={`width: ${progressPct}%`}></div>
 		</div>
 	</nav>
+
+	{isSolved && CASEBOOK[view.slot] && (
+		<p class="mx-auto mt-6 max-w-2xl border-l border-emerald-900 px-4 font-mono text-[11px] leading-relaxed text-neutral-500">
+			<span class="text-emerald-700">CASE LOG · Q{slotLabel}</span> — {CASEBOOK[view.slot]}
+		</p>
+	)}
 
 	<!-- ══════════════════════════════════════════════════════════════════════ -->
 	<!-- Q1 — INSTITUTIONAL ASSIGNMENT MEMO                                   -->
@@ -821,8 +847,22 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 						<!-- Final visible note -->
 						<text font-family="Georgia, 'Times New Roman', serif" font-size="13" fill="#2c2925">
-							<tspan x="64" y="368"><tspan text-decoration="underline">THE</tspan> files are incomplete. Follow the objects.</tspan>
+							<tspan x="64" y="368"><tspan text-decoration="underline">THE</tspan> files are incomplete. {pageChanged27
+								? <tspan text-decoration="line-through" fill="#5a534d">Follow the objects.</tspan>
+								: 'Follow the objects.'}</tspan>
 						</text>
+
+						<!-- The page is not the page you first read: lines appear as the case advances -->
+						{pageChanged20 && (
+							<text x="64" y="170" font-family="Georgia, 'Times New Roman', serif" font-size="12" font-style="italic" fill="#4a4540">
+								<tspan text-decoration="underline">THE</tspan> doll faced the door this morning. I did not move it.
+							</text>
+						)}
+						{pageChanged27 && (
+							<text x="300" y="392" font-family="Georgia, 'Times New Roman', serif" font-size="13" fill="#2c2925">
+								Follow <tspan text-decoration="underline">THE</tspan> names.
+							</text>
+						)}
 
 					</svg>
 
@@ -2268,18 +2308,6 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					</div>
 				</div>
 
-				<!-- Hidden entry data attributes (server → client) -->
-				<div
-					id="q9-entry"
-					data-lot-id={String(q9.hiddenEntry.lotId)}
-					data-catalogue-ref={q9.hiddenEntry.catalogueRef}
-					data-item={q9.hiddenEntry.item}
-					data-date-acquired={q9.hiddenEntry.dateAcquired}
-					data-origin={q9.hiddenEntry.origin}
-					data-notes={q9.hiddenEntry.notes}
-					style="display:none"
-					aria-hidden="true">
-				</div>
 
 			</div>
 
@@ -2563,6 +2591,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 						<pre class="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-neutral-300">{cp.prompt}</pre>
 					</div>
 				</div>
+				{evidence && <EvidenceFiles slug={slug} slot={view.slot} files={evidence} />}
 
 				<!-- Q12: Daniel's private archive portal -->
 				{isQ12 && (
@@ -2595,19 +2624,16 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					</div>
 				)}
 
-				<!-- Q16: download link for the altered photograph SVG -->
+				<!-- Q16: the same photograph URL as Q7; it has changed underneath -->
 				{isQ16 && (
 					<div class="px-6 pb-5">
 						<a
-							href={`/${slug}/case/photo/altered`}
-							download="vale-estate-photograph-current.svg"
+							href="/case/photo/vale-estate"
+							download="vale-estate-photograph.svg"
 							class="inline-flex items-center gap-2 rounded border border-neutral-700/60 bg-neutral-900 px-4 py-2 font-mono text-[11px] text-neutral-400 transition-colors hover:border-neutral-500 hover:text-neutral-200"
 						>
-							↓ Download current photograph
+							↓ Photograph item 8 — vale-estate-photograph.svg
 						</a>
-						<p class="mt-2 font-mono text-[10px] text-neutral-700">
-							Open in a text editor or DevTools source view to inspect XMP metadata
-						</p>
 					</div>
 				)}
 
@@ -2744,26 +2770,17 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					</div>
 				)}
 
-				<!-- Q19: link to v2 memo -->
+				<!-- Q19: the same memo URL as Q15; its content has changed -->
 				{isQ19 && (
-					<div class="px-6 pb-5 flex flex-wrap gap-3">
+					<div class="px-6 pb-5">
 						<a
 							href="/case/memo/daniel-reyes"
 							target="_blank"
 							rel="noopener noreferrer"
-							class="inline-flex items-center gap-1.5 rounded border border-neutral-700/60 bg-neutral-900 px-3 py-1.5 font-mono text-[10px] text-neutral-500 transition-colors hover:border-neutral-500 hover:text-neutral-300"
+							class="inline-flex items-center gap-1.5 rounded border border-neutral-700/60 bg-neutral-900 px-3 py-1.5 font-mono text-[10px] text-neutral-400 transition-colors hover:border-neutral-500 hover:text-neutral-200"
 						>
-							v1 (Q15 version) ↗
+							MEMO-published.html ↗
 						</a>
-						<a
-							href="/case/memo/daniel-reyes-v2"
-							target="_blank"
-							rel="noopener noreferrer"
-							class="inline-flex items-center gap-1.5 rounded border border-neutral-600 bg-neutral-900 px-3 py-1.5 font-mono text-[10px] text-neutral-400 transition-colors hover:border-neutral-400 hover:text-neutral-200"
-						>
-							v2 (current) ↗
-						</a>
-						<span class="self-center font-mono text-[10px] text-neutral-700">Compare — find what changed</span>
 					</div>
 				)}
 
@@ -3008,6 +3025,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 						<div>
 							<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">File Case Conclusion</p>
 							<form data-submit-form
+								data-ceremony="case-closed"
 								data-msg-verifying={qm.msgVerifying}
 								data-msg-correct={qm.msgCorrect}
 								data-msg-incorrect={qm.msgIncorrect}
@@ -3075,6 +3093,41 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 						<pre class="whitespace-pre-wrap font-mono text-[11.5px] leading-relaxed text-neutral-300">{cp.prompt}</pre>
 					</div>
 				</div>
+
+				<!-- Q28: the Ledger grid, checked row by row by /{event}/ledger -->
+				{isQ28 && q28 && (
+					<form id="q28-ledger" class="px-6 pb-5">
+						<div class="overflow-x-auto rounded border border-neutral-800">
+							<table class="w-full min-w-[46rem] font-mono text-[10.5px]">
+								<thead>
+									<tr class="border-b border-neutral-800 bg-neutral-950 text-left text-[9px] tracking-[0.15em] text-neutral-600">
+										<th class="px-2 py-2">CYCLE</th>
+										{['COLLECTOR', 'SUBJECT', 'INVESTIGATOR', 'WITNESS', 'SUCCESSOR'].map((r) => <th class="px-2 py-2">{r}</th>)}
+									</tr>
+								</thead>
+								<tbody>
+									{q28.rows.map((row, i) => (
+										<tr class="border-b border-neutral-800/60" data-row={i}>
+											<td class="px-2 py-1.5 whitespace-nowrap text-neutral-500">{row.cycle} <span class="text-neutral-700">{row.years}</span></td>
+											{row.cells.map((c) => (
+												<td class="px-1 py-1">
+													{'blank' in c
+														? <input data-cell={c.blank} autocomplete="off" spellcheck="false" class="w-full rounded border border-neutral-800 bg-black px-1.5 py-1 text-neutral-200 focus:border-neutral-500 focus:outline-none" />
+														: <span class="text-neutral-600">{c.text}</span>}
+												</td>
+											))}
+										</tr>
+									))}
+									<tr id="q28-current" class="hidden bg-neutral-950"></tr>
+								</tbody>
+							</table>
+						</div>
+						<div class="mt-3 flex items-center gap-3">
+							<button type="submit" class="rounded border border-neutral-700 bg-neutral-900 px-3 py-1.5 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase hover:text-neutral-100">Commit to Ledger</button>
+							<p id="q28-status" class="font-mono text-[10px] text-neutral-600" aria-live="polite"></p>
+						</div>
+					</form>
+				)}
 
 				<!-- Solved banner -->
 				{isSolved && (
@@ -3187,6 +3240,17 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					</div>
 				</div>
 
+					<!-- Q29: correlation terminal command line -->
+					{isQ29 && (
+						<form id="q29-terminal" class="mx-6 mb-5 rounded border border-neutral-800 bg-black px-4 py-3">
+							<pre id="q29-output" class="mb-2 whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-emerald-400/90"></pre>
+							<div class="flex items-center gap-2 font-mono text-[12px] text-neutral-300">
+								<span class="text-neutral-600">&gt;</span>
+								<input id="q29-command" autocomplete="off" spellcheck="false" placeholder="VERIFY ..." aria-label="Terminal command" class="flex-1 bg-transparent placeholder-neutral-800 focus:outline-none" />
+							</div>
+						</form>
+					)}
+
 				<!-- Solved banner -->
 				{isSolved && (
 					<div class={`mx-6 mb-4 rounded border px-4 py-3 ${isQ30 ? 'border-neutral-600/50 bg-neutral-900/60' : 'border-neutral-800/50 bg-neutral-950/80'}`}>
@@ -3226,6 +3290,8 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 								data-msg-verifying={qm.msgVerifying}
 								data-msg-correct={qm.msgCorrect}
 								data-msg-incorrect={qm.msgIncorrect}
+								data-msg-known={isQ30 ? Q30_KNOWN : undefined}
+								data-ceremony={isQ29 ? 'hard-cut' : undefined}
 								data-msg-error="System error. Please try again."
 								data-btn-loading="Processing…"
 							>

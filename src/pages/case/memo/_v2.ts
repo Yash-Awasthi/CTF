@@ -1,9 +1,7 @@
 /**
- * GET /case/memo/daniel-reyes-v2
+ * Q19 version of Daniel's memo, served from the same /case/memo/daniel-reyes URL
+ * as Q15 once the player reaches Q19. Underscore-prefixed so Astro does not route it.
  *
- * Q19 artifact — the updated memo from Daniel Reyes (v2).
- *
- * Same URL structure as v1 (/case/memo/daniel-reyes), different content.
  * v1 (Q15): "I was engaged by the estate solicitors in late 2013..."
  * v2 (Q19): "I have no direct knowledge of the acquisition timeline..."
  *
@@ -13,8 +11,6 @@
  */
 import type { APIRoute } from 'astro';
 import { gateArtifact } from '../../../lib/challenges/artifact-gate';
-
-export const prerender = false;
 
 export const GET: APIRoute = async ({ locals }) => {
 	const denied = await gateArtifact(locals.auth, 19);

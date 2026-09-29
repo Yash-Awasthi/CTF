@@ -60,11 +60,11 @@ const challenge: ChallengeModule<Public, Private> = {
 	hints: [
 		{
 			order: 1,
-			text: "You have seen this photograph before — really look again. Count carefully.",
+			text: 'Compare it with the photograph you downloaded at Q7. Count the people.',
 		},
 		{
 			order: 2,
-			text: 'The figure count changed. The timestamp changed. Both are in the EXIF. Submit the altered DateTimeOriginal value.',
+			text: 'Open the file as text. The XMP block still claims 2008 in two places, but its DateTimeOriginal no longer agrees. Submit that value.',
 		},
 	],
 
@@ -73,22 +73,18 @@ const challenge: ChallengeModule<Public, Private> = {
 		const alteredTimestamp = ctx.attributionAnswer!;
 
 		const prompt = [
-			'VALE ESTATE — PHOTOGRAPH EVIDENCE (ITEM 8, REVISED)',
+			'VALE ESTATE — PHOTOGRAPH ITEM 8',
 			'',
-			'The photograph from Q7 has been replaced.',
+			'You asked the archive for item 8 again.',
+			'It sent the file you already have. Same address. Same name.',
 			'',
-			'Whoever did this was careful — but not thorough.',
-			'Figure count dropped from seven to six. One person is gone.',
-			'GPS location field: cleared.',
-			'Caption on the reverse: still reads \'Six figures\' — not updated.',
-			'Timestamp: altered to a post-2015 date.',
+			"The caption on the reverse still reads 'Six figures'.",
+			'The file says it was last modified in March 2008.',
 			'',
-			'Download the current version using the link below.',
-			'Open the file in a text editor or source viewer.',
-			'The XMP metadata block is embedded in the SVG structure.',
-			'Find the DateTimeOriginal field.',
+			'Open it. Look at it properly. Then look inside it.',
 			'',
-			'What is the altered timestamp? (Format: YYYY:MM:DD HH:MM:SS)',
+			'When does the file now say the photograph was taken?',
+			'(Format: YYYY:MM:DD HH:MM:SS)',
 		].join('\n');
 
 		return {

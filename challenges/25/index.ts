@@ -12,7 +12,7 @@
  * Personalized: the date (1968–1975, inside Cycle 3), grain and layout from ctx.rng.
  * Answer: YYYY-MM-DD. It is never in page text; the day only exists in the pixels.
  *
- * Q29 contribution: the print's reverse carries the stamp TC-III-S (Cycle 3, Successor).
+ * Q29 contribution: the print's reverse carries the stamp TC-III-W (Cycle 3, Witness).
  * Mutable: no
  */
 import { exactMatch } from '../../src/lib/challenges/validators';
@@ -70,7 +70,7 @@ export async function buildPhotograph(p: Q25Private): Promise<Uint8Array<ArrayBu
 	}
 	return png(img, {
 		Title: 'Blackwood annex, item 114 — group photograph',
-		Description: 'Silver gelatin print on Ferrania bromide paper (stock manufactured 1958-1971). Reverse: "D. REYES - estate contact", stamp TC-III-S.',
+		Description: 'Silver gelatin print on Ferrania bromide paper (stock manufactured 1958-1971). Reverse: "D. REYES - estate contact", stamp TC-III-W.',
 		Comment: `Negative sleeve, transcribed at scanning: roll 14, frame 9, developed ${MONTHS[m - 1].slice(0, 3)} ${y}.`,
 		'Creation Time': '2008:06:11 14:02:37',
 		Software: 'Blackwood Archive Scan Station 2.1',
@@ -107,9 +107,9 @@ const challenge: ChallengeModule<Public, Q25Private> = {
 		const seed = await ctx.rng.string(12, ALPHABETS.upper);
 
 		const prompt = [
-			'RECOVERED PHOTOGRAPH — PROVENANCE QUERY',
+			'LATE ITEM — RECEIVED 3 MINUTES AFTER CASE 71-C WAS CLOSED',
 			'',
-			"Found in the Bureau's own suppressed annex — not in Daniel's archive.",
+			"Unsigned. Routed from the Bureau's own suppressed annex, not Daniel's archive.",
 			'Four people. The second from the left is labelled \'D. REYES\'',
 			'in handwriting on the reverse. He looks to be in his mid-30s.',
 			'',

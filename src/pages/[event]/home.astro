@@ -4,6 +4,11 @@ import { createDb } from '../../lib/db/client';
 import { getEnv } from '../../lib/runtime';
 import { ensureCurrentEventState } from '../../lib/event/state';
 import { getEventTiming } from '../../lib/event/timer';
+import { and, eq } from 'drizzle-orm';
+import { challenges, solves } from '../../lib/db/schema';
+import { getChallengeBySlot } from '../../lib/challenges';
+import { CASEBOOK } from '../../../challenges/shared/casebook';
+import { getCodename } from '../../../challenges/shared/codenames';
 
 export const prerender = false;
 
@@ -22,6 +27,22 @@ const event = await ensureCurrentEventState(db, auth.event, now);
 const timing = getEventTiming(event, now);
 
 const roll = auth.participant.rollNumber;
+const codename = getCodename(roll);
+const current = auth.participant.currentChallenge;
+
+// The casebook: one log entry per solved slot, in case order.
+const solvedSlots = (
+	await db
+		.select({ slot: challenges.slot })
+		.from(solves)
+		.innerJoin(challenges, eq(solves.challengeId, challenges.id))
+		.where(and(eq(solves.participantId, auth.participant.id), eq(solves.eventId, event.id)))
+		.all()
+).map((r) => r.slot).sort((a, b) => a - b);
+const solvedSet = new Set(solvedSlots);
+const completed = solvedSet.has(30);
+const entries = solvedSlots.map((slot) => ({ slot, title: getChallengeBySlot(slot)?.metadata.title ?? '', text: CASEBOOK[slot] }));
+const lead = getChallengeBySlot(current)?.metadata.title ?? '';
 
 function fmt(seconds: number): string {
 	const s = Math.max(0, seconds);
@@ -42,7 +63,7 @@ else view = 'ended'; // FROZEN or expired-LIVE
 ---
 
 <Layout title={`${event.name} — ${event.state}`}>
-	<main class="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-4 px-6">
+	<main class={view === 'live' ? 'mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-4 px-6 py-10' : 'mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-4 px-6'}>
 		<div class="flex items-center justify-between">
 			<p class="text-xs uppercase tracking-[0.3em] text-emerald-400">{event.name}</p>
 			<form method="POST" action="/api/auth/logout">
@@ -64,27 +85,62 @@ else view = 'ended'; // FROZEN or expired-LIVE
 		)}
 
 		{view === 'live' && (
-			<div
-				class="flex flex-col gap-3"
-				data-live-timer
-				data-ends-at={timing.endsAt}
-				data-server-now={timing.serverNow}
-			>
-				<h1 class="text-2xl font-semibold">Competition is live.</h1>
-				<p class="text-5xl font-mono tabular-nums" data-remaining>{fmt(timing.remainingSeconds)}</p>
-				<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm text-neutral-400">
-					<dt>Investigator</dt><dd class="text-neutral-100">{roll}</dd>
-					<dt>State</dt><dd class="text-neutral-100">{event.state}</dd>
-					<dt>Started</dt><dd class="text-neutral-100">{new Date((timing.startedAt ?? 0) * 1000).toUTCString()}</dd>
-					<dt>Ends</dt><dd class="text-neutral-100">{new Date((timing.endsAt ?? 0) * 1000).toUTCString()}</dd>
-				</dl>
-				<a
-					href={`/${slug}/challenge/${auth.participant.currentChallenge}`}
-					class="inline-block rounded bg-emerald-500 px-4 py-2 text-center text-sm font-semibold text-neutral-950 hover:bg-emerald-400"
-				>
-					Go to challenge {auth.participant.currentChallenge} →
-				</a>
-				<p class="text-xs text-neutral-500">Timer is display-only; the server is authoritative. Refresh to resync.</p>
+			<div class="flex flex-col gap-6" data-live-timer data-ends-at={timing.endsAt} data-server-now={timing.serverNow}>
+				<header class="flex items-end justify-between border-b border-neutral-800 pb-4">
+					<div>
+						<p class="font-mono text-[10px] tracking-[0.3em] text-neutral-600 uppercase">{current >= 30 ? 'The Continuity' : 'Blackwood Investigative Bureau'} · Case 71-C</p>
+						<h1 class="mt-1 text-2xl font-semibold">{completed ? 'Case 71-C is closed.' : 'The investigation is open.'}</h1>
+					</div>
+					<p class="text-right font-mono text-[10px] text-neutral-600">INV-{roll}<br /><span class="text-neutral-700">{codename}</span></p>
+				</header>
+
+				{completed ? (
+					<pre class="rounded border border-neutral-700 bg-black px-6 py-6 font-mono text-sm leading-relaxed text-neutral-100">{[
+						'SUBJECT IDENTIFIED.',
+						'LEDGER UPDATED.',
+						'CASE 71-C CLOSED.',
+						'CONTINUITY STATUS: ACTIVE.',
+						'',
+						`WELCOME, ${codename}.`,
+					].join('\n')}</pre>
+				) : (
+					<div class="flex flex-wrap items-center justify-between gap-4 rounded border border-neutral-800 bg-neutral-900/60 px-5 py-4">
+						<div>
+							<p class="font-mono text-[10px] tracking-[0.2em] text-neutral-600 uppercase">Current lead · Q{String(current).padStart(2, '0')} / 30</p>
+							<p class="mt-1 text-lg text-neutral-100">{lead}</p>
+						</div>
+						<a href={`/${slug}/challenge/${current}`} class="rounded bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-emerald-400">
+							Go to challenge {current} →
+						</a>
+					</div>
+				)}
+
+				<div class="flex items-center justify-between gap-4">
+					<p class="font-mono text-4xl tabular-nums" data-remaining>{fmt(timing.remainingSeconds)}</p>
+					<p class="text-right font-mono text-[10px] leading-relaxed text-neutral-600">remaining<br />server time is authoritative</p>
+				</div>
+
+				<ol class="grid grid-cols-10 gap-1" aria-label="Case files">
+					{Array.from({ length: 30 }, (_, i) => i + 1).map((n) => (
+						<li title={`Q${n}`} class={`h-2 rounded-sm ${solvedSet.has(n) ? 'bg-emerald-500/70' : n === current ? 'bg-neutral-500 animate-pulse' : 'bg-neutral-800'}`}></li>
+					))}
+				</ol>
+
+				<section aria-label="Casebook">
+					<p class="mb-3 font-mono text-[10px] tracking-[0.3em] text-neutral-600 uppercase">Casebook — {entries.length} of 30 filed</p>
+					{entries.length === 0 ? (
+						<p class="text-sm text-neutral-500">Nothing filed yet. The first lead is waiting.</p>
+					) : (
+						<ol class="space-y-3">
+							{entries.map((e) => (
+								<li class="border-l border-neutral-800 pl-4">
+									<a href={`/${slug}/challenge/${e.slot}`} class="font-mono text-[10px] tracking-[0.15em] text-neutral-500 uppercase hover:text-neutral-300">Q{String(e.slot).padStart(2, '0')} · {e.title}</a>
+									<p class="mt-0.5 text-sm leading-relaxed text-neutral-300">{e.text}</p>
+								</li>
+							))}
+						</ol>
+					)}
+				</section>
 			</div>
 		)}
 

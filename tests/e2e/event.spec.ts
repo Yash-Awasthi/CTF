@@ -35,7 +35,7 @@ test('READY → waiting room', async ({ page }) => {
 test('LIVE → competition placeholder with authoritative timer', async ({ page }) => {
 	sql(`UPDATE events SET state='LIVE', started_at=unixepoch(), duration_seconds=3600 WHERE slug='${SLUG}';`);
 	await loginAndOpenHome(page);
-	await expect(page.getByRole('heading', { name: 'Competition is live.' })).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'The investigation is open.' })).toBeVisible();
 	// Authoritative remaining time rendered (hh:mm:ss), close to full hour.
 	await expect(page.locator('[data-remaining]')).toHaveText(/00:(59|60|58):/);
 });

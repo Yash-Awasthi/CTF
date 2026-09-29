@@ -66,28 +66,10 @@ if (q8Input && q8Btn) {
 // ── Q9: archive file viewer ───────────────────────────────────────────────────
 const q9Viewer = $('q9-viewer');
 if (q9Viewer) {
-	const entry = $('q9-entry')!.dataset;
-	const csvHead = 'lot_id,catalogue_ref,item,date_acquired,origin,notes';
-	const q = (s = '') => (/[",]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
-	const FILES: Record<string, string> = {
-		'MANIFEST.txt': 'VALE ESTATE ARCHIVE — MANIFEST\nGenerated: 2015-04-07 16:02\nFiles: 16\nChecksums: size-only (legacy export tool)\n\nNote: manifest regenerated after inventory review. Do not edit inventory files after this point.',
-		'inventory/inventory-furniture.csv': `${csvHead}\n44,VALE-A-1912-044,Oak Writing Table,1912-06-02,VALE ESTATE PURCHASE,\n51,VALE-A-1934-051,Walnut Bureau,1934-09-17,PRIVATE PURCHASE,`,
-		'inventory/inventory-silverware.csv': `${csvHead}\n45,VALE-S-1928-045,Silver Candelabra (pair),1928-02-11,PRIVATE COLLECTION,`,
-		'inventory/inventory-textiles.csv': `${csvHead}\n46,VALE-T-1956-046,Oriental Rug,1956-10-30,ESTATE CLEARANCE,`,
-		'inventory/inventory-ceramics.csv': `${csvHead}\n48,VALE-C-1988-048,Ceramic Vases (set of three),1988-05-19,PRIVATE PURCHASE,`,
-		'inventory/inventory-dolls-figures.csv': [
-			csvHead,
-			'12,VALE-F-1994-012,Bisque Doll (seated),1994-03-02,PRIVATE PURCHASE,',
-			'19,VALE-F-1996-019,Carved Figure (standing),1996-07-21,ESTATE CLEARANCE,',
-			'33,VALE-F-2001-033,Porcelain Doll (pair),2001-11-08,AUCTION LOT,',
-			'40,VALE-F-2004-040,Articulated Figure,2004-01-15,PRIVATE PURCHASE,',
-			[entry.lotId, entry.catalogueRef, entry.item, entry.dateAcquired, entry.origin, entry.notes].map(q).join(','),
-		].join('\n'),
-		'appraisal/appraisal-notes.txt': 'Appraisal notes — M. Castellan (working copy)\n\nFigures series: prefix VALE-F throughout, all acquired 1990s onward.\nManifest size for the dolls/figures inventory does not match the file on disk. Raised with the executor. No reply.',
-	};
-	const show = (path: string) => {
+	const show = async (path: string) => {
 		$('q9-viewer-path')!.textContent = path;
-		$('q9-viewer-content')!.textContent = FILES[path] ?? '[binary file — no text preview. Size matches manifest.]';
+		const res = await fetch(`/${slug}/evidence/9/${path.split('/').pop()}`);
+		$('q9-viewer-content')!.textContent = res.ok ? await res.text() : '[binary file — no text preview. Size matches manifest.]';
 		const n = $('q9-viewer-note')!;
 		n.textContent = path.endsWith('dolls-figures.csv') ? 'File is 449 bytes larger than the manifest records.' : '';
 		n.className = 'mt-2 font-mono text-[10px] text-amber-600';
@@ -216,3 +198,58 @@ document.querySelectorAll<HTMLButtonElement>('[data-spectrogram]').forEach((btn)
 	btn.parentElement!.appendChild(note);
 	btn.remove();
 }));
+
+// ── Q28: the Ledger, checked row by row on the server ─────────────────────────
+const q28Form = $<HTMLFormElement>('q28-ledger');
+if (q28Form) {
+	const status = $('q28-status')!;
+	q28Form.addEventListener('submit', async (e) => {
+		e.preventDefault();
+		const cells: Record<string, string> = {};
+		q28Form.querySelectorAll<HTMLInputElement>('[data-cell]').forEach((i) => (cells[i.dataset.cell!] = i.value));
+		status.textContent = 'Checking the Ledger…';
+		const res = await fetch(`/${slug}/ledger`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ cells }),
+		});
+		const data: any = await res.json().catch(() => ({}));
+		if (!res.ok || !Array.isArray(data.rows)) return void (status.textContent = 'Ledger unavailable.');
+		(data.rows as boolean[]).forEach((ok, i) => {
+			const tr = q28Form.querySelector<HTMLElement>(`[data-row="${i}"]`)!;
+			tr.style.background = ok ? 'rgba(16,185,129,.08)' : '';
+			tr.querySelectorAll('input').forEach((inp) => (inp.style.borderColor = ok ? '#065f46' : ''));
+		});
+		const done = (data.rows as boolean[]).filter(Boolean).length;
+		if (!data.complete) return void (status.textContent = `${done} of ${data.rows.length} rows reconstructed. The current row stays blank.`);
+		status.textContent = 'All rows reconstructed. The Ledger printed one more.';
+		const row = $('q28-current')!;
+		row.replaceChildren();
+		for (const text of [`${data.current.cycle} ${data.current.years}`, ...data.current.cells]) {
+			const td = document.createElement('td');
+			td.className = 'px-2 py-2 text-amber-300';
+			td.textContent = text;
+			row.appendChild(td);
+		}
+		row.classList.remove('hidden');
+	});
+}
+
+// ── Q29: correlation terminal ─────────────────────────────────────────────────
+const q29Form = $<HTMLFormElement>('q29-terminal');
+if (q29Form) {
+	const input = $<HTMLInputElement>('q29-command')!;
+	const out = $('q29-output')!;
+	q29Form.addEventListener('submit', async (e) => {
+		e.preventDefault();
+		const command = input.value;
+		const res = await fetch(`/${slug}/terminal`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ command }),
+		});
+		const data: any = await res.json().catch(() => ({}));
+		out.textContent = `> ${command}\n${data.output ?? 'TERMINAL OFFLINE.'}`;
+		input.value = '';
+	});
+}

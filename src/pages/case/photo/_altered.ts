@@ -1,66 +1,26 @@
 /**
- * GET /{event}/case/photo/altered
- *
- * Q16 artifact — the altered Vale estate photograph (participant-specific).
- *
- * Authenticated route. Returns an SVG with 6 figures (one removed from Q7)
- * and the participant's unique altered timestamp embedded in XMP metadata.
- * The timestamp (the Q16 answer) is only accessible by inspecting the file
- * source — it is NOT rendered visually in the SVG or in the challenge UI.
- *
- * Requires Q16 to be unlocked (currentChallenge >= 16).
+ * Q16 version of the Vale estate photograph (participant-specific), served from
+ * the same /case/photo/vale-estate URL as Q7 once the player reaches Q16. Six
+ * figures where there were seven, GPS cleared, caption now matching, and the
+ * player's altered DateTimeOriginal in the XMP block; ModifyDate still claims 2008.
+ * Underscore-prefixed so Astro does not route it.
  */
-import type { APIRoute } from 'astro';
-import { createDb } from '../../../../lib/db/client';
-import { getEnv } from '../../../../lib/runtime';
-import { ensureCurrentEventState } from '../../../../lib/event/state';
-import { canAccessCompetition } from '../../../../lib/event/access';
-import {
-	generateChallengeForParticipant,
-	getEventRoster,
-	canAccessChallenge,
-} from '../../../../lib/challenges';
+import { createDb } from '../../../lib/db/client';
+import { getEnv } from '../../../lib/runtime';
+import { generateChallengeForParticipant, getEventRoster } from '../../../lib/challenges';
+import type { AuthContext } from '../../../lib/auth/types';
 
-export const prerender = false;
-
-export const GET: APIRoute = async ({ params, locals }) => {
-	const slug = params.event!;
-	const auth = locals.auth;
-
-	if (!auth || auth.event.slug !== slug) {
-		return new Response('Authentication required.', { status: 401 });
-	}
-
-	const db  = createDb(getEnv().DB);
-	const now = new Date();
-	const event = await ensureCurrentEventState(db, auth.event, now);
-
-	if (!canAccessCompetition(event, now)) {
-		return new Response('Event not live.', { status: 403 });
-	}
-
-	if (!canAccessChallenge(auth.participant, 16)) {
-		return new Response('Access denied — case file not yet unlocked.', { status: 403 });
-	}
-
-	// Regenerate Q16 for this participant to get their specific altered timestamp
-	const roster = await getEventRoster(db, event.id);
+export async function alteredPhoto(auth: AuthContext): Promise<Response> {
+	const roster = await getEventRoster(createDb(getEnv().DB), auth.event.id);
 	const { instance } = await generateChallengeForParticipant(
-		{ env: getEnv(), event, rollNumber: auth.participant.rollNumber, roster },
+		{ env: getEnv(), event: auth.event, rollNumber: auth.participant.rollNumber, roster },
 		16,
 	);
-	const alteredTimestamp = (instance.privateData as { answer: string }).answer;
-
-	const svg = buildAlteredPhotoSvg(alteredTimestamp);
-
+	const svg = buildAlteredPhotoSvg((instance.privateData as { answer: string }).answer);
 	return new Response(svg, {
-		headers: {
-			'Content-Type'       : 'image/svg+xml; charset=utf-8',
-			'Content-Disposition': 'attachment; filename="vale-estate-photograph-current.svg"',
-			'Cache-Control'      : 'no-store',
-		},
+		headers: { 'Content-Type': 'image/svg+xml; charset=utf-8', 'Cache-Control': 'private, no-store' },
 	});
-};
+}
 
 function buildAlteredPhotoSvg(timestamp: string): string {
 	return `<?xml version="1.0" encoding="UTF-8"?>
@@ -78,8 +38,9 @@ function buildAlteredPhotoSvg(timestamp: string): string {
       <tiff:Copyright>Vale Collection — private archive</tiff:Copyright>
       <exif:DateTimeOriginal>${timestamp}</exif:DateTimeOriginal>
       <exif:GPSAreaInformation>[FIELD CLEARED]</exif:GPSAreaInformation>
-      <dc:description>Vale estate collection photograph. Figure count and timestamp differ from earlier version.</dc:description>
-      <xmp:ModifyDate>${timestamp}</xmp:ModifyDate>
+      <dc:description>Vale estate collection photograph.</dc:description>
+      <xmp:CreateDate>2008-03-14T11:42:07</xmp:CreateDate>
+      <xmp:ModifyDate>2008-03-14T11:42:07</xmp:ModifyDate>
     </rdf:Description>
   </rdf:RDF>
 </x:xmpmeta>

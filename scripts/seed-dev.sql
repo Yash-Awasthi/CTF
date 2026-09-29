@@ -36,7 +36,7 @@ SELECT
   n,
   CASE WHEN n = 30 THEN 'capstone' WHEN n >= 21 THEN 'hard' WHEN n >= 7 THEN 'medium' ELSE 'easy' END,
   CASE WHEN n = 30 THEN 500 WHEN n >= 28 THEN 350 WHEN n >= 21 THEN 300 WHEN n >= 13 THEN 200 WHEN n >= 7 THEN 150 ELSE 100 END,
-  CASE WHEN n IN (8, 15, 16, 17) THEN 1 ELSE 0 END,
+  CASE WHEN n IN (8, 15, 16, 17, 28) THEN 1 ELSE 0 END,
   NULL,
   unixepoch()
 FROM slots;

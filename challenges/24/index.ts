@@ -43,6 +43,9 @@ const challenge: ChallengeModule<Public, Private> = {
 
 	async generate(ctx): Promise<GeneratedChallenge<Public, Private>> {
 		const token = await ctx.rng.string(8, ALPHABETS.upper);
+		// The board quotes this player's own findings, so it reads as their case.
+		const found = async (slot: number) => ((await ctx.related(slot)).privateData as { answer: string }).answer;
+		const [met, room, box] = [await found(15), await found(22), await found(23)];
 
 		const prompt = [
 			'BLACKWOOD BUREAU — CASE BOARD',
@@ -50,22 +53,22 @@ const challenge: ChallengeModule<Public, Private> = {
 			'CASE 71-C — EVIDENCE SYNTHESIS',
 			'',
 			'MOTIVE:',
-			'  Reyes knew Vale since 2001 (Q15 draft) — not 2013 as claimed.',
-			'  Suppressing the true provenance (1948 ownership, pre-Vale acquisition',
-			'  dates) protects a chain of fraudulent estate dealings.',
+			`  Reyes met Vale on ${met} (Q15 draft), not in late 2013 as he claimed.`,
+			'  Hiding the true provenance (the 1948 owner, the pre-Vale ledger date)',
+			'  protects whatever the collection really is.',
 			'',
 			'MEANS:',
-			'  Elevated, unauthorised archive access confirmed by audit log (Q21).',
-			'  Reyes could reach and alter records Mira could not.',
+			'  Elevated, unauthorised archive access confirmed by the audit log (Q21).',
+			'  He could reach and alter records Mira could not.',
 			'  MEMO-published.html was overwritten after her disappearance (Q19).',
 			'',
 			'OPPORTUNITY:',
-			'  Building access log places Reyes at VALE ESTATE NORTH WING, 02:23–02:44',
-			'  on 2015-10-03 — during the archive write window (Q22).',
-			'  Transit records confirm he did not board the alibi coach.',
+			`  His replacement card puts him in the ${room} across the 02:41 write`,
+			'  on 2015-10-03 (Q22). He never boarded the coach.',
 			'',
 			'DIRECT EVIDENCE:',
-			'  Mira\'s recovered audio names him — specifically \'what he is, not who\' (Q23).',
+			`  Mira wrote his name into her own tape, beside box ${box} (Q23).`,
+			'  "Afraid of what he is. Not who. What."',
 			'',
 			'Four independent threads. One name.',
 			'',

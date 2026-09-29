@@ -36,6 +36,19 @@ function banner(html: string, tone: 'win' | 'blood') {
 	setTimeout(() => el.remove(), 2600);
 }
 
+// Q24: the Bureau closes the case, and something arrives straight after.
+function caseClosed() {
+	const el = document.createElement('div');
+	el.setAttribute('role', 'status');
+	el.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;background:rgba(10,10,10,.92)';
+	el.innerHTML = '<div style="border:6px double #b91c1c;color:#dc2626;padding:18px 44px;font:800 44px ui-monospace,monospace;letter-spacing:.18em;transform:rotate(-8deg)">CASE CLOSED</div>'
+		+ '<p style="font:12px ui-monospace,monospace;letter-spacing:.3em;color:#737373">71-C · FILED · NO FURTHER ACTION</p>'
+		+ '<p data-late style="font:12px ui-monospace,monospace;letter-spacing:.2em;color:#fbbf24;opacity:0">LATE ITEM RECEIVED — 3 MINUTES AFTER CLOSURE</p>';
+	document.body.appendChild(el);
+	if (!reduceMotion) el.firstElementChild!.animate([{ transform: 'rotate(-8deg) scale(2.4)', opacity: 0 }, { transform: 'rotate(-8deg) scale(1)', opacity: 1 }], { duration: 380, easing: 'cubic-bezier(.3,1.4,.6,1)' });
+	setTimeout(() => el.querySelector<HTMLElement>('[data-late]')!.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 600, fill: 'forwards' }), reduceMotion ? 0 : 2600);
+}
+
 function shake(el: HTMLElement) {
 	if (reduceMotion) return;
 	el.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-8px)' }, { transform: 'translateX(8px)' }, { transform: 'translateX(-5px)' }, { transform: 'translateX(0)' }], { duration: 320 });
@@ -114,13 +127,17 @@ if (root) {
 				const streak = attempts === 0 && !data.hintUsed ? bumpStreak(slug) : (breakStreak(slug), 0);
 				renderStreak(slug);
 				const r = button?.getBoundingClientRect();
-				burst(r ? r.left + r.width / 2 : innerWidth / 2, r ? r.top : innerHeight / 2);
+				if (form.dataset.ceremony !== 'hard-cut') burst(r ? r.left + r.width / 2 : innerWidth / 2, r ? r.top : innerHeight / 2);
 				const pts = data.finalScore != null ? (data.finalScore / 1000).toFixed(1).replace(/\.0$/, '') : '';
 				const mult = data.timeFactor != null ? ` · time ×${(data.timeFactor / 1000).toFixed(2)}${data.hintUsed ? ' · hint ×0.5' : ''}` : '';
-				if (data.firstBlood) banner('🩸 FIRST BLOOD<br><small>You cracked it before anyone else</small>', 'blood');
+				const ceremony = form.dataset.ceremony;
+				if (ceremony === 'case-closed') caseClosed();
+				// Q29: no reward, no congratulation; the Bureau's interface just goes dark.
+				else if (ceremony === 'hard-cut') document.body.animate([{ opacity: 1 }, { opacity: 0 }], { duration: reduceMotion ? 1 : 900, fill: 'forwards' });
+				else if (data.firstBlood) banner('🩸 FIRST BLOOD<br><small>You cracked it before anyone else</small>', 'blood');
 				else if (pts) banner(`+${pts} PTS${streak > 1 ? ` · 🔥 ${streak} in a row` : ''}<br><small>${mult.slice(3)}</small>`, 'win');
 				const next = data.completed ? `/${slug}/home` : `/${slug}/challenge/${data.currentChallenge ?? slot}`;
-				setTimeout(() => { location.href = next; }, reduceMotion ? 600 : 2400);
+				setTimeout(() => { location.href = next; }, ceremony === 'case-closed' ? (reduceMotion ? 1500 : 5200) : reduceMotion ? 600 : ceremony === 'hard-cut' ? 1400 : 2400);
 				return;
 			}
 			if (res.ok) {
@@ -128,7 +145,10 @@ if (root) {
 				breakStreak(slug);
 				renderStreak(slug);
 				shake(form);
-				say(`${form.dataset.msgIncorrect ?? 'Incorrect.'} (attempt ${attempts})`, 'text-red-400');
+				let known: Record<string, string> = {};
+				try { known = JSON.parse(form.dataset.msgKnown ?? '{}'); } catch {}
+				const msg = known[answer.toLowerCase().replace(/\s+/g, ' ')] ?? form.dataset.msgIncorrect ?? 'Incorrect.';
+				say(`${msg} (attempt ${attempts})`, 'text-red-400');
 			} else if (res.status === 429) {
 				const secs = data.retryAfterSeconds ?? res.headers.get('retry-after') ?? '';
 				say(`Slow down, detective. Try again${secs ? ` in ${secs}s` : ' shortly'}.`, 'text-amber-400');

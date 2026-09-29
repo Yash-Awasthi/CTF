@@ -14,12 +14,15 @@
  */
 import type { APIRoute } from 'astro';
 import { gateArtifact } from '../../../lib/challenges/artifact-gate';
+import { alteredPhoto } from './_altered';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ locals }) => {
 	const denied = await gateArtifact(locals.auth, 7);
 	if (denied) return denied;
+	// The photograph changes under the same address once the player reaches Q16.
+	if (locals.auth!.participant.currentChallenge >= 16) return alteredPhoto(locals.auth!);
 
 	const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <?xpacket begin="\uFEFF" id="W5M0MpCehiHzreSzNTczkc9d"?>
@@ -161,7 +164,7 @@ export const GET: APIRoute = async ({ locals }) => {
 		headers: {
 			'Content-Type': 'image/svg+xml; charset=utf-8',
 			'Content-Disposition': 'attachment; filename="vale-estate-photograph.svg"',
-			'Cache-Control': 'private, max-age=3600',
+			'Cache-Control': 'private, no-store',
 		},
 	});
 };

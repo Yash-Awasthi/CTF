@@ -44,12 +44,6 @@ export interface Q9Public {
 	 * Varies per participant for minor anti-cheat without altering historical truth.
 	 */
 	readonly downloadRef: string;
-	/**
-	 * The suppressed Lot 47 inventory record. Present in the actual CSV file
-	 * but absent from the manifest (causing the size mismatch the participant
-	 * must notice). Surfaced only through the archive inspection mechanic.
-	 */
-	readonly hiddenEntry: Q9InventoryRow;
 }
 
 // ── Private interface (server-only) ──────────────────────────────────────────
@@ -87,6 +81,30 @@ export const LOT_47_ENTRY: Q9InventoryRow = {
 	notes:        '[SUPPRESSED \u2014 See internal solicitor reference. Do not include in public auction listing.]',
 } as const;
 
+// ── Archive text files (served by /{event}/evidence/9/{basename}) ─────────────
+
+const CSV_HEAD = 'lot_id,catalogue_ref,item,date_acquired,origin,notes';
+const csv = (v: string) => (/[",]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+const lines = (...rows: string[]) => rows.join('\n') + '\n';
+
+/** Text files in the archive by basename; the rest are binary and have no preview. */
+export const ARCHIVE_FILES: Readonly<Record<string, string>> = {
+	'MANIFEST.txt': lines('VALE ESTATE ARCHIVE — MANIFEST', 'Generated: 2015-04-07 16:02', 'Files: 16', 'Checksums: size-only (legacy export tool)', '', 'Note: manifest regenerated after inventory review. Do not edit inventory files after this point.'),
+	'inventory-furniture.csv': lines(CSV_HEAD, '44,VALE-A-1912-044,Oak Writing Table,1912-06-02,VALE ESTATE PURCHASE,', '51,VALE-A-1934-051,Walnut Bureau,1934-09-17,PRIVATE PURCHASE,'),
+	'inventory-silverware.csv': lines(CSV_HEAD, '45,VALE-S-1928-045,Silver Candelabra (pair),1928-02-11,PRIVATE COLLECTION,'),
+	'inventory-textiles.csv': lines(CSV_HEAD, '46,VALE-T-1956-046,Oriental Rug,1956-10-30,ESTATE CLEARANCE,'),
+	'inventory-ceramics.csv': lines(CSV_HEAD, '48,VALE-C-1988-048,Ceramic Vases (set of three),1988-05-19,PRIVATE PURCHASE,'),
+	'inventory-dolls-figures.csv': lines(
+		CSV_HEAD,
+		'12,VALE-F-1994-012,Bisque Doll (seated),1994-03-02,PRIVATE PURCHASE,',
+		'19,VALE-F-1996-019,Carved Figure (standing),1996-07-21,ESTATE CLEARANCE,',
+		'33,VALE-F-2001-033,Porcelain Doll (pair),2001-11-08,AUCTION LOT,',
+		'40,VALE-F-2004-040,Articulated Figure,2004-01-15,PRIVATE PURCHASE,',
+		[String(LOT_47_ENTRY.lotId), LOT_47_ENTRY.catalogueRef, LOT_47_ENTRY.item, LOT_47_ENTRY.dateAcquired, LOT_47_ENTRY.origin, LOT_47_ENTRY.notes].map(csv).join(','),
+	),
+	'appraisal-notes.txt': lines('Appraisal notes — M. Castellan (working copy)', '', 'Figures series: prefix VALE-F throughout, all acquired 1990s onward.', 'Manifest size for the dolls/figures inventory does not match the file on disk. Raised with the executor. No reply.'),
+};
+
 // ── Module ───────────────────────────────────────────────────────────────────
 
 const challenge: ChallengeModule<Q9Public, Q9Private> = {
@@ -114,13 +132,18 @@ const challenge: ChallengeModule<Q9Public, Q9Private> = {
 		const downloadRef = `BIB-VALE-${refNum}`;
 
 		return {
-			publicData:  { downloadRef, hiddenEntry: LOT_47_ENTRY },
+			publicData:  { downloadRef },
 			privateData: { answer: CATALOGUE_ID },
 		};
 	},
 
 	validate(instance, normalizedAnswer) {
 		return exactMatch(normalizedAnswer, instance.privateData.answer);
+	},
+
+	artifact(_instance, name) {
+		const body = ARCHIVE_FILES[name];
+		return body ? { body, contentType: 'text/plain; charset=utf-8' } : null;
 	},
 };
 
