@@ -27,25 +27,21 @@ const users: Map<string, User> = new Map();
 const sessions: Map<string, Session> = new Map();
 
 function generateId(): string {
-  return `user_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  return `user_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
 }
 
 function generateToken(): string {
+  const bytes = new Uint8Array(64);
+  crypto.getRandomValues(bytes);
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let token = '';
-  for (let i = 0; i < 64; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return token;
+  return Array.from(bytes, (b) => chars.charAt(b % chars.length)).join('');
 }
 
 function generateSalt(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let salt = '';
-  for (let i = 0; i < 32; i++) {
-    salt += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return salt;
+  return Array.from(bytes, (b) => chars.charAt(b % chars.length)).join('');
 }
 
 async function hashPassword(password: string, salt: string): Promise<string> {

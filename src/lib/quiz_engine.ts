@@ -1,6 +1,6 @@
-"""
-Quiz management from classquiz — quiz creation, scoring, real-time play.
-"""
+/**
+ * Quiz management from classquiz — quiz creation, scoring, real-time play.
+ */
 export interface QuizQuestion {
     id: string;
     question: string;

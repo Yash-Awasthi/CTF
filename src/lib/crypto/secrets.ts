@@ -15,8 +15,15 @@
  */
 import { utf8 } from './encoding';
 
-/** Minimal shape this resolver reads — a superset of the generated `Env`. */
-export type SecretEnv = Record<string, unknown>;
+/**
+ * Minimal shape this resolver reads — a superset of the generated `Env`.
+ *
+ * Deliberately `object` rather than `Record<string, unknown>`: an interface has no
+ * implicit index signature, so the generated `Env` interface is not assignable to
+ * `Record<string, unknown>` and every caller passing `getEnv()` fails to compile.
+ * The single indexed read below casts instead.
+ */
+export type SecretEnv = object;
 
 /**
  * Version → runtime binding name. `v1` maps to the existing `EVENT_SECRET`
@@ -49,7 +56,7 @@ export function resolveEventSecret(
 			`Unknown secret_version: ${JSON.stringify(secretVersion)}`,
 		);
 	}
-	const value = env[binding];
+	const value = (env as Record<string, unknown>)[binding];
 	if (typeof value !== 'string' || value.length === 0) {
 		// Report the binding NAME only — never the value.
 		throw new SecretResolutionError(

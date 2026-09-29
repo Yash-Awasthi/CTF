@@ -41,8 +41,8 @@ const challenge: ChallengeModule<Public, Private> = {
 		slot: 10,
 		key: 'doll-number-six',
 		title: 'Doll Number Six',
-		tier: 'easy',
-		basePoints: 100,
+		tier: 'medium',
+		basePoints: 150,
 		attributionEnabled: false,
 	},
 	hints: [

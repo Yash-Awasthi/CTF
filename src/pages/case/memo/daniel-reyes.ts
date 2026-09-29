@@ -11,10 +11,14 @@
  * Published: he claims engagement "through solicitors in late 2013".
  */
 import type { APIRoute } from 'astro';
+import { gateArtifact } from '../../../lib/challenges/artifact-gate';
 
 export const prerender = false;
 
-export const GET: APIRoute = () => {
+export const GET: APIRoute = async ({ locals }) => {
+	const denied = await gateArtifact(locals.auth, 15);
+	if (denied) return denied;
+
 	const html = `<!DOCTYPE html>
 <html lang="en">
 <head>

@@ -11,11 +11,11 @@ export default defineConfig({
   output: 'server',
 
   // We run our OWN D1-backed session system (src/lib/auth). Astro's built-in
-  // sessions are unused, so pin an in-memory driver purely to stop the
+  // sessions are unused, so pin a driver that needs no binding purely to stop the
   // Cloudflare adapter from auto-requiring a `SESSION` KV namespace binding.
   // (The adapter only forces the KV driver when `session.driver` is unset.)
   session: {
-    driver: sessionDrivers.memory(),
+    driver: sessionDrivers.http(),
   },
 
   integrations: [react()],

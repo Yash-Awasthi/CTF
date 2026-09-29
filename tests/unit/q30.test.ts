@@ -65,12 +65,12 @@ describe('Q30 personalized answer', () => {
 	it('answer matches getCodename(rollNumber) for each participant', async () => {
 		const roll = ROLLS[0];
 		const { instance } = await generateChallengeForParticipant(ctx(roll), SLOT);
-		expect(instance.privateData.answer).toBe(getCodename(roll));
+		expect((instance.privateData as { answer: string }).answer).toBe(getCodename(roll));
 	});
 	it('different rolls produce different answers', async () => {
 		const answers = await Promise.all([ROLLS[0], ROLLS[1], ROLLS[5], ROLLS[10]].map(async r => {
 			const { instance } = await generateChallengeForParticipant(ctx(r), SLOT);
-			return instance.privateData.answer;
+			return (instance.privateData as { answer: string }).answer;
 		}));
 		expect(new Set(answers).size).toBe(4);
 	});
@@ -80,13 +80,13 @@ describe('Q30 personalized answer', () => {
 			generateChallengeForParticipant(ctx(roll), SLOT),
 			generateChallengeForParticipant(ctx(roll), SLOT),
 		]);
-		expect(a.instance.privateData.answer).toBe(b.instance.privateData.answer);
+		expect((a.instance.privateData as { answer: string }).answer).toBe((b.instance.privateData as { answer: string }).answer);
 	});
 	it('Q1 and Q30 produce identical codename for same roll', async () => {
 		// Q30 uses getCodename(rollNumber) — same formula as Q1
 		const roll = ROLLS[3];
 		const { instance } = await generateChallengeForParticipant(ctx(roll), SLOT);
-		expect(instance.privateData.answer).toBe(getCodename(roll));
+		expect((instance.privateData as { answer: string }).answer).toBe(getCodename(roll));
 	});
 });
 
@@ -196,8 +196,8 @@ describe('Q30 hints', () => {
 });
 
 describe('Q30 progression', () => {
-	it('locked at Q29', () => { expect(getChallengeAccessStatus({ rollNumber: ROLLS[0], currentChallenge: 29 as 29 }, 30)).toBe('locked'); });
-	it('current at Q30', () => { expect(getChallengeAccessStatus({ rollNumber: ROLLS[0], currentChallenge: 30 as 30 }, 30)).toBe('current'); });
+	it('locked at Q29', () => { expect(getChallengeAccessStatus({ currentChallenge: 29 }, 30)).toBe('locked'); });
+	it('current at Q30', () => { expect(getChallengeAccessStatus({ currentChallenge: 30 }, 30)).toBe('current'); });
 });
 
 describe('Q30 capstone properties', () => {
@@ -216,7 +216,7 @@ describe('Q30 capstone properties', () => {
 	it('answer is always a valid CODENAME_POOL entry', async () => {
 		const answers = await Promise.all(ROLLS.slice(0, 20).map(async r => {
 			const { instance } = await generateChallengeForParticipant(ctx(r), SLOT);
-			return instance.privateData.answer;
+			return (instance.privateData as { answer: string }).answer;
 		}));
 		answers.forEach(a => expect(CODENAME_POOL).toContain(a));
 	});

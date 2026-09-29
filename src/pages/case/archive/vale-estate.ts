@@ -8,10 +8,14 @@
  * Answer: 2023-09-14 (from Last-Modified: Thu, 14 Sep 2023 03:22:11 GMT)
  */
 import type { APIRoute } from 'astro';
+import { gateArtifact } from '../../../lib/challenges/artifact-gate';
 
 export const prerender = false;
 
-export const GET: APIRoute = () => {
+export const GET: APIRoute = async ({ locals }) => {
+	const denied = await gateArtifact(locals.auth, 17);
+	if (denied) return denied;
+
 	const html = `<!DOCTYPE html>
 <html lang="en">
 <head>

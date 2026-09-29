@@ -1,0 +1,62 @@
+---
+/**
+ * LiveAnnouncements — Server Island that fetches announcements on each request.
+ *
+ * Uses `server:defer` so the page shell renders immediately while
+ * this component fetches fresh data from D1. Falls back to a static
+ * skeleton while loading.
+ *
+ * Usage:
+ *   <LiveAnnouncements server:defer>
+ *     <div slot="fallback" class="animate-pulse">Loading announcements...</div>
+ *   </LiveAnnouncements>
+ */
+import { getEnv } from '../lib/runtime';
+import { createDb } from '../lib/db/client';
+import { listAnnouncements } from '../lib/admin';
+
+interface Props {
+  eventId?: number;
+  limit?: number;
+}
+
+const { eventId, limit = 5 } = Astro.props;
+
+let announcements: Array<{ id: number; message: string; createdAt: string }> = [];
+
+try {
+  const env = getEnv();
+  const db = createDb(env.DB);
+  // If eventId is provided, filter by event; otherwise get all
+  if (eventId) {
+    const { listAnnouncements: listByEvent } = await import('../lib/admin');
+    announcements = await listByEvent(db, eventId);
+  }
+} catch {
+  // Graceful fallback — server island errors don't break the page
+  announcements = [];
+}
+---
+
+<div class="announcements-server-island">
+  {announcements.length > 0 ? (
+    <div class="space-y-3">
+      {announcements.slice(0, limit).map((a) => (
+        <div class="rounded-lg border border-neutral-800 bg-neutral-900/50 p-4">
+          <p class="text-sm text-neutral-300">{a.message}</p>
+          <time class="mt-1 block text-xs text-neutral-500">
+            {new Date(a.createdAt).toLocaleString()}
+          </time>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <p class="text-sm text-neutral-500">No announcements yet.</p>
+  )}
+</div>
+
+<style>
+  .announcements-server-island {
+    view-transition-name: announcements;
+  }
+</style>

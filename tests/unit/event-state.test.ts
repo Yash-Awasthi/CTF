@@ -212,8 +212,8 @@ describe('extension', () => {
 		const ev = await liveEvent(5 * 3600);
 		await expect(extendEvent(db, ev.id, 0)).rejects.toThrow();
 		await expect(extendEvent(db, ev.id, -60)).rejects.toThrow();
-		await expect(extendEvent(db, ev.id, 2 * 3600)).rejects.toThrow(); // 5h+2h > 6h
-		expect(2 * 3600 + 5 * 3600).toBeGreaterThan(MAX_EVENT_DURATION_SECONDS);
+		await expect(extendEvent(db, ev.id, MAX_EVENT_DURATION_SECONDS)).rejects.toThrow(); // 5h + max > cap
+		expect(5 * 3600 + MAX_EVENT_DURATION_SECONDS).toBeGreaterThan(MAX_EVENT_DURATION_SECONDS);
 
 		const draft = await insertEvent(db, { state: 'DRAFT', slug: 'd' });
 		await expect(extendEvent(db, draft.id, 60)).rejects.toThrow(); // non-LIVE

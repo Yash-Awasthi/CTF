@@ -1,6 +1,6 @@
-"""
-CTF scoreboard from ctf-scoreboard — real-time scoring and ranking.
-"""
+/**
+ * CTF scoreboard from ctf-scoreboard — real-time scoring and ranking.
+ */
 export interface Challenge {
     id: string;
     name: string;

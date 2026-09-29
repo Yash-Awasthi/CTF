@@ -12,10 +12,14 @@
  * Participants compare v1 and v2, submit the new opening sentence.
  */
 import type { APIRoute } from 'astro';
+import { gateArtifact } from '../../../lib/challenges/artifact-gate';
 
 export const prerender = false;
 
-export const GET: APIRoute = () => {
+export const GET: APIRoute = async ({ locals }) => {
+	const denied = await gateArtifact(locals.auth, 19);
+	if (denied) return denied;
+
 	const html = `<!DOCTYPE html>
 <html lang="en">
 <head>

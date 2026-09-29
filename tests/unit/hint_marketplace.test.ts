@@ -2,7 +2,7 @@
  * Tests for hint_marketplace.ts
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { HintMarketplace, HintCategory } from '../../src/lib/hint_marketplace';
+import { HintMarketplace, type HintCategory } from '../../src/lib/hint_marketplace';
 
 describe('HintMarketplace', () => {
   let marketplace: HintMarketplace;

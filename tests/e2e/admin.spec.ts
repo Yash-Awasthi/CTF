@@ -51,15 +51,15 @@ test('participant login does not grant admin access', async ({ page }) => {
 	expect(res.status()).toBe(401);
 });
 
-test('admin timer extension respects the 6h cap and freeze works', async ({ request }) => {
+test('admin timer extension respects the 48h cap and freeze works', async ({ request }) => {
 	sql(`UPDATE events SET state='LIVE', started_at=unixepoch(), duration_seconds=3600 WHERE slug='${SLUG}';`);
 	await request.post('/api/admin/login', { data: { password: adminPassword() } });
 
 	const ok = await request.post('/api/admin/extend', { data: { eventSlug: SLUG, seconds: 3600 } });
 	expect(ok.status()).toBe(200);
 
-	// 6h cap: pushing beyond 21600 total is rejected.
-	const tooMuch = await request.post('/api/admin/extend', { data: { eventSlug: SLUG, seconds: 21600 } });
+	// 48h cap: pushing beyond 172800 total is rejected.
+	const tooMuch = await request.post('/api/admin/extend', { data: { eventSlug: SLUG, seconds: 172800 } });
 	expect(tooMuch.status()).toBe(409);
 
 	const freeze = await request.post('/api/admin/freeze', { data: { eventSlug: SLUG } });

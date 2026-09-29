@@ -5,6 +5,6 @@ defineChallengeTests({
   key: 'daniel-reyes',
   title: 'Daniel Reyes',
   tier: 'medium',
-  basePoints: 200,
+  basePoints: 150,
   attributionEnabled: false,
 });

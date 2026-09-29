@@ -31,7 +31,7 @@ const challenge: ChallengeModule<Public, Private> = {
 		key: 'the-ledger',
 		title: 'The Ledger',
 		tier: 'hard',
-		basePoints: 300,
+		basePoints: 350,
 		attributionEnabled: false,
 	},
 	hints: [

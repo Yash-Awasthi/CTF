@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/Node-≥22-green.svg)](https://nodejs.org)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-orange.svg)](https://workers.cloudflare.com)
-[![Vitest](https://img.shields.io/badge/Tests-582-brightgreen.svg)](#testing)
+[![Vitest](https://img.shields.io/badge/Tests-727-brightgreen.svg)](#testing)
 
 **Case Files** is a browser-based CTF platform where 30 sequential challenges unfold an AI-narrated investigation story. Each player gets **cryptographically unique** challenge content — same puzzle structure, different names, dates, and filenames — so copied answers betray their source.
 
@@ -165,7 +165,7 @@ normalizedAnswer → rollNumber
 ## 🧪 Testing
 
 ```bash
-pnpm test          # Vitest unit tests (582 tests)
+pnpm test          # Vitest unit tests (727 tests)
 pnpm test:e2e      # Playwright end-to-end
 ```
 

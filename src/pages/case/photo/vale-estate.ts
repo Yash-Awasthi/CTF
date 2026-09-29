@@ -13,10 +13,14 @@
  * participants here.
  */
 import type { APIRoute } from 'astro';
+import { gateArtifact } from '../../../lib/challenges/artifact-gate';
 
 export const prerender = false;
 
-export const GET: APIRoute = () => {
+export const GET: APIRoute = async ({ locals }) => {
+	const denied = await gateArtifact(locals.auth, 7);
+	if (denied) return denied;
+
 	const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <?xpacket begin="\uFEFF" id="W5M0MpCehiHzreSzNTczkc9d"?>
 <x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="Vale Collection Digital Archive v1.2">

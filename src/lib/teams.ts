@@ -48,18 +48,18 @@ function saveMembers(members: TeamMember[]): void {
   localStorage.setItem(MEMBERS_KEY, JSON.stringify(members));
 }
 
-function getSolves(): Record<string, Set<string>> {
+function getSolves(): Record<string, Map<string, string>> {
   try {
     const raw = JSON.parse(localStorage.getItem(SOLVES_KEY) ?? "{}");
-    const result: Record<string, Set<string>> = {};
-    for (const [k, v] of Object.entries(raw)) result[k] = new Set(v as string[]);
+    const result: Record<string, Map<string, string>> = {};
+    for (const [k, v] of Object.entries(raw)) result[k] = new Map(Object.entries(v as Record<string, string>));
     return result;
   } catch { return {}; }
 }
 
-function saveSolves(solves: Record<string, Set<string>>): void {
-  const raw: Record<string, string[]> = {};
-  for (const [k, v] of Object.entries(solves)) raw[k] = [...v];
+function saveSolves(solves: Record<string, Map<string, string>>): void {
+  const raw: Record<string, Record<string, string>> = {};
+  for (const [k, v] of Object.entries(solves)) raw[k] = Object.fromEntries(v);
   localStorage.setItem(SOLVES_KEY, JSON.stringify(raw));
 }
 
@@ -307,7 +307,7 @@ export function recordTeamSolve(
   points: number,
 ): void {
   const solves = getSolves();
-  if (!solves[teamId]) solves[teamId] = new Set();
+  if (!solves[teamId]) solves[teamId] = new Map();
   // Only store if better than existing
   const existing = parseInt(solves[teamId].get(`challenge_${challengeId}`) ?? "0");
   if (points > existing) {
@@ -390,7 +390,7 @@ export function hasUserSolved(userId: string, challengeId: number): boolean {
 export function recordUserSolve(userId: string, challengeId: number, points: number): void {
   const solves = getSolves();
   const key = `user_${userId}`;
-  if (!solves[key]) solves[key] = new Set();
+  if (!solves[key]) solves[key] = new Map();
   const existing = parseInt(solves[key].get(`challenge_${challengeId}`) ?? "0");
   if (points > existing) {
     solves[key].set(`challenge_${challengeId}`, String(points));

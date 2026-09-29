@@ -1,3 +1,4 @@
+import type { AnySQLiteDb } from './client';
 import { events, participants } from './schema';
 
 /**
@@ -35,14 +36,10 @@ export const DEV_EVENT: SeedEventOptions = {
 };
 
 // Narrow structural type so this file has no hard dependency on a specific
-// Drizzle driver (D1 vs better-sqlite3).
-type InsertableDb = {
-	insert: (table: typeof events | typeof participants) => {
-		values: (rows: unknown) => {
-			returning: () => Promise<Array<{ id: number }>> | Array<{ id: number }>;
-		};
-	};
-};
+// Drizzle driver (D1 vs better-sqlite3). Derived from the driver-agnostic alias
+// rather than hand-written: a hand-written `values(rows: unknown)` is not
+// assignable from a typed driver, because the parameter is contravariant.
+type InsertableDb = Pick<AnySQLiteDb, 'insert'>;
 
 export async function seedEvent(
 	db: InsertableDb,

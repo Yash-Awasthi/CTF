@@ -77,8 +77,8 @@ const challenge: ChallengeModule<Q6Public, { answer: string }> = {
 		slot: 6,
 		key: 'the-directory',
 		title: 'The Directory',
-		tier: 'medium',
-		basePoints: 150,
+		tier: 'easy',
+		basePoints: 100,
 		attributionEnabled: false,
 	},
 	hints: [

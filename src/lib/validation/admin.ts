@@ -4,7 +4,7 @@ import { z } from 'zod';
 export const eventScoped = z.object({ eventSlug: z.string().min(1).max(100) });
 
 export const extendSchema = eventScoped.extend({
-	seconds: z.coerce.number().int().positive().max(21_600),
+	seconds: z.coerce.number().int().positive().max(172_800),
 });
 
 export const advanceSchema = eventScoped.extend({

@@ -19,7 +19,7 @@ import {
 	submissions,
 } from '../db/schema';
 import { getEventTiming } from '../event/timer';
-import { getAdminLeaderboard } from '../leaderboard';
+import { getAdminLeaderboard } from '../leaderboard/index';
 import { TOTAL_SLOTS } from '../challenges';
 import { ADMIN_ACTIONS } from './constants';
 

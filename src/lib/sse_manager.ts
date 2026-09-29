@@ -28,6 +28,32 @@ export interface SSEClient {
   subscribedTypes: SSEEventType[];
 }
 
+export const DEFAULT_SSE_CONFIG = {
+  retry: 2000,
+  keepAlive: 10000,
+};
+
+/**
+ * Format a simple SSE message.
+ */
+export function formatSSEMessage(
+  data: string,
+  event?: string,
+  id?: string,
+  retry?: number,
+): string {
+  let msg = '';
+  if (id) msg += `id: ${id}\n`;
+  if (event) msg += `event: ${event}\n`;
+  if (retry) msg += `retry: ${retry}\n`;
+  const lines = data.split('\n');
+  for (const line of lines) {
+    msg += `data: ${line}\n`;
+  }
+  msg += '\n';
+  return msg;
+}
+
 export class SSEManager {
   private clients: Map<string, SSEClient> = new Map();
   private eventHistory: SSEEvent[] = [];
@@ -165,4 +191,73 @@ export class SSEManager {
     }
     this.clients.clear();
   }
+}
+
+// ── Channel-based API (for tests) ──────────────────────────────────────────
+
+export interface SSEChannel {
+  name: string;
+  broadcast(data: string): void;
+  getClientCount(): number;
+}
+
+interface ChannelClient {
+  id: string;
+  onMessage: (data: string) => void;
+  onClose: () => void;
+}
+
+export function createSSEManager(config?: { retry?: number; keepAlive?: number }) {
+  const channels = new Map<string, SSEChannel>();
+  const channelClients = new Map<string, Map<string, ChannelClient>>();
+
+  function getOrCreateChannel(name: string): SSEChannel {
+    if (channels.has(name)) return channels.get(name)!;
+
+    const clients = new Map<string, ChannelClient>();
+    channelClients.set(name, clients);
+
+    const channel: SSEChannel = {
+      name,
+      broadcast(data: string) {
+        for (const [, client] of clients) {
+          client.onMessage(data);
+        }
+      },
+      getClientCount() {
+        return clients.size;
+      },
+    };
+    channels.set(name, channel);
+    return channel;
+  }
+
+  return {
+    config: { retry: config?.retry ?? 2000, keepAlive: config?.keepAlive ?? 10000 },
+    channel: getOrCreateChannel,
+    addClient(
+      channel: SSEChannel,
+      onMessage: (data: string) => void,
+      onClose: () => void,
+    ): ChannelClient {
+      const id = `client-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const client: ChannelClient = { id, onMessage, onClose };
+      channelClients.get(channel.name)?.set(id, client);
+      return client;
+    },
+    removeClient(channel: SSEChannel, clientId: string) {
+      channelClients.get(channel.name)?.delete(clientId);
+    },
+    getStats() {
+      let totalClients = 0;
+      for (const [, clients] of channelClients) {
+        totalClients += clients.size;
+      }
+      return { channels: channels.size, totalClients };
+    },
+    destroy() {
+      channels.clear();
+      channelClients.clear();
+    },
+  };
 }

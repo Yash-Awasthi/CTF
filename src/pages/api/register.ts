@@ -6,6 +6,10 @@
  *
  * Validates all fields, hashes password, stores in mock DB.
  * All client-side for now — wire to D1 when backend is ready.
+ *
+ * This route is unauthenticated, so the address in the request body is
+ * attacker-controlled and must never reach the Cloudflare Email binding.
+ * Participants carry no email address, so no mail is sent from here.
  */
 import type { APIRoute } from "astro";
 
@@ -41,7 +45,7 @@ const mockUsers: Array<{ username: string; email: string; passwordHash: string }
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const body = await request.json();
+    const body = await request.json() as { username?: string; email?: string; password?: string };
     const { username, email, password } = body;
 
     // Required fields

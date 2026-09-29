@@ -7,7 +7,7 @@ import { schema } from './schema';
  * (sync) test client. Auth/db helpers accept this so they run identically in
  * Workers and in Vitest. Callers `await` results — sync results await fine.
  */
-export type AnySQLiteDb = BaseSQLiteDatabase<'async' | 'sync', unknown>;
+export type AnySQLiteDb = BaseSQLiteDatabase<'async' | 'sync', any, Record<string, unknown>>;
 
 /**
  * Build a Drizzle client bound to the request's D1 database.

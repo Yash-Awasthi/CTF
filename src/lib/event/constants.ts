@@ -2,8 +2,8 @@ import { EVENT_STATES } from '../db/schema';
 
 export type EventState = (typeof EVENT_STATES)[number];
 
-/** Maximum TOTAL event duration: 6 hours (not "6 additional hours"). */
-export const MAX_EVENT_DURATION_SECONDS = 21_600;
+/** Maximum TOTAL event duration: 48 hours (not "6 additional hours"). */
+export const MAX_EVENT_DURATION_SECONDS = 172_800;
 
 /**
  * Forward-only lifecycle: each state has exactly one legal successor (or none).

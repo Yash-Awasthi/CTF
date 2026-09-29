@@ -67,7 +67,7 @@ const challenge: ChallengeModule<Q11Public, Q11Private> = {
 		key: 'verified',
 		title: 'VERIFIED',
 		tier: 'medium',
-		basePoints: 200,
+		basePoints: 150,
 		attributionEnabled: false,
 	},
 	hints: [

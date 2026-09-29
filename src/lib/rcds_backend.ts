@@ -234,7 +234,7 @@ export class ChallengeScoreboard {
         teamName: record.teamId,
         score: record.points,
         solves: [record],
-        lastSolve: record.solveAt,
+        lastSolve: record.solvedAt,
       });
     }
   }

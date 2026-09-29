@@ -11,10 +11,14 @@
  * Answer: EDGAR HOLT (in page source text layer, not visible on screen)
  */
 import type { APIRoute } from 'astro';
+import { gateArtifact } from '../../../lib/challenges/artifact-gate';
 
 export const prerender = false;
 
-export const GET: APIRoute = () => {
+export const GET: APIRoute = async ({ locals }) => {
+	const denied = await gateArtifact(locals.auth, 13);
+	if (denied) return denied;
+
 	const html = `<!DOCTYPE html>
 <html lang="en">
 <head>

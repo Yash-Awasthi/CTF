@@ -14,6 +14,17 @@ interface ScopeKey {
 	subject: string;
 }
 
+/** Throttle policy. Defaults preserve the login policy for existing callers. */
+export interface RateLimitPolicy {
+	maxFailures: number;
+	windowSeconds: number;
+}
+
+const LOGIN_POLICY: RateLimitPolicy = {
+	maxFailures: RATE_LIMIT_MAX_FAILURES,
+	windowSeconds: RATE_LIMIT_WINDOW_SECONDS,
+};
+
 /**
  * Privacy-preserving IP identifier: HMAC-SHA256(ip, RATE_LIMIT_SECRET), hex.
  * Raw IPs are never persisted. Uses a dedicated secret, NOT EVENT_SECRET.
@@ -41,8 +52,8 @@ export interface RateLimitStatus {
 	retryAfterSeconds: number;
 }
 
-function windowExpired(windowStart: Date, now: Date): boolean {
-	return (now.getTime() - windowStart.getTime()) / 1000 >= RATE_LIMIT_WINDOW_SECONDS;
+function windowExpired(windowStart: Date, now: Date, windowSeconds: number): boolean {
+	return (now.getTime() - windowStart.getTime()) / 1000 >= windowSeconds;
 }
 
 /** Read-only check: is this scope currently in cooldown? */
@@ -50,6 +61,7 @@ export async function checkRateLimit(
 	db: AnySQLiteDb,
 	key: ScopeKey,
 	now: Date = new Date(),
+	policy: RateLimitPolicy = LOGIN_POLICY,
 ): Promise<RateLimitStatus> {
 	const row = await db
 		.select()
@@ -63,13 +75,13 @@ export async function checkRateLimit(
 		)
 		.get();
 
-	if (!row || windowExpired(row.windowStart, now)) {
+	if (!row || windowExpired(row.windowStart, now, policy.windowSeconds)) {
 		return { blocked: false, retryAfterSeconds: 0 };
 	}
 	const elapsed = (now.getTime() - row.windowStart.getTime()) / 1000;
 	return {
-		blocked: row.failureCount >= RATE_LIMIT_MAX_FAILURES,
-		retryAfterSeconds: Math.max(0, Math.ceil(RATE_LIMIT_WINDOW_SECONDS - elapsed)),
+		blocked: row.failureCount >= policy.maxFailures,
+		retryAfterSeconds: Math.max(0, Math.ceil(policy.windowSeconds - elapsed)),
 	};
 }
 
@@ -78,6 +90,7 @@ export async function recordFailure(
 	db: AnySQLiteDb,
 	key: ScopeKey,
 	now: Date = new Date(),
+	policy: RateLimitPolicy = LOGIN_POLICY,
 ): Promise<void> {
 	const row = await db
 		.select()
@@ -102,7 +115,7 @@ export async function recordFailure(
 		return;
 	}
 
-	if (windowExpired(row.windowStart, now)) {
+	if (windowExpired(row.windowStart, now, policy.windowSeconds)) {
 		await db
 			.update(loginRateLimit)
 			.set({ windowStart: now, failureCount: 1 })

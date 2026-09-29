@@ -174,13 +174,13 @@ describe('announcements', () => {
 });
 
 describe('timer extension cap (reuses Phase 3 service)', () => {
-	it('extends while LIVE and enforces the 6h cap', async () => {
+	it('extends while LIVE and enforces the 48h cap', async () => {
 		await markEventReady(db, event.id);
 		await startEvent(db, event.id);
 		await extendEvent(db, event.id, 3600); // ok
 		const ev = await db.select().from(events).where(eq(events.id, event.id)).get();
 		expect(ev!.durationSeconds).toBe(DEV_EVENT.durationSeconds + 3600);
-		// Pushing past 21600 total must be rejected.
-		await expect(extendEvent(db, event.id, 21_600)).rejects.toThrow(/exceeds_max_duration/);
+		// Pushing past 172800 total must be rejected.
+		await expect(extendEvent(db, event.id, 172_800)).rejects.toThrow(/exceeds_max_duration/);
 	});
 });

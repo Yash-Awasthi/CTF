@@ -11,8 +11,8 @@ import {
   generateFullLeaderboard,
   calculateRankChanges,
   AchievementType,
-  Solve,
-  PlayerEntry,
+  type Solve,
+  type PlayerEntry,
 } from '../../src/lib/leaderboard';
 
 function makeSolve(overrides: Partial<Solve> = {}): Solve {

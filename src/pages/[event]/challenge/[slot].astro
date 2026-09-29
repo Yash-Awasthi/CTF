@@ -264,7 +264,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 		</div>
 		<!-- Case progress line -->
 		<div class="h-px w-full bg-neutral-800">
-			<div class="h-full bg-neutral-600/50 transition-all duration-700"
+			<div class="h-full bg-neutral-600/50 transition-[width] duration-700"
 			     style={`width: ${progressPct}%`}></div>
 		</div>
 	</nav>
@@ -3381,5 +3381,9 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 		})();
 	</script>
 )}
+
+<script>
+	import '../../../scripts/challenge-play';
+</script>
 
 </Layout>

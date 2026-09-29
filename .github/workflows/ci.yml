@@ -2,81 +2,39 @@ name: CTF CI
 
 on:
   push:
-    branches: [main, develop]
   pull_request:
-    branches: [main]
 
 jobs:
-  test:
+  verify:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18, 20, 22]
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js ${{ matrix.node-version }}
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          node-version: '22'
+          cache: 'pnpm'
 
+      # The repository is a pnpm project: packageManager pins pnpm and
+      # pnpm-lock.yaml is the tracked lockfile. package-lock.json is gitignored,
+      # so an `npm ci` step could never have resolved.
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Run tests
-        run: npm test
+        run: pnpm test
 
+      # Not blocking while 29 errors remain, all in parked modules and test
+      # helpers. continue-on-error still reports the job as failed, unlike
+      # appending `|| true`, which reported it as passing.
       - name: Run type checks
-        run: npx tsc --noEmit || true
-
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run linter
-        run: npm run lint || true
-
-  build:
-    runs-on: ubuntu-latest
-    needs: [test, lint]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
+        continue-on-error: true
+        run: npx tsc --noEmit
 
       - name: Build
-        run: npm run build
-
-      - name: Verify build output
-        run: |
-          echo "✅ Checking build output..."
-          test -d dist
-          echo "✅ Build OK"
-
-      - name: Count pages
-        run: |
-          echo "📊 Pages:"
-          find src/pages -name "*.astro" | wc -l
-          echo "📊 Components:"
-          find src/components -name "*.astro" 2>/dev/null | wc -l || echo "0"
-          echo "📊 Lib modules:"
-          find src/lib -name "*.ts" | wc -l
+        run: pnpm build

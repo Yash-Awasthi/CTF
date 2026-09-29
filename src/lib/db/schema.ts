@@ -336,7 +336,9 @@ export const challengeBypasses = sqliteTable('challenge_bypasses', {
 // Fixed-window counter per scope. `subject` is the roll number (string) for the
 // 'roll' scope, or an HMAC(ip, RATE_LIMIT_SECRET) hex digest for the 'ip' scope
 // — raw IPs are never persisted (privacy §14).
-export const RATE_LIMIT_SCOPES = ['roll', 'ip'] as const;
+// 'roll'/'ip' throttle login; 'submit'/'hint' throttle the authenticated routes
+// by participant id so answers cannot be brute-forced without bound.
+export const RATE_LIMIT_SCOPES = ['roll', 'ip', 'submit', 'hint'] as const;
 
 export const loginRateLimit = sqliteTable(
 	'login_rate_limit',

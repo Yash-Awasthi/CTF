@@ -110,7 +110,7 @@ export function createBadgeTemplate(input: {
   color?: string;
 }): BadgeTemplate {
   return {
-    id: `badge_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+    id: `badge_${Date.now().toString(36)}_${crypto.randomUUID().slice(0, 8)}`,
     name: input.name,
     description: input.description,
     icon: input.icon,

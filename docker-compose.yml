@@ -2,10 +2,14 @@
 # Usage: docker compose up
 # Then open http://localhost:4321
 
+version: "3.8"
+
 services:
   dev:
-    image: node:22-slim
+    image: node:22.6-alpine
+    container_name: ctf-dev
     working_dir: /app
+    restart: unless-stopped
     volumes:
       - .:/app
       - node_modules:/app/node_modules
@@ -20,15 +24,25 @@ services:
       "
     environment:
       - NODE_ENV=development
-
-  # Miniflare (local Cloudflare Workers runtime) — used by wrangler dev
-  # Uncomment if you need isolated D1/R2:
-  # miniflare:
-  #   image: ghcr.io/cloudflare/miniflare:latest
-  #   volumes:
-  #     - .:/app
-  #   working_dir: /app
-  #   command: miniflare --d1 case-files-db --r2 case-files-assets
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4321/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "1.0"
+          memory: 512M
 
 volumes:
   node_modules:

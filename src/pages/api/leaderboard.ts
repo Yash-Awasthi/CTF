@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { createDb } from '../../lib/db/client';
 import { getEnv } from '../../lib/runtime';
 import { resolveEventBySlug } from '../../lib/event/resolve';
-import { getPublicLeaderboard, LeaderboardNotPublicError } from '../../lib/leaderboard';
+import { getPublicLeaderboard, LeaderboardNotPublicError } from '../../lib/leaderboard/index';
 
 export const prerender = false;
 

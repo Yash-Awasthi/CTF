@@ -5,6 +5,6 @@ defineChallengeTests({
   key: 'verified',
   title: 'VERIFIED',
   tier: 'medium',
-  basePoints: 200,
+  basePoints: 150,
   attributionEnabled: false,
 });

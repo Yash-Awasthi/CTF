@@ -29,7 +29,7 @@ const challenge: ChallengeModule<Public, Private> = {
 		key: 'the-continuity',
 		title: 'Anomaly Synthesis',
 		tier: 'hard',
-		basePoints: 300,
+		basePoints: 350,
 		attributionEnabled: false,
 	},
 	hints: [

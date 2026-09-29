@@ -32,6 +32,8 @@ import {
 import {
 	RATE_LIMIT_MAX_FAILURES,
 	RATE_LIMIT_WINDOW_SECONDS,
+	SUBMIT_RATE_LIMIT_MAX_FAILURES,
+	SUBMIT_RATE_LIMIT_WINDOW_SECONDS,
 } from '../../src/lib/auth/constants';
 
 const MIGRATIONS_DIR = join(process.cwd(), 'migrations');
@@ -236,6 +238,47 @@ describe('rate limiting', () => {
 
 		await resetFailures(db, key); // success clears it → never a permanent lock
 		expect((await checkRateLimit(db, key)).blocked).toBe(false);
+	});
+
+	it('applies a stricter policy to submission scopes', async () => {
+		const { ev } = await setup(db);
+		const policy = {
+			maxFailures: SUBMIT_RATE_LIMIT_MAX_FAILURES,
+			windowSeconds: SUBMIT_RATE_LIMIT_WINDOW_SECONDS,
+		};
+		const key = { eventId: ev.id, scope: 'submit' as const, subject: '1' };
+
+		for (let i = 0; i < SUBMIT_RATE_LIMIT_MAX_FAILURES - 1; i++) {
+			await recordFailure(db, key, new Date(), policy);
+		}
+		expect((await checkRateLimit(db, key, new Date(), policy)).blocked).toBe(false);
+
+		await recordFailure(db, key, new Date(), policy);
+		expect((await checkRateLimit(db, key, new Date(), policy)).blocked).toBe(true);
+
+		// Same row read under the login policy is still under its higher ceiling:
+		// proves the policy argument is what decides, not a shared constant.
+		expect((await checkRateLimit(db, key)).blocked).toBe(false);
+
+		await resetFailures(db, key);
+		expect((await checkRateLimit(db, key, new Date(), policy)).blocked).toBe(false);
+	});
+
+	it('lapses the submission window on its own shorter budget', async () => {
+		const { ev } = await setup(db);
+		const policy = {
+			maxFailures: SUBMIT_RATE_LIMIT_MAX_FAILURES,
+			windowSeconds: SUBMIT_RATE_LIMIT_WINDOW_SECONDS,
+		};
+		const key = { eventId: ev.id, scope: 'hint' as const, subject: '1' };
+		const t0 = new Date();
+		for (let i = 0; i < SUBMIT_RATE_LIMIT_MAX_FAILURES; i++) {
+			await recordFailure(db, key, t0, policy);
+		}
+		expect((await checkRateLimit(db, key, t0, policy)).blocked).toBe(true);
+
+		const after = new Date(t0.getTime() + (SUBMIT_RATE_LIMIT_WINDOW_SECONDS + 1) * 1000);
+		expect((await checkRateLimit(db, key, after, policy)).blocked).toBe(false);
 	});
 
 	it('lapses the window (no permanent lock)', async () => {

@@ -13,5 +13,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 	const g = await guardAdmin(request, cookies, parsed.data.eventSlug, { mutation: true });
 	if (g instanceof Response) return g;
 	const res = await createAnnouncement(g.db, { eventId: g.event.id, message: parsed.data.message });
+
 	return adminJson({ ok: true, id: res.id }, 200);
 };
