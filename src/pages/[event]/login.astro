@@ -24,8 +24,8 @@ const loginOpen = event ? isLoginAllowed(event.state) : false;
 const errorCode = Astro.url.searchParams.get('error');
 const retry = Astro.url.searchParams.get('retry');
 const ERROR_MESSAGES: Record<string, string> = {
-	invalid_input: 'Please enter a valid roll number and password.',
-	invalid_credentials: 'Incorrect roll number or password.',
+	invalid_input: 'Please enter your roll number and access code.',
+	invalid_credentials: 'Incorrect roll number or access code.',
 	event_closed: 'This event is not open for login yet.',
 	event_not_found: 'Event not found.',
 	rate_limited: `Too many attempts. Try again in ${retry ?? 60}s.`,
@@ -67,11 +67,12 @@ const errorMessage = errorCode ? (ERROR_MESSAGES[errorCode] ?? 'Sign in failed.'
 						/>
 					</label>
 					<label class="flex flex-col gap-1 text-sm">
-						<span class="text-neutral-400">Password</span>
+						<span class="text-neutral-400">Access code</span>
 						<input
 							name="password"
 							type="password"
 							autocomplete="current-password"
+							placeholder="XXXX-XXXX-XXXX"
 							required
 							class="rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 outline-none focus:border-emerald-500"
 						/>

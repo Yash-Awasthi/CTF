@@ -5,6 +5,8 @@ import { getEnv } from '../../lib/runtime';
 import { isAdmin, getAdminOverview } from '../../lib/admin';
 import { ensureCurrentEventState } from '../../lib/event/state';
 import { resolveEventBySlug } from '../../lib/event/resolve';
+import { events } from '../../lib/db/schema';
+import { desc } from 'drizzle-orm';
 
 export const prerender = false;
 
@@ -14,7 +16,9 @@ const authed = await isAdmin(Astro.cookies, db);
 const slug = Astro.url.searchParams.get('event') ?? 'case-files-dev-2026';
 
 let overview: Awaited<ReturnType<typeof getAdminOverview>> | null = null;
+let allEvents: { slug: string; name: string; state: string }[] = [];
 if (authed) {
+	allEvents = await db.select({ slug: events.slug, name: events.name, state: events.state }).from(events).orderBy(desc(events.id)).all();
 	const ev = await resolveEventBySlug(db, slug);
 	if (ev) {
 		const now = new Date();
@@ -37,6 +41,15 @@ if (authed) {
 			</form>
 		)}
 
+		{authed && allEvents.length > 0 && (
+			<nav class="flex flex-wrap gap-2 text-sm" aria-label="Events">
+				{allEvents.map((e) => (
+					<a href={`/admin?event=${e.slug}`} class={`rounded border px-3 py-1 ${e.slug === slug ? 'border-emerald-500 text-emerald-300' : 'border-neutral-700 text-neutral-400 hover:text-neutral-200'}`}>
+						{e.name} <span class="text-neutral-600">· {e.state}</span>
+					</a>
+				))}
+			</nav>
+		)}
 		{authed && !overview && <p class="text-red-400">Event <code>{slug}</code> not found.</p>}
 
 		{authed && overview && (

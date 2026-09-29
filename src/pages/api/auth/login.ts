@@ -133,7 +133,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 		)
 		.get();
 
-	const ok = !!participant && validateParticipantCredentials(participant, password);
+	const ok = !!participant && (await validateParticipantCredentials(participant, password));
 	if (!ok) {
 		await recordFailure(db, rollKey);
 		if (ipKey) await recordFailure(db, ipKey);

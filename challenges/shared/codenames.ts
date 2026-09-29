@@ -6,13 +6,12 @@
  * in both Q1 (assignment) and Q30 (final query) to guarantee the answer
  * to both challenges is identical for every participant.
  *
- * Collision properties: pool size 200 >> typical CTF roster size.
- * For events with >200 participants a modulo wrap occurs — event organiser
- * should ensure roster_size ≤ CODENAME_POOL.length.
+ * Collision properties: pool size 195, more than a typical classroom roster.
+ * Larger rosters would share codenames; `pnpm event:create` refuses them.
  */
 
 /**
- * 200 single-word investigator codenames — evocative of cold-case archives,
+ * 195 single-word investigator codenames — evocative of cold-case archives,
  * old-world craft, and enduring institutional memory.
  */
 export const CODENAME_POOL: readonly string[] = [
@@ -67,7 +66,7 @@ export const CODENAME_POOL: readonly string[] = [
  * SAME formula used in Q1 and Q30 — never modify one without the other.
  */
 export function getCodename(rollNumber: number): string {
-  const stride = 37; // coprime with 200 → full-cycle permutation
+  const stride = 37; // coprime with 195, so the stride visits every name
   const idx = ((rollNumber - 1) * stride) % CODENAME_POOL.length;
   return CODENAME_POOL[idx];
 }

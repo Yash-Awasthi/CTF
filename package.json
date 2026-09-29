@@ -21,7 +21,8 @@
     "db:seed:local": "wrangler d1 execute case-files-db --local --file scripts/seed-dev.sql",
     "db:reset:local": "rm -rf .wrangler/state/v3/d1 && pnpm db:migrate:local && pnpm db:seed:local",
     "replay:export": "node scripts/export-leaderboard.mjs",
-    "replay:scrub": "node scripts/scrub-static-replay.mjs"
+    "replay:scrub": "node scripts/scrub-static-replay.mjs",
+    "event:create": "tsx scripts/create-event.ts"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.3",
@@ -45,6 +46,7 @@
     "@types/node": "^26.1.0",
     "better-sqlite3": "^12.11.1",
     "drizzle-kit": "^0.31.10",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"
   }

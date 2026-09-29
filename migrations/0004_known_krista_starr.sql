@@ -1,0 +1,1 @@
+ALTER TABLE `participants` ADD `access_code_hash` text;

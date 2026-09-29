@@ -72,6 +72,8 @@ Read `ctf-build-plan.md` (source of truth, already corrected). This file = per-p
 - Interactive routes: `/{event}/portal/reyes` (Q12 password), `/{event}/ledger` (Q28 table, row-level verdicts), `/{event}/terminal` (Q29 VERIFY). Client code for all in-page tools: `src/scripts/challenge-widgets.ts`.
 - Attribution slots: 8, 15, 16, 17, 28 (seed-dev.sql mirrors this). Casebook text: `challenges/shared/casebook.ts`. Codename shown in chrome via `getCodename(roll)`; after Q29 (current_challenge >= 30) chrome switches to the Continuity.
 - Windows: stop `astro dev` before `pnpm db:reset:local` (the running server locks the D1 files).
+- Real events: `pnpm event:create` (scripts/create-event.ts) writes events/<slug>/setup.sql + access-codes.csv (git-ignored) and can --apply local|remote. Participants with `access_code_hash` must log in with the code (SHA-256 compare, case/dash-insensitive); only the dev roster (null hash) uses roll-as-password. Roster cap 195 = codename pool.
+- No ClientRouter: full page loads keep challenge scripts running after navigation.
 
 ## Local dev / test
 - `pnpm db:reset:local` (wipe+migrate+seed) → dev event slug `case-files-dev-2026`, state `READY`, rolls 25115000–25115115.

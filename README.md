@@ -1,287 +1,101 @@
-# 🕵️ Case Files — AI-Narrated Internet Investigation CTF
+# Case Files
 
-> **30 puzzles. One story. Cryptographically personalized per player.**
+A browser capture-the-flag event: thirty sequential challenges that tell one investigation, Case
+71-C. Every player gets their own evidence (names, dates, files, audio, images) derived from an
+event secret, so copied answers are traced back to their owner. It runs on Cloudflare Workers
+with a D1 database, on Astro.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/Node-≥22-green.svg)](https://nodejs.org)
-[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-orange.svg)](https://workers.cloudflare.com)
-[![Vitest](https://img.shields.io/badge/Tests-727-brightgreen.svg)](#testing)
+The story and puzzle design live in `PHASE13-story/ctf-story-bible.md`; how each slot plays and how
+it was verified is in `CHALLENGE-AUDIT.md`.
 
-**Case Files** is a browser-based CTF platform where 30 sequential challenges unfold an AI-narrated investigation story. Each player gets **cryptographically unique** challenge content — same puzzle structure, different names, dates, and filenames — so copied answers betray their source.
+## Requirements
 
-Built for classroom competitions with 40+ simultaneous players. Zero infrastructure cost on Cloudflare's free tier.
+- Node 22.12 or later, pnpm 11
+- A Cloudflare account (only for deploying)
 
----
-
-## ✨ Features
-
-| Feature | Description |
-|---------|-------------|
-| 🎭 **AI-Narrated Story** | 30 challenges that unfold a cohesive investigation narrative |
-| 🔐 **Per-Player Personalization** | HMAC-derived seeds create unique content per participant |
-| 🎯 **Attribution Anti-Cheat** | Copied answers are traceable to their source via deterministic bijections |
-| ⚡ **Zero-Cost infra** | Runs on Cloudflare Workers + D1 + R2 (free tier) |
-| 🏆 **Live Leaderboard** | Real-time scoring with time decay and hint penalties |
-| 📊 **Milli-Point Precision** | Integer-only scoring — no floating-point drift |
-| 🔑 **Rate-Limited Auth** | HMAC-hashed IPs, per-roll login limits, no permanent lockouts |
-| 📦 **Static Replay** | Post-event archive that works without any backend |
-| 🌑 **Noir Challenge Hub** | Dark, mystery-themed landing page with animated challenge grid |
-
----
-
-## 🌑 Challenge Hub
-
-The challenge hub (`/challenges`) is a noir-themed investigation dashboard:
-
-- **Animated challenge grid** — 30 cards with tier color-coding (easy/medium/hard/capstone)
-- **Click-to-expand** — reveals case description and "Start Investigation" button
-- **Progress bar** — tracks investigation completion with animated fill
-- **Leaderboard** — top investigators ranked by score and cases solved
-- **Responsive** — 1-column mobile, 2-column tablet, 3-column desktop
-- **Accessible** — respects `prefers-reduced-motion`, keyboard navigable
-
-Design: deep blue/purple palette (#0a0e1a, #1a0a2e), green accents for solved states, amber for hints, scanning line animation, typewriter title effect.
-
----
-
-## 🚀 Quick Start
+## Run it locally
 
 ```bash
-# Install dependencies
 pnpm install
-
-# Set up local environment
-cp .env.example .dev.vars
-
-# Start dev server
-pnpm dev
-# → http://localhost:4321
+cp .env.example .dev.vars        # then replace the three dev secrets (openssl rand -hex 32)
+pnpm db:reset:local              # create the local D1, apply migrations, seed the dev event
+pnpm dev                         # http://localhost:4321
 ```
 
-### Cloudflare Setup (one-time)
+The seeded dev event is `case-files-dev-2026` with roll numbers 25115000–25115115. On the dev
+roster the password is the roll number itself. To play:
+
+1. Open `http://localhost:4321/admin?event=case-files-dev-2026`, log in with `ADMIN_SECRET` from
+   `.dev.vars`, and press **Start**.
+2. Open `http://localhost:4321/`, pick the event, and log in as `25115000` / `25115000`.
+
+On Windows, stop `pnpm dev` before `pnpm db:reset:local`; the running server holds the database files.
+
+## Create a real event
+
+Real events give every participant a random access code instead of the roll-number password.
+
+```bash
+pnpm event:create --slug spring-2026 --name "Case Files — Spring 2026" \
+  --hours 3 --rolls 25115000-25115059 --apply local
+# or: --roster rolls.txt (one roll number per line); use --apply remote for production
+```
+
+This writes `events/<slug>/setup.sql` and `events/<slug>/access-codes.csv` (git-ignored). The CSV is
+the only copy of the codes: give each player their line and keep the file private. The event is
+created in the READY state, so players can log in to the waiting room until you start it. At most
+195 participants per event (the codename pool); events last up to 48 hours.
+
+## Deploy to Cloudflare
 
 ```bash
 pnpm wrangler login
-
-# Create D1 database
-pnpm wrangler d1 create case-files-db
-# Copy the database_id into wrangler.jsonc
-
-# Create R2 bucket
-pnpm wrangler r2 bucket create case-files-assets
-
-# Generate types + run migrations
-pnpm generate-types
-pnpm db:generate
-pnpm db:migrate:local
-pnpm db:seed:local
+pnpm wrangler d1 create case-files-db          # put the returned database_id in wrangler.jsonc
+pnpm wrangler secret put EVENT_SECRET          # three distinct values from openssl rand -hex 32
+pnpm wrangler secret put RATE_LIMIT_SECRET
+pnpm wrangler secret put ADMIN_SECRET
+pnpm db:migrate:remote
+pnpm build && pnpm wrangler deploy
+pnpm event:create --slug ... --name ... --hours 3 --rolls ... --apply remote
 ```
 
-### Database Commands
+Never change `EVENT_SECRET` once an event has started: every player's evidence and answers are
+derived from it.
 
-| Command | Description |
-|---------|-------------|
-| `pnpm db:generate` | Generate SQL migration from Drizzle schema |
-| `pnpm db:migrate:local` | Apply migrations to local D1 |
-| `pnpm db:seed:local` | Seed dev event + 116 participants |
-| `pnpm db:reset:local` | Wipe, re-migrate, re-seed |
-| `pnpm db:migrate:remote` | Apply to production D1 |
+## Running the event
 
----
+The admin dashboard at `/admin` (password: `ADMIN_SECRET`) lists every event. For the selected
+event it can start, freeze, extend, announce, bypass a broken challenge for everyone, reset a
+player's session, begin review, and publish results. The event freezes itself when time runs out.
+Players never see standings; the leaderboard is public only after results are published.
 
-## 🏗️ Architecture
+## How scoring works
 
-```
-┌──────────────────────────────────────────────────────────┐
-│                    BROWSER (Player)                       │
-│  Astro SSR + React Islands · Tailwind v4 · Countdown     │
-├──────────────────────────────────────────────────────────┤
-│                   CLOUDFLARE WORKERS                      │
-│  ┌─────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐ │
-│  │  Auth   │  │ Challenge│  │ Scoring  │  │Anti-Cheat│ │
-│  │ (Roll#) │  │  Engine  │  │  Engine  │  │(Attrib.) │ │
-│  └─────────┘  └──────────┘  └──────────┘  └──────────┘ │
-├──────────────────────────────────────────────────────────┤
-│  D1 (SQL)     │  R2 (Assets)     │  SSE (Live Updates)  │
-└──────────────────────────────────────────────────────────┘
-```
+`score = base_points × time_factor × hint_factor`, stored as integer milli-points.
 
-### Challenge Engine
+- Base points: slots 1–6 score 100, 7–12 score 150, 13–20 score 200, 21–27 score 300, 28–29 score
+  350, 30 scores 500.
+- Time factor falls linearly from 1.0 to 0.5 over the event.
+- Taking any hint halves that challenge's score (once, however many hints).
+- Wrong answers to attribution slots (8, 15, 16, 17, 28) that match another player's answer are
+  recorded as strikes; a second strike on a different challenge disqualifies.
 
-Each challenge is a TypeScript module that implements a `ChallengeModule` interface:
-
-```typescript
-interface ChallengeModule {
-  metadata: { slot: number; key: string; title: string; basePoints: number; tier: string };
-  generate(ctx: GenerationContext): { publicData: unknown; privateData: unknown };
-  validate(instance: unknown, answer: string): boolean;
-}
-```
-
-Modules receive a **seeded RNG** (HMAC-derived, deterministic per player per slot) — they never see secrets or seeds directly.
-
-### Scoring Formula
-
-```
-score = base_points × time_factor × hint_factor
-```
-
-- **Time factor**: `max(0.5, 1 − (elapsed/duration) × 0.5)` — decays linearly, floors at 50%
-- **Hint factor**: `1.0` (no hints) or `0.5` (hint used) — binary, doesn't stack
-- **Minimum**: `0.25 × base_points`
-
-All scores are **integer milli-points** (1 pt = 1000 units). No floats in the database.
-
-### Anti-Cheat System
-
-On incorrect answers to attribution-enabled challenges, the system performs an O(1) lookup in a deterministic ownership map:
-
-```
-normalizedAnswer → rollNumber
-```
-
-- **1st offense**: Strike (not elimination)
-- **2nd offense** (different challenge): Disqualified from competitive play
-
----
-
-## 🔐 Authentication
-
-**Roll-Number Mode** (classroom events):
-- **Roll-number login** — username = password = roll number
-- **One active session per participant** — new login revokes old session
-- **Rate limiting** — 10 failures / 5 min per roll and per IP (HMAC-hashed)
-- **12-hour sessions** — auto-expire, no inactivity logout
-
-**Account Mode** (open events):
-- **Registration** — username (3-20 chars) + email + password
-- **Password hashing** — PBKDF2 + SHA-256 (100K iterations) via Web Crypto API
-- **Session tokens** — 24-hour localStorage tokens
-- **Leaderboard** — ranked by points, ties broken by join date
-- **Login page** — noir-themed at `/login` with register/login toggle
-
----
-
-## 🧪 Testing
+## Tests
 
 ```bash
-pnpm test          # Vitest unit tests (727 tests)
-pnpm test:e2e      # Playwright end-to-end
+pnpm test          # Vitest: engine, crypto, scoring, auth, and per-challenge solvability
+pnpm test:e2e      # Playwright against pnpm dev
+pnpm exec tsc --noEmit
 ```
 
-### Test Coverage
-
-| Area | Tests |
-|------|-------|
-| Challenge engine | 3,480 combinations (116 players × 30 slots) |
-| Scoring | Formula, floors, integer precision, idempotency |
-| Anti-cheat | Attribution, strikes, idempotency |
-| Auth | Login, sessions, rate limiting, CSRF |
-| Admin | Lifecycle, bypass, audit logging |
-| Static replay | Personalization, scrubbing, leaderboard export |
-
----
-
-## 📂 Project Structure
+## Layout
 
 ```
-CTF/
-├── src/
-│   ├── lib/
-│   │   ├── auth/           # Login, sessions, rate limiting
-│   │   ├── challenges/     # Challenge engine + 30 modules
-│   │   ├── crypto/         # HMAC, seeded RNG, deterministic PRNG
-│   │   ├── scoring/        # Scoring formula + persistence
-│   │   ├── anti-cheat/     # Attribution-based cheating detection
-│   │   ├── event/          # Event state machine + timer
-│   │   ├── admin/          # Admin dashboard + operations
-│   │   └── sse/            # Live updates (SSE + polling fallback)
-│   ├── pages/              # Astro routes
-│   └── components/         # React islands
-├── challenges/             # Per-challenge content (01-30)
-├── tests/
-│   ├── unit/               # Vitest
-│   └── e2e/                # Playwright
-├── scripts/                # Seed, export, scrub
-└── wrangler.jsonc          # Cloudflare config
+challenges/              the 30 challenge modules, plus shared builders (audio, images, casebook)
+src/lib/challenges/      engine, registry, evidence gate
+src/lib/{auth,crypto,event,scoring,anti-cheat,admin,sse,...}
+src/pages/[event]/       player pages: login, home (casebook), challenge, evidence and tool routes
+src/pages/case/          static-URL evidence (some of it changes as the case advances)
+scripts/                 dev seed, event:create, replay export
+migrations/              D1 schema
 ```
-
----
-
-## 📊 Event Lifecycle
-
-```
-DRAFT → READY → LIVE → FROZEN → REVIEW → RESULTS_PUBLISHED → ARCHIVED
-```
-
-- **Lazy expiry**: No cron needed — the next request after `ends_at` auto-freezes
-- **Server time is authoritative**: Browser countdown is display-only
-- **Max duration**: 6 hours (enforced)
-
----
-
-## 🏆 Leaderboard
-
-Leaderboard is **only visible** after `RESULTS_PUBLISHED`:
-
-```
-Score DESC → Earliest final solve → Roll ASC
-```
-
-Excludes disqualified participants. Public rolls are unmasked in results.
-
----
-
-## 👥 Team Mode
-
-Form teams of 2-5 investigators to tackle challenges collaboratively.
-
-| Feature | Description |
-|---------|-------------|
-| **Create team** | Choose a name (3-30 chars), get a 6-character invite code |
-| **Join team** | Enter invite code or share it |
-| **Team roles** | Captain (can manage members) + Member |
-| **Team scoring** | Best score per challenge counts once across team |
-| **Team leaderboard** | Ranked by total team score |
-| **Captain actions** | Promote, remove members, disband team |
-
-Team scoring formula: sum of best individual scores per challenge. If two teammates solve the same challenge, only the higher score counts.
-
----
-
-## 🗺️ Roadmap
-
-- [ ] Production challenge content (30 real puzzles)
-- [x] Team mode (multi-player per entry)
-- [ ] Custom event creation UI
-- [ ] Webhook integrations (Discord, Slack)
-
----
-
-## 🛠️ Admin Dashboard
-
-The admin dashboard (`/admin`) provides event management:
-
-| Tab | Features |
-|-----|----------|
-| 📋 **Challenges** | List/edit all 30 challenges, filter by tier, toggle attribution |
-| 🏆 **Leaderboard** | Participant rankings with search, score, solves, hints |
-| 📊 **Statistics** | Solves-per-challenge bar chart, solve time distribution, tier breakdown, hint usage rates |
-| ⏱️ **Timeline** | Event lifecycle events (creation, solves, status changes) |
-| ⚙️ **Settings** | Time decay, hint penalties, flag format, rate limits, authentication |
-
-Design: dark noir theme matching the challenge hub, CSS-only charts, responsive grid.
-
-All data is client-side mock for now — wire to D1 API when backend is ready.
-
----
-
-## 🤝 Contributing
-
-See the [build plan](ctf-build-plan.md) for the full phase-by-phase architecture. Contributions welcome — open an issue or PR.
-
----
-
-## 📄 License
-
-[MIT](LICENSE)

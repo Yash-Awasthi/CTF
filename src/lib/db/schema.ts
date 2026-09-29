@@ -71,6 +71,9 @@ export const participants = sqliteTable(
 			.notNull()
 			.references(() => events.id, { onDelete: 'cascade' }),
 		rollNumber: integer('roll_number').notNull(),
+		// SHA-256 of the participant's access code. Null only for the dev roster,
+		// whose password is the roll number.
+		accessCodeHash: text('access_code_hash'),
 		currentChallenge: integer('current_challenge').notNull().default(1),
 		// milli-points; participant total = sum of solves.final_score.
 		score: integer('score').notNull().default(0),

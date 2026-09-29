@@ -1,11 +1,58 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { inArray, desc } from 'drizzle-orm';
+import { createDb } from '../lib/db/client';
+import { getEnv } from '../lib/runtime';
+import { events } from '../lib/db/schema';
+
+export const prerender = false;
+
+// Events a player can log in to or has just finished; drafts and archives stay hidden.
+const open = await createDb(getEnv().DB)
+	.select({ slug: events.slug, name: events.name, state: events.state })
+	.from(events)
+	.where(inArray(events.state, ['READY', 'LIVE', 'FROZEN', 'REVIEW', 'RESULTS_PUBLISHED']))
+	.orderBy(desc(events.id))
+	.all();
+
+const LABEL: Record<string, string> = {
+	READY: 'Waiting to start',
+	LIVE: 'Live now',
+	FROZEN: 'Ended',
+	REVIEW: 'Ended',
+	RESULTS_PUBLISHED: 'Results published',
+};
 ---
 
-<Layout title="Case Files — CTF">
-	<main class="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-4 px-6 text-center">
-		<p class="text-xs uppercase tracking-[0.3em] text-emerald-400">Case Files</p>
-		<h1 class="text-3xl font-semibold">Scaffold online.</h1>
-		<p class="text-neutral-400">Phase 0 complete. The investigation begins soon.</p>
+<Layout title="Case Files">
+	<main class="mx-auto flex min-h-screen max-w-xl flex-col justify-center gap-8 px-6">
+		<header>
+			<p class="font-mono text-[10px] tracking-[0.35em] text-emerald-500 uppercase">Blackwood Investigative Bureau</p>
+			<h1 class="mt-2 text-3xl font-semibold">Case Files</h1>
+			<p class="mt-2 text-neutral-400">
+				Case 71-C was closed eleven years ago. It has been reassigned to you.
+				Thirty files, one investigation, and every investigator sees their own evidence.
+			</p>
+		</header>
+
+		<section aria-label="Events">
+			<p class="mb-3 font-mono text-[10px] tracking-[0.3em] text-neutral-600 uppercase">Open investigations</p>
+			{open.length === 0 ? (
+				<p class="text-sm text-neutral-500">No investigation is open right now.</p>
+			) : (
+				<ul class="space-y-2">
+					{open.map((e) => (
+						<li>
+							<a href={`/${e.slug}/login`} class="flex items-center justify-between rounded border border-neutral-800 bg-neutral-900/60 px-4 py-3 hover:border-neutral-600">
+								<span>{e.name}</span>
+								<span class={`font-mono text-[10px] tracking-[0.15em] uppercase ${e.state === 'LIVE' ? 'text-emerald-400' : 'text-neutral-500'}`}>{LABEL[e.state]}</span>
+							</a>
+						</li>
+					))}
+				</ul>
+			)}
+		</section>
+
+		<p class="font-mono text-[10px] text-neutral-700">Sign in with your roll number and the access code your organiser gave you.</p>
 	</main>
 </Layout>

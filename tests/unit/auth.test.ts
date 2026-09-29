@@ -16,6 +16,7 @@ import {
 import {
 	constantTimeEqual,
 	validateParticipantCredentials,
+	hashAccessCode,
 } from '../../src/lib/auth/credentials';
 import {
 	createSession,
@@ -102,11 +103,20 @@ describe('credentials', () => {
 		expect(constantTimeEqual('abc', 'abcd')).toBe(false);
 	});
 
-	it('validates password == roll number', async () => {
+	it('falls back to the roll number when no access code is set', async () => {
 		const { db } = makeDb();
 		const { p } = await setup(db);
-		expect(validateParticipantCredentials(p, '25115000')).toBe(true);
-		expect(validateParticipantCredentials(p, '99999999')).toBe(false);
+		expect(await validateParticipantCredentials(p, '25115000')).toBe(true);
+		expect(await validateParticipantCredentials(p, '99999999')).toBe(false);
+	});
+
+	it('requires the access code, ignoring case and dashes, once one is set', async () => {
+		const { db } = makeDb();
+		const { p } = await setup(db);
+		const coded = { ...p, accessCodeHash: await hashAccessCode('K7PD-XQ3M-2WHN') };
+		expect(await validateParticipantCredentials(coded, 'k7pd xq3m 2whn')).toBe(true);
+		expect(await validateParticipantCredentials(coded, String(p.rollNumber))).toBe(false);
+		expect(await validateParticipantCredentials(coded, 'K7PD-XQ3M-2WHM')).toBe(false);
 	});
 });
 
