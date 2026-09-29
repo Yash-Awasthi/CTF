@@ -1,15 +1,19 @@
 /**
  * Q26 — Daniel Reyes, Again
  *
- * The Blackwood personnel archive contains more than one file with the name
- * "Daniel Reyes." Enumerating the archive surfaces four distinct records —
- * different photographs, different eras, same handwriting style metrics.
- * "Daniel Reyes" is not a person. It's a role. Fixed answer: 4.
+ * The Bureau personnel archive is numbered P-0001 to P-0400 in order of engagement.
+ * Its search index only shows the 2015 Reyes file, but every file can be opened by
+ * number. Enumerating them turns up three more "REYES, DANIEL" files from 1952, 1968
+ * and 1986: same age on every photograph, same handwriting metrics. Decoys share
+ * part of the name. "Daniel Reyes" is not a person. It's a role.
+ *
+ * Artifacts (served by /{event}/evidence/26/{name}): index.txt and P-NNNN.txt.
+ * Personalized: the four Reyes file numbers and the decoy positions from ctx.rng.
+ * Answer: all four file numbers; order and separators do not matter.
  *
  * Q29 contribution: none
  * Mutable: no
  */
-import { exactMatch } from '../../src/lib/challenges/validators';
 import { ALPHABETS } from '../../src/lib/crypto/constants';
 import type { ChallengeModule, GeneratedChallenge } from '../../src/lib/challenges/types';
 
@@ -17,11 +21,77 @@ interface Public {
 	prompt: string;
 	token: string;
 }
-interface Private {
+export interface Q26Private {
+	/** Canonical answer: the four Reyes file numbers, ascending. */
 	answer: string;
+	reyes: number[];
+	/** File number → decoy name. */
+	decoys: Record<number, string>;
 }
 
-const challenge: ChallengeModule<Public, Private> = {
+export const FILES = 400;
+const REYES_YEARS = [1952, 1968, 1986, 2015];
+const DECOY_NAMES = ['REYES, DOROTHY', 'REYNOLDS, DANIEL', 'REYES, DAVID', 'RAYES, DANIELLE'];
+const FIRST = ['ARTHUR', 'MARGARET', 'HAROLD', 'EDITH', 'LEONARD', 'IRENE', 'WALTER', 'JOAN', 'PETER', 'SUSAN', 'GRAHAM', 'NORA', 'COLIN', 'RUTH', 'MARTIN', 'CLAIRE'];
+const LAST = ['ASHBY', 'BRENNAN', 'CROFT', 'DALLOWAY', 'ELLIS', 'FENWICK', 'GARROD', 'HOLLIS', 'IVES', 'JARVIS', 'KEMBLE', 'LOWRY', 'MARSH', 'NOLAN', 'OAKES', 'PRYCE', 'QUINLAN', 'RUDD', 'SAXBY', 'TALBOT'];
+const ROLES = ['Archive clerk', 'Field investigator', 'Records officer', 'Evidence technician', 'Case reviewer', 'Photographer', 'Translator (contract)', 'Courier'];
+
+const pad = (n: number) => `P-${String(n).padStart(4, '0')}`;
+/** Engagement year implied by a file's position in the sequence. */
+const yearOf = (n: number) => 1920 + Math.floor(((n - 1) * 96) / FILES);
+/** File number whose position matches a year, used to seat the Reyes files plausibly. */
+const slotFor = (year: number) => Math.floor(((year - 1920) * FILES) / 96) + 1;
+
+function hash(n: number) {
+	let h = Math.imul(n ^ 0x9e3779b9, 2654435761);
+	return () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909)) >>> 0);
+}
+
+function record(n: number, name: string, role: string, photo: string, hand: string, status: string, year = yearOf(n)) {
+	return [
+		'BLACKWOOD INVESTIGATIVE BUREAU — PERSONNEL FILE',
+		'',
+		`File:         ${pad(n)}`,
+		`Name:         ${name}`,
+		`Engaged:      ${year}`,
+		`Role:         ${role}`,
+		`Photograph:   ${photo}`,
+		`Handwriting:  ${hand}`,
+		`Status:       ${status}`,
+		'',
+	].join('\n');
+}
+
+export function buildFile(p: Q26Private, n: number): string {
+	const r = p.reyes.indexOf(n);
+	if (r >= 0) {
+		return record(n, 'REYES, DANIEL', r === 3 ? 'Archive researcher (contract) — Vale estate' : 'Provenance researcher (contract)',
+			'male, approx. 30–40', 'stroke angle 17°, loop ratio 0.44, rightward slant',
+			r === 3 ? 'Active' : 'Contract ended — no forwarding address', REYES_YEARS[r]);
+	}
+	const h = hash(n);
+	const angle = 8 + (h() % 20);
+	const hand = `stroke angle ${angle === 17 ? 18 : angle}°, loop ratio 0.${30 + (h() % 40)}, ${h() % 2 ? 'rightward' : 'upright'} slant`;
+	const age = 22 + (h() % 30);
+	const photo = `${h() % 2 ? 'male' : 'female'}, approx. ${age}–${age + 10}`;
+	const name = p.decoys[n] ?? `${LAST[h() % LAST.length]}, ${FIRST[h() % FIRST.length]}`;
+	return record(n, name, ROLES[h() % ROLES.length], photo, hand, h() % 3 ? 'Retired' : 'Resigned');
+}
+
+export function buildIndex(p: Q26Private): string {
+	return [
+		'BLACKWOOD BUREAU — PERSONNEL SEARCH',
+		"Query: name = 'Daniel Reyes'",
+		'',
+		`1 result:  ${pad(p.reyes[3])}.txt   REYES, DANIEL   engaged 2015`,
+		'',
+		`Files are numbered ${pad(1)} to ${pad(FILES)} in order of engagement.`,
+		'Only files cleared for the public index appear in search results.',
+		'',
+	].join('\n');
+}
+
+const challenge: ChallengeModule<Public, Q26Private> = {
 	metadata: {
 		slot: 26,
 		key: 'daniel-reyes-again',
@@ -33,60 +103,59 @@ const challenge: ChallengeModule<Public, Private> = {
 	hints: [
 		{
 			order: 1,
-			text: 'This is not the only personnel file with that name. Enumerate the archive directory — the name appears more than once.',
+			text: 'The search only covers indexed files, but every file opens by its number. Four hundred numbers is a job for a loop, not a mouse.',
 		},
 		{
 			order: 2,
-			text: 'Count distinct records, not distinct mentions. Each record has a different photograph and a different era — but the handwriting metrics match across all of them.',
+			text: 'Fetch P-0001.txt to P-0400.txt with your session cookie (curl or a browser-console loop) and keep the files whose name is exactly REYES, DANIEL. Watch for near-miss names.',
 		},
 	],
 
-	async generate(ctx): Promise<GeneratedChallenge<Public, Private>> {
+	async generate(ctx): Promise<GeneratedChallenge<Public, Q26Private>> {
 		const token = await ctx.rng.string(8, ALPHABETS.upper);
+		const reyes: number[] = [];
+		for (const y of REYES_YEARS) reyes.push(Math.min(FILES, Math.max(1, slotFor(y) + (await ctx.rng.int(-3, 4)))));
+		const decoys: Record<number, string> = {};
+		for (const name of DECOY_NAMES) {
+			let n: number;
+			do n = 1 + (await ctx.rng.int(0, FILES)); while (reyes.includes(n) || decoys[n]);
+			decoys[n] = name;
+		}
+		const base = `/${ctx.eventSlug}/evidence/26`;
 
 		const prompt = [
 			'BLACKWOOD BUREAU — PERSONNEL ARCHIVE',
 			'',
-			'Search: name = \'Daniel Reyes\'',
+			`Search: name = 'Daniel Reyes'   →   1 result   (${base}/index.txt)`,
 			'',
-			'--- RESULTS ---',
+			'One file. Engaged 2015. The Daniel you have been chasing.',
 			'',
-			'RECORD 1  ·  personnel/reyes-d-1952.pdf',
-			'  Photo: male, approx. 35–45, monochrome, formal dress, early 1950s',
-			'  Role: researcher, collection provenance — engaged 1952',
-			'  Handwriting metrics: stroke angle 17°, loop ratio 0.44, slant rightward',
+			'The search index only covers files cleared for public view.',
+			'The archive itself is numbered in order of engagement, and',
+			'every file opens directly by its number:',
+			`  ${base}/P-0001.txt  …  ${base}/P-0400.txt`,
 			'',
-			'RECORD 2  ·  personnel/reyes-d-1968.pdf',
-			'  Photo: male, approx. 30–40, colour (early), open collar, late 1960s',
-			'  Role: provenance researcher — engaged 1968',
-			'  Handwriting metrics: stroke angle 17°, loop ratio 0.44, slant rightward',
-			'',
-			'RECORD 3  ·  personnel/reyes-d-1963.pdf',
-			'  Photo: male, approx. 30–40, matches photograph from Q25',
-			'  Role: estate research contact — introduced 1963',
-			'  Handwriting metrics: stroke angle 17°, loop ratio 0.44, slant rightward',
-			'',
-			'RECORD 4  ·  personnel/reyes-d-2015.pdf',
-			'  Photo: male, approx. 30–40, digital, contemporary dress',
-			'  Role: archive researcher — engaged 2015, Vale estate',
-			'  Handwriting metrics: stroke angle 17°, loop ratio 0.44, slant rightward',
-			'',
-			'--- END RESULTS ---',
-			'',
-			'Same name. Same handwriting metrics. Decades apart.',
-			'Each record is a distinct individual — yet they are indistinguishable.',
-			'',
-			'How many distinct \'Daniel Reyes\' records are in the personnel archive?',
+			'List every personnel file for Daniel Reyes.',
+			'(Format: P-NNNN, comma-separated)',
 		].join('\n');
 
 		return {
 			publicData: { prompt, token },
-			privateData: { answer: '4' },
+			privateData: { answer: reyes.map(pad).join(', '), reyes, decoys },
 		};
 	},
 
 	validate(instance, normalizedAnswer) {
-		return exactMatch(normalizedAnswer, instance.privateData.answer);
+		const got = [...new Set(normalizedAnswer.toUpperCase().match(/P-\d{4}/g) ?? [])].sort();
+		return { correct: got.join(', ') === instance.privateData.answer };
+	},
+
+	artifact(instance, name) {
+		if (name === 'index.txt') return { body: buildIndex(instance.privateData), contentType: 'text/plain; charset=utf-8' };
+		const m = /^P-(\d{4})\.txt$/.exec(name);
+		const n = m ? Number(m[1]) : 0;
+		if (n < 1 || n > FILES) return null;
+		return { body: buildFile(instance.privateData, n), contentType: 'text/plain; charset=utf-8' };
 	},
 };
 

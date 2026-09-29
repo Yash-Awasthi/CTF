@@ -3,9 +3,11 @@
  *
  * Daniel provides a memo explaining the impossible date anomaly from Q14.
  * Inspecting the HTML source reveals an earlier draft in a comment — the draft
- * contradicts the published version. The contradicting year is the answer.
- * Fixed answer: 2001 (the year Daniel claims in the hidden draft he knew Vale,
- * vs his published claim of first contact in "late 2013").
+ * contradicts the published version: it dates his first meeting with Vale to 2001,
+ * not "late 2013". The meeting date in the draft is the answer.
+ *
+ * Attribution-enabled: each participant's draft names a different day of 2001, so a
+ * shared answer identifies its owner. The year stays 2001 for Q24.
  *
  * Q29 contribution: none (mutation to Q19 is the continuity marker)
  * Mutable: v1 here (draft visible in source) — filename returns at Q19 with
@@ -30,7 +32,7 @@ const challenge: ChallengeModule<Public, Private> = {
 		title: "Daniel's Explanation",
 		tier: 'medium',
 		basePoints: 200,
-		attributionEnabled: false,
+		attributionEnabled: true,
 	},
 	hints: [
 		{
@@ -61,17 +63,23 @@ const challenge: ChallengeModule<Public, Private> = {
 			'What the page displays is not always what the page contains.',
 			'Inspect the page source.',
 			'',
-			'What year does the draft version claim Reyes first knew Silas Vale?',
+			'On what date does the draft say Reyes first met Silas Vale? (YYYY-MM-DD)',
 		].join('\n');
 
 		return {
 			publicData: { prompt, token },
-			privateData: { answer: '2001' },
+			privateData: { answer: ctx.attributionAnswer! },
 		};
 	},
 
 	validate(instance, normalizedAnswer) {
 		return exactMatch(normalizedAnswer, instance.privateData.answer);
+	},
+
+	getAttributionPool() {
+		const out: string[] = [];
+		for (let t = Date.UTC(2001, 0, 1); t < Date.UTC(2002, 0, 1); t += 86_400_000) out.push(new Date(t).toISOString().slice(0, 10));
+		return out;
 	},
 };
 

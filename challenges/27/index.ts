@@ -1,13 +1,10 @@
 /**
  * Q27 — Stop Looking for People
  *
- * Mira's notebook v3: the final page. Her last coherent note is a message with
- * deliberate spacing anomalies — extra spaces between words encoding a fragment
- * of the Q29 doctrine ("ROLES REMAIN"). The visible content is the instruction
- * Mira reached before she disappeared. Fixed answer: FOLLOW THE NAMES.
+ * Mira's notebook v3: the final page, written with every gap double-width, plus a
+ * margin note. The visible instruction is the answer. Fixed answer: FOLLOW THE NAMES.
  *
- * Q29 contribution: spacing/formatting anomalies in the final message encode
- *   "ROLES REMAIN" (one space = 0, two spaces = 1, Morse-like).
+ * Q29 contribution: the margin note "ROLES REMAIN".
  * Mutable: v3 of Mira's notebook (v1 at Q3, v2 at Q20).
  */
 import { exactMatch } from '../../src/lib/challenges/validators';
@@ -38,23 +35,12 @@ const challenge: ChallengeModule<Public, Private> = {
 		},
 		{
 			order: 2,
-			text: "The spacing between words in the final note is inconsistent. Some gaps are doubled. The gaps encode something, but the visible message is what you submit.",
+			text: "The margin note belongs to Q29. Here, submit the instruction itself: the sentence that starts with FOLLOW.",
 		},
 	],
 
 	async generate(ctx): Promise<GeneratedChallenge<Public, Private>> {
 		const token = await ctx.rng.string(8, ALPHABETS.upper);
-
-		// The spacing anomaly:
-		// Single space = 0 (dot), Double space = 1 (dash)
-		// Encoding "ROLES REMAIN" in Morse via word gaps.
-		// Visible to careful readers — the prompt notes the anomaly explicitly.
-		// Regular spacing shown as _ (single), anomalous as __ (double).
-
-		// The final message with deliberate double-spaces at specific gaps:
-		// "Stop  looking for  people. Follow  the  names."
-		// Double gaps: Stop__looking (R), for__people (O), Follow__the (L), the__names (E)
-		// We just show the raw note and note the spacing pattern.
 
 		const prompt = [
 			'MIRA\'S NOTEBOOK — FINAL PAGE (FORENSICALLY RESTORED)',
@@ -70,10 +56,9 @@ const challenge: ChallengeModule<Public, Private> = {
 			'[remaining text: ink completely gone — unrecoverable]',
 			'--- END PAGE ---',
 			'',
-			'Forensic note: the wide spacing is not degradation.',
-			'Ink distribution confirms deliberate double-width gaps between certain words.',
-			'The pattern encodes a secondary phrase: \'ROLES REMAIN\' —',
-			'consistent with other fragments found in this case.',
+			'Forensic note: the wide spacing is not degradation. Every gap was',
+			'written double-width, slowly, as if she was being careful.',
+			'A margin note in the same ink reads: \'ROLES REMAIN\'.',
 			'',
 			'The visible instruction is what matters here.',
 			'What does Mira\'s final note tell the investigator to do?',
@@ -87,7 +72,8 @@ const challenge: ChallengeModule<Public, Private> = {
 	},
 
 	validate(instance, normalizedAnswer) {
-		return exactMatch(normalizedAnswer, instance.privateData.answer);
+		// The note is printed with double spaces and a full stop; a pasted copy must pass.
+		return exactMatch(normalizedAnswer.replace(/\s+/g, ' ').replace(/\.$/, ''), instance.privateData.answer);
 	},
 };
 

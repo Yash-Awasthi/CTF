@@ -24,8 +24,29 @@ function toast(msg: string, kind: 'blood' | 'note') {
 	setTimeout(() => d.remove(), 9000);
 }
 
-export function startLiveFeed({ onStateChange }: FeedOptions = {}) {
-	const cursors = { fb: 0, ann: 0 };
+const CURSOR_KEY = `feed-cursors:${location.pathname.split('/')[1]}`;
+
+function loadCursors(): { fb: number; ann: number } | null {
+	try {
+		const c = JSON.parse(localStorage.getItem(CURSOR_KEY) ?? 'null');
+		return c && Number.isFinite(c.fb) && Number.isFinite(c.ann) ? c : null;
+	} catch {
+		return null;
+	}
+}
+
+// Cursors persist across pages so a navigation does not replay old toasts; a first
+// visit takes the current backlog as already seen.
+export async function startLiveFeed({ onStateChange }: FeedOptions = {}) {
+	let cursors = loadCursors();
+	if (!cursors) {
+		cursors = { fb: 0, ann: 0 };
+		try {
+			const snap: any = await (await fetch('/api/events/updates?fb=0&ann=0')).json();
+			for (const f of snap.firstBloods ?? []) cursors.fb = Math.max(cursors.fb, Number(f.id) || 0);
+			for (const a of snap.announcements ?? []) cursors.ann = Math.max(cursors.ann, Number(a.id) || 0);
+		} catch {}
+	}
 	let stateVersion: string | null = null;
 	const seen = new Set<string>();
 
@@ -37,14 +58,17 @@ export function startLiveFeed({ onStateChange }: FeedOptions = {}) {
 		const key = kind + id;
 		if (seen.has(key)) return;
 		seen.add(key);
-		cursors[kind] = Math.max(cursors[kind], Number(id) || 0);
+		cursors![kind] = Math.max(cursors![kind], Number(id) || 0);
+		try {
+			localStorage.setItem(CURSOR_KEY, JSON.stringify(cursors));
+		} catch {}
 		toast(message, kind === 'fb' ? 'blood' : 'note');
 	};
 
 	if (typeof EventSource === 'undefined') {
 		setInterval(async () => {
 			try {
-				const res = await fetch(`/api/events/updates?fb=${cursors.fb}&ann=${cursors.ann}`);
+				const res = await fetch(`/api/events/updates?fb=${cursors!.fb}&ann=${cursors!.ann}`);
 				if (!res.ok) return;
 				const snap: any = await res.json();
 				checkState(snap.stateVersion);
@@ -58,7 +82,7 @@ export function startLiveFeed({ onStateChange }: FeedOptions = {}) {
 	}
 
 	const connect = () => {
-		const es = new EventSource(`/api/events/stream?fb=${cursors.fb}&ann=${cursors.ann}`);
+		const es = new EventSource(`/api/events/stream?fb=${cursors!.fb}&ann=${cursors!.ann}`);
 		es.addEventListener('state', (e) => checkState(JSON.parse((e as MessageEvent).data).stateVersion));
 		es.addEventListener('firstblood', (e) => show('fb', (e as MessageEvent).lastEventId, JSON.parse((e as MessageEvent).data).message));
 		es.addEventListener('announcement', (e) => show('ann', (e as MessageEvent).lastEventId, JSON.parse((e as MessageEvent).data).message));

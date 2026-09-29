@@ -1,26 +1,56 @@
 /**
  * Q23 — Mira's Last Recording
  *
- * A damaged audio file recovered from Mira's effects. The relevant segment is
- * buried in noise. Basic forensics (isolation, slow playback, spectral filter)
- * recovers a single name — the person Mira said she feared. Fixed: DANIEL.
+ * A damaged tape recovered from Mira's effects. Played back it is hiss, rumble and
+ * muffled fragments. Mira did not trust saying it aloud: she wrote it into the
+ * recording's spectrum, where a spectrogram shows "DANIEL" and a deposit box number.
+ *
+ * Artifact (served by /{event}/evidence/23/mira-recording-2015-05.wav): 8 kHz mono
+ * WAV, 45 s. The text sits between 3.0 and 3.8 kHz starting near 0:34. The page has
+ * no spectrogram tool; players bring their own (Audacity, Sonic Visualiser).
+ * Personalized: box number, noise and burst timing from ctx.rng.
+ * Answer: the box number. The name alone is guessable from the story, so the
+ * question asks for what only the audio holds.
  *
  * Q29 contribution: none
  * Mutable: no
  */
-import { exactMatch } from '../../src/lib/challenges/validators';
+import { oneOf } from '../../src/lib/challenges/validators';
 import { ALPHABETS } from '../../src/lib/crypto/constants';
 import type { ChallengeModule, GeneratedChallenge } from '../../src/lib/challenges/types';
+import { RATE, noise, paintText, wav } from '../shared/audio';
 
 interface Public {
 	prompt: string;
 	token: string;
 }
-interface Private {
+export interface Q23Private {
 	answer: string;
+	seed: string;
 }
 
-const challenge: ChallengeModule<Public, Private> = {
+export const FILE = 'mira-recording-2015-05.wav';
+const SECONDS = 45;
+export const TEXT_START = 34;
+
+export function buildRecording(p: Q23Private): Uint8Array<ArrayBuffer> {
+	const buf = new Float32Array(SECONDS * RATE);
+	const rnd = noise(p.seed);
+	// Tape hiss plus 50 Hz hum, then muffled speech-like bursts (low-passed noise).
+	let lp = 0;
+	let env = 0;
+	let target = 0;
+	for (let i = 0; i < buf.length; i++) {
+		if (i % 1200 === 0) target = rnd() > 0.1 ? Math.abs(rnd()) : 0;
+		env += (target - env) * 0.002;
+		lp += (rnd() - lp) * 0.08;
+		buf[i] = 0.06 * rnd() + 0.08 * Math.sin((2 * Math.PI * 50 * i) / RATE) + 0.9 * env * lp;
+	}
+	paintText(buf, `DANIEL  BOX ${p.answer}`, TEXT_START, 0.08, 3000, 3800, 0.05);
+	return wav(buf);
+}
+
+const challenge: ChallengeModule<Public, Q23Private> = {
 	metadata: {
 		slot: 23,
 		key: 'miras-last-recording',
@@ -32,51 +62,54 @@ const challenge: ChallengeModule<Public, Private> = {
 	hints: [
 		{
 			order: 1,
-			text: 'The important segment is buried in noise. Try isolating frequencies above 300Hz or slowing the track to 0.5x speed.',
+			text: 'Nothing useful is audible. Mira hid it where ears do not look — view the frequencies over time instead of listening.',
 		},
 		{
 			order: 2,
-			text: "The recoverable segment is short — a single name. It's at the 34-second mark after noise reduction is applied.",
+			text: 'Open the WAV in Audacity (track menu → Spectrogram) or Sonic Visualiser and look at the upper band, above 3 kHz, from about 0:34.',
 		},
 	],
 
-	async generate(ctx): Promise<GeneratedChallenge<Public, Private>> {
+	async generate(ctx): Promise<GeneratedChallenge<Public, Q23Private>> {
 		const token = await ctx.rng.string(8, ALPHABETS.upper);
+		const answer = await ctx.rng.string(4, ALPHABETS.digits);
+		const seed = await ctx.rng.string(12, ALPHABETS.upper);
 
 		const prompt = [
-			"MIRA CASTELLAN — RECOVERED AUDIO (PARTIALLY RESTORED)",
+			'MIRA CASTELLAN — RECOVERED AUDIO (DAMAGED)',
 			'',
-			"A voice recording recovered from Mira's personal effects.",
-			"Physical tape degradation and overwrite artifacts. Most content is gone.",
+			"A tape recovered from Mira's personal effects, digitised as",
+			`${FILE}. Degradation and overwrite artifacts throughout.`,
 			'',
-			"--- FORENSIC AUDIO REPORT ---",
-			"File:     mira-recording-2015-05.wav",
-			"Duration: 1:12  (recoverable: 9 seconds at 0:34–0:43)",
-			"Process:  spectral subtraction + 0.5x playback recovery",
+			'--- FORENSIC AUDIO REPORT ---',
+			'Duration:  0:45',
+			'Speech:    fragments only — no intelligible words recovered',
+			'Fragment:  "...afraid of what ... is. Not who. What."',
+			'Note:      unexplained narrow-band energy in the upper range,',
+			'           inaudible under the hiss. Not tape noise.',
+			'--- END REPORT ---',
 			'',
-			"TRANSCRIPT — recoverable segment:",
+			'Mira knew the recording might be heard by the wrong person.',
+			'She did not say the name aloud. She put it somewhere else,',
+			'along with where she left the rest of her evidence.',
 			'',
-			"  [noise] [noise] — I am afraid of — [noise] — it is [NOISE] —",
-			"  [noise] DANIEL [2.1 seconds noise] [noise]",
-			'',
-			"POST-PROCESSING (300Hz high-pass filter, 0.5x speed):",
-			'',
-			"  I am afraid of what DANIEL is. Not who. What.",
-			'',
-			"The name is the only segment recoverable at normal playback speed.",
-			"--- END REPORT ---",
-			'',
-			"Who does Mira name in the recovered segment?",
+			'What box number did Mira leave in the recording?',
 		].join('\n');
 
 		return {
 			publicData: { prompt, token },
-			privateData: { answer: 'DANIEL' },
+			privateData: { answer, seed },
 		};
 	},
 
 	validate(instance, normalizedAnswer) {
-		return exactMatch(normalizedAnswer, instance.privateData.answer);
+		const a = instance.privateData.answer;
+		return oneOf(normalizedAnswer.replace(/\s+/g, ' '), [a, `box ${a}`, `daniel box ${a}`]);
+	},
+
+	artifact(instance, name) {
+		if (name !== FILE) return null;
+		return { body: buildRecording(instance.privateData), contentType: 'audio/wav' };
 	},
 };
 

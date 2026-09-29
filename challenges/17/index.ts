@@ -3,7 +3,10 @@
  *
  * The Vale collection archive website is marked "defunct." But checking the
  * HTTP response headers reveals a Last-Modified date well after Mira's 2015
- * disappearance — someone is still maintaining it. Fixed answer: 2023-09-14.
+ * disappearance — someone is still maintaining it.
+ *
+ * Attribution-enabled: each participant's Last-Modified date is a unique day in
+ * 2016–2024, so a shared answer identifies its owner.
  *
  * Q29 contribution: none
  * Mutable: v2 of Q9's archive site — the site was "defunct" at Q9, now updated.
@@ -20,6 +23,13 @@ interface Private {
 	answer: string;
 }
 
+/** Every day from 2016-01-01 to 2024-12-31, all after Mira's disappearance. */
+export function buildModifiedPool(): string[] {
+	const out: string[] = [];
+	for (let t = Date.UTC(2016, 0, 1); t <= Date.UTC(2024, 11, 31); t += 86_400_000) out.push(new Date(t).toISOString().slice(0, 10));
+	return out;
+}
+
 const challenge: ChallengeModule<Public, Private> = {
 	metadata: {
 		slot: 17,
@@ -27,7 +37,7 @@ const challenge: ChallengeModule<Public, Private> = {
 		title: 'The Dead Website',
 		tier: 'medium',
 		basePoints: 200,
-		attributionEnabled: false,
+		attributionEnabled: true,
 	},
 	hints: [
 		{
@@ -66,12 +76,16 @@ const challenge: ChallengeModule<Public, Private> = {
 
 		return {
 			publicData: { prompt, token },
-			privateData: { answer: '2023-09-14' },
+			privateData: { answer: ctx.attributionAnswer! },
 		};
 	},
 
 	validate(instance, normalizedAnswer) {
 		return exactMatch(normalizedAnswer, instance.privateData.answer);
+	},
+
+	getAttributionPool() {
+		return buildModifiedPool();
 	},
 };
 

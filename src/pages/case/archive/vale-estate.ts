@@ -5,16 +5,25 @@
  * The HTTP Last-Modified header says otherwise.
  * Participants must inspect response headers (DevTools / curl) to find the date.
  *
- * Answer: 2023-09-14 (from Last-Modified: Thu, 14 Sep 2023 03:22:11 GMT)
+ * Answer: the participant's attributed date, sent as the Last-Modified header.
  */
 import type { APIRoute } from 'astro';
 import { gateArtifact } from '../../../lib/challenges/artifact-gate';
+import { createDb } from '../../../lib/db/client';
+import { getEnv } from '../../../lib/runtime';
+import { generateChallengeForParticipant, getEventRoster } from '../../../lib/challenges';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ locals }) => {
 	const denied = await gateArtifact(locals.auth, 17);
 	if (denied) return denied;
+	const auth = locals.auth!;
+	const { instance } = await generateChallengeForParticipant(
+		{ env: getEnv(), event: auth.event, rollNumber: auth.participant.rollNumber, roster: await getEventRoster(createDb(getEnv().DB), auth.event.id) },
+		17,
+	);
+	const modified = new Date(`${(instance.privateData as { answer: string }).answer}T03:22:11Z`).toUTCString();
 
 	const html = `<!DOCTYPE html>
 <html lang="en">
@@ -118,8 +127,8 @@ p { font-size: 14px; line-height: 1.8; color: #3a3028; margin-bottom: 14px; }
 	return new Response(html, {
 		headers: {
 			'Content-Type': 'text/html; charset=utf-8',
-			'Last-Modified': 'Thu, 14 Sep 2023 03:22:11 GMT',
-			'Cache-Control': 'public, max-age=86400',
+			'Last-Modified': modified,
+			'Cache-Control': 'private, no-store',
 			'X-Archive-Status': 'preserved',
 			'Server': 'nginx/1.18.0',
 		},

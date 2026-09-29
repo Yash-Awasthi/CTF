@@ -95,6 +95,24 @@ export interface ChallengeModule<Public = unknown, Private = unknown> {
 	 * unique after normalization). The engine assigns one answer per participant.
 	 */
 	getAttributionPool?(rosterSize: number): string[];
+
+	/**
+	 * Evidence files served at /{event}/evidence/{slot}/{name} once the slot is
+	 * unlocked. Returns null for an unknown name (the route answers 404).
+	 */
+	artifact?(
+		instance: GeneratedChallenge<Public, Private>,
+		name: string,
+	): ChallengeArtifact | null | Promise<ChallengeArtifact | null>;
+}
+
+/** One downloadable evidence file produced by a module. */
+export interface ChallengeArtifact {
+	readonly body: string | Uint8Array<ArrayBuffer>;
+	readonly contentType: string;
+	/** Download filename; when absent the file is served inline. */
+	readonly filename?: string;
+	readonly headers?: Record<string, string>;
 }
 
 /** Progression classification for a (participant, slot) pair. */

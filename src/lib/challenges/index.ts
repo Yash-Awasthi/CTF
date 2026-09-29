@@ -11,6 +11,7 @@ export type {
 	ChallengeValidationResult,
 	ChallengeAccessStatus,
 	ChallengeTier,
+	ChallengeArtifact,
 } from './types';
 
 export {

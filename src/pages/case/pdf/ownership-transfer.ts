@@ -147,7 +147,7 @@ hr { border: none; border-top: 1px solid #c8c8c8; margin: 16px 0 20px; }
 	return new Response(html, {
 		headers: {
 			'Content-Type': 'text/html; charset=utf-8',
-			'Cache-Control': 'public, max-age=3600',
+			'Cache-Control': 'private, max-age=3600',
 			'X-Document-Type': 'provenance-record',
 		},
 	});

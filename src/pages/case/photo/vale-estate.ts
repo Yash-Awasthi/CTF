@@ -161,7 +161,7 @@ export const GET: APIRoute = async ({ locals }) => {
 		headers: {
 			'Content-Type': 'image/svg+xml; charset=utf-8',
 			'Content-Disposition': 'attachment; filename="vale-estate-photograph.svg"',
-			'Cache-Control': 'public, max-age=3600',
+			'Cache-Control': 'private, max-age=3600',
 		},
 	});
 };

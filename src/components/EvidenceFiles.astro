@@ -1,0 +1,22 @@
+---
+/** Evidence files for a slot, served by /{event}/evidence/{slot}/{name}. */
+interface Props {
+	slug: string;
+	slot: number;
+	files: { name: string; label: string; kind: 'image' | 'audio' | 'link' }[];
+}
+const { slug, slot, files } = Astro.props;
+const href = (name: string) => `/${slug}/evidence/${slot}/${name}`;
+---
+<div class="space-y-4 px-6 pb-5">
+	{files.map((f) => (
+		<figure class="rounded border border-neutral-800 bg-neutral-950 p-3">
+			{f.kind === 'image' && <img src={href(f.name)} alt={f.label} loading="lazy" class="w-full rounded" />}
+			{f.kind === 'audio' && <audio controls preload="none" src={href(f.name)} class="w-full"></audio>}
+			<figcaption class="mt-2 flex items-center justify-between font-mono text-[10px] text-neutral-600">
+				<span>{f.label}</span>
+				<a href={href(f.name)} download={f.name} class="text-neutral-500 hover:text-neutral-300">↓ {f.name}</a>
+			</figcaption>
+		</figure>
+	))}
+</div>

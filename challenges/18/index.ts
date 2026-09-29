@@ -1,36 +1,50 @@
 /**
  * Q18 — For You
  *
- * A voicemail arrives on the investigation line. The speaker references something
- * specific to this participant — a detail only they would have found. Buried in
- * the transcript is a background tone that encodes a Q29 fragment. The key
- * spoken phrase is the answer. Personalized via RNG.
+ * A voicemail arrives on the investigation line. Nobody speaks: the caller keyed
+ * the message in Morse over a hissing line. The decoded phrase is the answer.
  *
- * Q29 contribution: background tone in voicemail audio encodes a fragment of
- *   THE CONTINUITY doctrine ("NAMES REMAIN" — audible at 2x speed or via
- *   waveform inspection, per the challenge narrative).
+ * Artifact (served by /{event}/evidence/18/voicemail.wav): 8 kHz mono WAV with
+ * line noise, the phrase keyed at 1 kHz, and a quiet 440 Hz carrier keyed "TC"
+ * on repeat. The page offers a spectrogram view of the same file.
+ * Personalized: phrase, keying speed and noise from ctx.rng. The phrase never
+ * appears in page text or page data.
+ *
+ * Q29 contribution: the 440 Hz carrier spells TC in Morse.
  * Mutable: no
  */
-import { exactMatch } from '../../src/lib/challenges/validators';
+import { oneOf } from '../../src/lib/challenges/validators';
 import { ALPHABETS } from '../../src/lib/crypto/constants';
 import type { ChallengeModule, GeneratedChallenge } from '../../src/lib/challenges/types';
+import { RATE, keyTone, morse, noise, wav } from '../shared/audio';
 
 interface Public {
 	prompt: string;
 	token: string;
-	/** Base64-encoded spoken phrase — used by TTS player in the browser. */
-	phraseB64: string;
 }
-interface Private {
+export interface Q18Private {
 	answer: string;
+	/** Morse unit length in milliseconds. */
+	unitMs: number;
+	seed: string;
 }
 
-/**
- * Spoken phrases that reference the participant's investigation.
- * These reference generic investigation actions (Q11 owner, archive access, etc.)
- * without needing to cross-reference specific slot outputs.
- */
-/** Exported for test access. */
+/** Render the voicemail. Returns the WAV bytes. */
+export function buildVoicemail(p: Q18Private): Uint8Array<ArrayBuffer> {
+	const unit = p.unitMs / 1000;
+	const msg = morse(p.answer);
+	const lead = 1.5;
+	const seconds = Math.ceil(lead * 2 + msg.units * unit);
+	const buf = new Float32Array(seconds * RATE);
+	const rnd = noise(p.seed);
+	for (let i = 0; i < buf.length; i++) buf[i] = 0.08 * rnd();
+	const tc = morse('TC');
+	for (let t = 0.3; t < seconds - 1; t += tc.units * 0.12) keyTone(buf, tc.on, 0.12, t, 440, 0.05);
+	keyTone(buf, msg.on, unit, lead, 1000, 0.35);
+	return wav(buf);
+}
+
+/** Message phrases, all addressed to the investigator. Exported for test access. */
 export const SPOKEN_PHRASES: readonly string[] = [
 	'YOU FOUND THE TRANSFER RECORD',
 	'YOU HAVE THE LEDGER ENTRY',
@@ -44,7 +58,7 @@ export const SPOKEN_PHRASES: readonly string[] = [
 	'THE CHAIN LEADS FURTHER BACK',
 ];
 
-const challenge: ChallengeModule<Public, Private> = {
+const challenge: ChallengeModule<Public, Q18Private> = {
 	metadata: {
 		slot: 18,
 		key: 'for-you',
@@ -56,45 +70,52 @@ const challenge: ChallengeModule<Public, Private> = {
 	hints: [
 		{
 			order: 1,
-			text: 'Listen for something that could not be generic — the caller references a specific thing only your investigation would have surfaced.',
+			text: 'Nobody speaks. The pattern of long and short beeps is the message — an old code for sending letters over a wire.',
 		},
 		{
 			order: 2,
-			text: 'The spoken phrase addresses you directly and references your findings. Submit the exact spoken message (in capitals).',
+			text: 'Decode the 1 kHz beeps as Morse code (the spectrogram shows them as dots and dashes). Ignore the quiet 440 Hz tone. Submit the decoded words.'
 		},
 	],
 
-	async generate(ctx): Promise<GeneratedChallenge<Public, Private>> {
+	async generate(ctx): Promise<GeneratedChallenge<Public, Q18Private>> {
 		const token = await ctx.rng.string(8, ALPHABETS.upper);
 		const phrase = await ctx.rng.choice(SPOKEN_PHRASES);
-
-		const phraseB64 = btoa(phrase);
+		const unitMs = 70 + (await ctx.rng.int(0, 21));
+		const seed = await ctx.rng.string(12, ALPHABETS.upper);
 
 		const prompt = [
 			'INVESTIGATION LINE — UNPLAYED VOICEMAIL',
 			'',
 			'Case 71-C  ·  Blackwood Investigative Bureau',
 			'Caller:    WITHHELD',
-			'Duration:  8.7 seconds',
+			'Voice:     NONE DETECTED — tones only',
 			'Status:    UNPLAYED — flagged for manual review',
 			'',
 			'A voicemail arrived on the case contact line after the archive was accessed.',
 			'The caller identity was suppressed at source.',
-			'Background carrier tone at 440Hz — amplitude modulation archived.',
+			'Background carrier tone at 440Hz, faintly keyed.',
 			'',
-			'Play the recording. The message is brief.',
+			'The caller did not speak. Whoever it was knew what you have found.',
+			'Play the recording, or open it as a spectrogram.',
 			'',
-			'Submit the exact spoken phrase (in capitals).',
+			'What message did the caller send?',
 		].join('\n');
 
 		return {
-			publicData: { prompt, token, phraseB64 },
-			privateData: { answer: phrase },
+			publicData: { prompt, token },
+			privateData: { answer: phrase, unitMs, seed },
 		};
 	},
 
 	validate(instance, normalizedAnswer) {
-		return exactMatch(normalizedAnswer, instance.privateData.answer);
+		const a = instance.privateData.answer;
+		return oneOf(normalizedAnswer.replace(/\s+/g, ' '), [a, a.replace(/\s+/g, '')]);
+	},
+
+	artifact(instance, name) {
+		if (name !== 'voicemail.wav') return null;
+		return { body: buildVoicemail(instance.privateData), contentType: 'audio/wav' };
 	},
 };
 
