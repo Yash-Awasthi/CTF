@@ -41,7 +41,8 @@ export const GET: APIRoute = async ({ params, locals }) => {
 	return new Response(file.body, {
 		headers: {
 			'content-type': file.contentType,
-			'cache-control': 'private, no-store',
+			// Evidence never changes for a player, and audio players re-request it while seeking.
+			'cache-control': 'private, max-age=3600',
 			'x-content-type-options': 'nosniff',
 			...(file.filename ? { 'content-disposition': `attachment; filename="${file.filename}"` } : {}),
 			...file.headers,

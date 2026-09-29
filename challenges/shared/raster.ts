@@ -42,9 +42,34 @@ function crc32(bytes: Uint8Array) {
 	return (c ^ 0xffffffff) >>> 0;
 }
 
-async function deflate(data: Uint8Array): Promise<Uint8Array> {
-	const stream = new Blob([data as BlobPart]).stream().pipeThrough(new CompressionStream('deflate'));
-	return new Uint8Array(await new Response(stream).arrayBuffer());
+/**
+ * zlib stream of uncompressed ("stored") deflate blocks. Film grain barely
+ * compresses, and compressing it cost more CPU than the rest of the render.
+ */
+function storedZlib(data: Uint8Array): Uint8Array {
+	const blocks = Math.max(1, Math.ceil(data.length / 65_535));
+	const out = new Uint8Array(2 + data.length + blocks * 5 + 4);
+	out[0] = 0x78;
+	out[1] = 0x01;
+	let o = 2;
+	for (let b = 0; b < blocks; b++) {
+		const chunk = data.subarray(b * 65_535, (b + 1) * 65_535);
+		out[o++] = b === blocks - 1 ? 1 : 0;
+		out[o++] = chunk.length & 255;
+		out[o++] = chunk.length >> 8;
+		out[o++] = ~chunk.length & 255;
+		out[o++] = (~chunk.length >> 8) & 255;
+		out.set(chunk, o);
+		o += chunk.length;
+	}
+	let a = 1;
+	let s = 0;
+	for (let i = 0; i < data.length; i++) {
+		a = (a + data[i]) % 65_521;
+		s = (s + a) % 65_521;
+	}
+	new DataView(out.buffer).setUint32(o, ((s << 16) | a) >>> 0);
+	return out;
 }
 
 function chunk(type: string, data: Uint8Array): Uint8Array {
@@ -71,7 +96,7 @@ export async function png(img: Gray, meta: Record<string, string>): Promise<Uint
 		Uint8Array.of(137, 80, 78, 71, 13, 10, 26, 10),
 		chunk('IHDR', ihdr),
 		...Object.entries(meta).map(([k, val]) => chunk('tEXt', latin1(`${k}\0${val}`))),
-		chunk('IDAT', await deflate(raw)),
+		chunk('IDAT', storedZlib(raw)),
 		chunk('IEND', new Uint8Array()),
 	];
 	const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));

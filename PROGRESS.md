@@ -9,8 +9,8 @@ Read `ctf-build-plan.md` (source of truth, already corrected). This file = per-p
 4. Commit + push each phase to `origin/main` (github.com/Yash-Awasthi/CTFplayground).
 
 ## Status
-- Phase 0 ✅ · P1–P7 ✅ · P8–P12 ✅ · P12.5 admin hardening ✅ · **P13 DEFERRED + P14 integration + P15 verification + P16 static replay ✅ (awaiting confirm)**
-- Next: Phase 13 production challenge authoring — BLOCKED on story/theme + per-slot technique mapping + base-point confirmation. Do NOT write content without those.
+- Phase 0 ✅ · P1–P7 ✅ · P8–P12 ✅ · P12.5 admin hardening ✅ · P13 content ✅ (30 real challenges, story per `PHASE13-story/ctf-story-bible.md`) · P14–P16 ✅
+- Per-slot mechanics and how each was verified: `CHALLENGE-AUDIT.md`.
 
 ## Non-obvious facts (not in the plan)
 - Project name `case-files`. Bindings: `DB` (D1), `BUCKET` (R2), `ASSETS` (CF static).
@@ -66,6 +66,12 @@ Read `ctf-build-plan.md` (source of truth, already corrected). This file = per-p
 - P16 static replay `src/lib/static-replay/` + `/replay` (prerender=true, ZERO backend/secret at runtime). personalize.ts: investigatorId(localStorage)+PUBLIC REPLAY_SALT+slot→SHA256 (never EVENT_SECRET/seeds). verify.ts client-side (reuses normalizeAnswer, non-secret by design; live validation untouched). manifest.ts→prerendered /replay/challenges.json (public metadata only). leaderboard-export.ts + scripts/export-leaderboard.mjs→public/replay/leaderboard.json (final data, eliminated excluded, unmasked rolls, deterministic). scrub.ts + scripts/scrub-static-replay.mjs (`pnpm replay:scrub`) fails on prohibited data; unmasked rolls allowed.
 - Cold-start Playwright flake FIXED: tests/e2e/global-setup.ts warms routes before timed tests; playwright.config retries:1 + timeouts. Cold run green (1 flaky→retry-absorbed).
 - pnpm scripts: replay:export, replay:scrub. Zero-cost: no DO, no paid svc; static replay = plain prerendered assets.
+- Evidence files: modules implement `artifact(instance, name)`; one gated route `/{event}/evidence/{slot}/{name}` serves them (image/audio/CSV/text). Shared builders in `challenges/shared/` (portrait SVG, WAV + Morse + spectrum text, grayscale PNG with tEXt, bitmap font).
+- `ctx.related(slot)` gives a module the same player's instance of an EARLIER slot (Q18 uses Q11, Q24 uses Q15/22/23, Q28 uses Q10/11). Later slots are rejected to avoid cycles.
+- Same-URL mutation: `/case/photo/vale-estate` serves the altered photo once current_challenge >= 16; `/case/memo/daniel-reyes` serves v2 once >= 19. Builders live in underscore files (`_altered.ts`, `_v2.ts`) so Astro does not route them.
+- Interactive routes: `/{event}/portal/reyes` (Q12 password), `/{event}/ledger` (Q28 table, row-level verdicts), `/{event}/terminal` (Q29 VERIFY). Client code for all in-page tools: `src/scripts/challenge-widgets.ts`.
+- Attribution slots: 8, 15, 16, 17, 28 (seed-dev.sql mirrors this). Casebook text: `challenges/shared/casebook.ts`. Codename shown in chrome via `getCodename(roll)`; after Q29 (current_challenge >= 30) chrome switches to the Continuity.
+- Windows: stop `astro dev` before `pnpm db:reset:local` (the running server locks the D1 files).
 
 ## Local dev / test
 - `pnpm db:reset:local` (wipe+migrate+seed) → dev event slug `case-files-dev-2026`, state `READY`, rolls 25115000–25115115.

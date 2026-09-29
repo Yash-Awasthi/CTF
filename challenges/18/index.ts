@@ -27,7 +27,6 @@ export interface Q18Private {
 	answer: string;
 	/** Morse unit length in milliseconds. */
 	unitMs: number;
-	seed: string;
 }
 
 /** Render the voicemail. Returns the WAV bytes. */
@@ -37,7 +36,7 @@ export function buildVoicemail(p: Q18Private): Uint8Array<ArrayBuffer> {
 	const lead = 1.5;
 	const seconds = Math.ceil(lead * 2 + msg.units * unit);
 	const buf = new Float32Array(seconds * RATE);
-	const rnd = noise(p.seed);
+	const rnd = noise();
 	for (let i = 0; i < buf.length; i++) buf[i] = 0.08 * rnd();
 	const doctrine = morse(CARRIER);
 	for (let t = 0.3; t + doctrine.units * 0.1 < seconds; t += doctrine.units * 0.1) keyTone(buf, doctrine.on, 0.1, t, 440, 0.05);
@@ -83,7 +82,6 @@ const challenge: ChallengeModule<Public, Q18Private> = {
 			.replace('{NAME}', owner)
 			.replace('{SURNAME}', owner.split(' ').pop()!);
 		const unitMs = 70 + (await ctx.rng.int(0, 21));
-		const seed = await ctx.rng.string(12, ALPHABETS.upper);
 
 		const prompt = [
 			'INVESTIGATION LINE — UNPLAYED VOICEMAIL',
@@ -105,7 +103,7 @@ const challenge: ChallengeModule<Public, Q18Private> = {
 
 		return {
 			publicData: { prompt, token },
-			privateData: { answer: phrase, unitMs, seed },
+			privateData: { answer: phrase, unitMs },
 		};
 	},
 

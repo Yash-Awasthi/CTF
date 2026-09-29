@@ -372,3 +372,20 @@ WELCOME, [CODENAME].
 - Q29 requires each contributing challenge's `generator.ts` to emit a secondary personalized fragment beyond its visible answer — flag in Phase 5 interface design.
 - Q28's `SUCCESSOR` answer and Q30's codename must be validated per-participant, not globally — both draw on session-specific state, not static content.
 - Silent Decade and collection-mechanism ambiguity are intentional — do not resolve them in any challenge text, hint, or ending copy.
+
+---
+
+## As built (differences from the design above)
+
+- **Q10** compares Doll #6 with six photographs from the 1978 missing-persons register; the answer is
+  the matching file number, and the register skips entry 071.
+- **Q18** names the owner this player uncovered at Q11; the carrier tone spells NAMES REMAIN.
+- **Q23** hides DANIEL and a deposit-box number in the recording's spectrum; the box number is the answer.
+- **Q25** dates to a personalised day in 1968–1975 (Cycle 3) and is stamped TC-III-W.
+- **Q26** holds one Daniel Reyes file per cycle (1952, 1971, 1994, 2015); the 1952 file assists the Ilves inquiry.
+- **Q27** carries Mira's last two sentences and ROLES REMAIN in zero-width characters.
+- **Q28** is rebuilt from the case: Cycle 2 Collector is Edgar Holt (Q13), Cycle 3 Collector and Subject
+  are the player's own Q11 and Q10 answers, Cycle 3 Witness is Daniel Reyes (Q25 stamp), Cycle 5
+  Successor is the player's codename. The answer is the reference of the open role, TC-VI-S-NNNN.
+- **Q29** doctrine nouns come from Q20 (PEOPLE), Q18 (NAMES), Q14 (RECORDS), Q27 (ROLES); the Q28 note
+  supplies the verbs and the final line. The terminal's VERIFY shows the initials T. C.

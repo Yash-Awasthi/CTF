@@ -27,7 +27,6 @@ interface Public {
 }
 export interface Q25Private {
 	answer: string;
-	seed: string;
 	/** Which of the four people holds the newspaper (0-based, never Reyes). */
 	holder: number;
 }
@@ -62,11 +61,12 @@ export async function buildPhotograph(p: Q25Private): Promise<Uint8Array<ArrayBu
 	img.text(nx + 7, 203, `${DAYS[date.getUTCDay()]} ${d} ${MONTHS[m - 1]} ${y}`, 60);
 	for (let r = 0; r < 4; r++) img.rect(nx + 7, 216 + r * 6, 150 - (r % 2) * 40, 2, 150);
 	// Grain and vignette.
-	const rnd = noise(p.seed);
+	const rnd = noise();
 	for (let j = 0; j < 320; j++) for (let i = 0; i < 480; i++) {
 		const k = j * 480 + i;
-		const dist = Math.hypot(i - 240, j - 160) / 290;
-		img.px[k] = Math.max(0, Math.min(255, img.px[k] * (1 - 0.45 * dist * dist) + rnd() * 9));
+		const d2 = ((i - 240) ** 2 + (j - 160) ** 2) / 84_100;
+		const v = img.px[k] * (1 - 0.45 * d2) + rnd() * 9;
+		img.px[k] = v < 0 ? 0 : v > 255 ? 255 : v;
 	}
 	return png(img, {
 		Title: 'Blackwood annex, item 114 — group photograph',
@@ -104,7 +104,6 @@ const challenge: ChallengeModule<Public, Q25Private> = {
 		const d = 1 + (await ctx.rng.int(0, 28));
 		const answer = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 		const holder = await ctx.rng.choice([0, 2, 3]);
-		const seed = await ctx.rng.string(12, ALPHABETS.upper);
 
 		const prompt = [
 			'LATE ITEM — RECEIVED 3 MINUTES AFTER CASE 71-C WAS CLOSED',
@@ -129,7 +128,7 @@ const challenge: ChallengeModule<Public, Q25Private> = {
 
 		return {
 			publicData: { prompt, token },
-			privateData: { answer, seed, holder },
+			privateData: { answer, holder },
 		};
 	},
 

@@ -18,7 +18,7 @@
 import { oneOf } from '../../src/lib/challenges/validators';
 import { ALPHABETS } from '../../src/lib/crypto/constants';
 import type { ChallengeModule, GeneratedChallenge } from '../../src/lib/challenges/types';
-import { RATE, noise, paintText, wav } from '../shared/audio';
+import { RATE, addSine, noise, paintText, wav } from '../shared/audio';
 
 interface Public {
 	prompt: string;
@@ -26,7 +26,6 @@ interface Public {
 }
 export interface Q23Private {
 	answer: string;
-	seed: string;
 }
 
 export const FILE = 'mira-recording-2015-05.wav';
@@ -35,7 +34,7 @@ export const TEXT_START = 34;
 
 export function buildRecording(p: Q23Private): Uint8Array<ArrayBuffer> {
 	const buf = new Float32Array(SECONDS * RATE);
-	const rnd = noise(p.seed);
+	const rnd = noise();
 	// Tape hiss plus 50 Hz hum, then muffled speech-like bursts (low-passed noise).
 	let lp = 0;
 	let env = 0;
@@ -44,8 +43,9 @@ export function buildRecording(p: Q23Private): Uint8Array<ArrayBuffer> {
 		if (i % 1200 === 0) target = rnd() > 0.1 ? Math.abs(rnd()) : 0;
 		env += (target - env) * 0.002;
 		lp += (rnd() - lp) * 0.08;
-		buf[i] = 0.06 * rnd() + 0.08 * Math.sin((2 * Math.PI * 50 * i) / RATE) + 0.9 * env * lp;
+		buf[i] = 0.06 * rnd() + 0.9 * env * lp;
 	}
+	addSine(buf, 0, buf.length, 50, 0.08, 1);
 	paintText(buf, `DANIEL  BOX ${p.answer}`, TEXT_START, 0.08, 3000, 3800, 0.05);
 	return wav(buf);
 }
@@ -73,7 +73,6 @@ const challenge: ChallengeModule<Public, Q23Private> = {
 	async generate(ctx): Promise<GeneratedChallenge<Public, Q23Private>> {
 		const token = await ctx.rng.string(8, ALPHABETS.upper);
 		const answer = await ctx.rng.string(4, ALPHABETS.digits);
-		const seed = await ctx.rng.string(12, ALPHABETS.upper);
 
 		const prompt = [
 			'MIRA CASTELLAN — RECOVERED AUDIO (DAMAGED)',
@@ -98,7 +97,7 @@ const challenge: ChallengeModule<Public, Q23Private> = {
 
 		return {
 			publicData: { prompt, token },
-			privateData: { answer, seed },
+			privateData: { answer },
 		};
 	},
 

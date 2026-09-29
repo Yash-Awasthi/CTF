@@ -131,7 +131,8 @@ const challenge: ChallengeModule<Q28Public, Q28Private> = {
 	},
 
 	getAttributionPool() {
-		return Array.from({ length: 10_000 }, (_, i) => `TC-VI-S-${String(i).padStart(4, '0')}`);
+		// 1,000 references covers the 200-player cap; attribution shuffles the whole pool per request.
+		return Array.from({ length: 1000 }, (_, i) => `TC-VI-S-${String(1000 + i * 7).padStart(4, '0')}`);
 	},
 };
 

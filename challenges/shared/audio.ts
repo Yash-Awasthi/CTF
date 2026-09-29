@@ -1,18 +1,22 @@
 /**
  * Minimal audio synthesis for evidence recordings (Q18, Q23): mono 16-bit PCM WAV,
- * seeded noise, Morse keying and text painted into the spectrogram.
+ * line noise, Morse keying and text painted into the spectrogram. Rendered per
+ * request inside the Workers CPU budget, so the hot loops avoid per-sample calls.
  */
 import { FONT } from './font';
 
 export const RATE = 8000;
 
-/** Deterministic noise so the same instance always yields the same file. */
-export function noise(seed: string) {
-	let h = 2166136261;
-	for (const c of seed) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+/** Noise in [-1, 1). Random per render: only the keyed and painted evidence must be exact. */
+export function noise() {
+	const pool = new Int32Array(8192);
+	let i = pool.length;
 	return () => {
-		h = (Math.imul(h, 1664525) + 1013904223) >>> 0;
-		return h / 2 ** 31 - 1;
+		if (i === pool.length) {
+			crypto.getRandomValues(pool);
+			i = 0;
+		}
+		return pool[i++] / 2 ** 31;
 	};
 }
 
@@ -24,7 +28,12 @@ export function wav(samples: Float32Array, rate = RATE): Uint8Array<ArrayBuffer>
 	str(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
 	v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
 	str(36, 'data'); v.setUint32(40, samples.length * 2, true);
-	for (let i = 0; i < samples.length; i++) v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, samples[i])) * 32767, true);
+	// Int16Array writes host byte order; every Workers and Node host is little-endian.
+	const pcm = new Int16Array(out.buffer, 44, samples.length);
+	for (let i = 0; i < samples.length; i++) {
+		const x = samples[i];
+		pcm[i] = (x > 1 ? 1 : x < -1 ? -1 : x) * 32767;
+	}
 	return out;
 }
 
@@ -53,16 +62,30 @@ export function morse(text: string): { on: [number, number][]; units: number } {
 	return { on, units: t };
 }
 
+/**
+ * Add a sine burst over samples [s, e) with linear ramps of `ramp` samples at both
+ * ends. Uses the two-term recurrence instead of Math.sin per sample: artifacts are
+ * rendered per request and the Workers CPU budget is small.
+ */
+export function addSine(buf: Float32Array, s: number, e: number, freq: number, amp: number, ramp: number) {
+	const w = (2 * Math.PI * freq) / RATE;
+	const k = 2 * Math.cos(w);
+	let prev = Math.sin(w * (s - 1));
+	let cur = Math.sin(w * s);
+	for (let i = s; i < e; i++) {
+		buf[i] += amp * Math.min(1, (i - s + 1) / ramp, (e - i) / ramp) * cur;
+		const next = k * cur - prev;
+		prev = cur;
+		cur = next;
+	}
+}
+
 /** Add a keyed sine tone to buf. Edges ramp over 5 ms to avoid clicks. */
 export function keyTone(buf: Float32Array, on: [number, number][], unitSec: number, startSec: number, freq: number, amp: number) {
-	const ramp = RATE * 0.005;
 	for (const [a, b] of on) {
 		const s = Math.floor((startSec + a * unitSec) * RATE);
 		const e = Math.min(buf.length, Math.floor((startSec + b * unitSec) * RATE));
-		for (let i = s; i < e; i++) {
-			const env = Math.min(1, (i - s) / ramp, (e - i) / ramp);
-			buf[i] += amp * env * Math.sin((2 * Math.PI * freq * i) / RATE);
-		}
+		addSine(buf, s, e, freq, amp, RATE * 0.005);
 	}
 }
 
@@ -82,7 +105,7 @@ export function paintText(buf: Float32Array, text: string, startSec: number, col
 			for (let y = 0; y < 7; y++) {
 				if (!(glyph[y] & (16 >> x))) continue;
 				const f = fHigh - y * rowHz;
-				for (let i = s; i < e; i++) buf[i] += amp * Math.min(1, (i - s) / 40, (e - i) / 40) * Math.sin((2 * Math.PI * f * i) / RATE);
+				addSine(buf, s, e, f, amp, 40);
 			}
 		}
 		col++;

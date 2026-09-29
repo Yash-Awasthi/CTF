@@ -6,7 +6,7 @@
  * disappearance — someone is still maintaining it.
  *
  * Attribution-enabled: each participant's Last-Modified date is a unique day in
- * 2016–2024, so a shared answer identifies its owner.
+ * 2018–2019, so a shared answer identifies its owner.
  *
  * Q29 contribution: none
  * Mutable: v2 of Q9's archive site — the site was "defunct" at Q9, now updated.
@@ -23,10 +23,10 @@ interface Private {
 	answer: string;
 }
 
-/** Every day from 2016-01-01 to 2024-12-31, all after Mira's disappearance. */
+/** Every day of 2018 and 2019, all after Mira's disappearance. Kept small: attribution shuffles the whole pool per request. */
 export function buildModifiedPool(): string[] {
 	const out: string[] = [];
-	for (let t = Date.UTC(2016, 0, 1); t <= Date.UTC(2024, 11, 31); t += 86_400_000) out.push(new Date(t).toISOString().slice(0, 10));
+	for (let t = Date.UTC(2018, 0, 1); t <= Date.UTC(2019, 11, 31); t += 86_400_000) out.push(new Date(t).toISOString().slice(0, 10));
 	return out;
 }
 

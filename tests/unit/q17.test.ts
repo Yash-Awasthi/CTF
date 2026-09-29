@@ -19,7 +19,7 @@ defineChallengeTests({
           const roll = 25_115_000 + i;
           const { instance } = await generateChallengeForParticipant(ctx(roll), 17);
           const answer = (instance.privateData as { answer: string }).answer;
-          expect(answer).toMatch(/^20(1[6-9]|2[0-4])-\d{2}-\d{2}$/);
+          expect(answer).toMatch(/^201[89]-\d{2}-\d{2}$/);
           expect(owners.get(normalizeAnswer(answer))).toBe(roll);
           seen.add(answer);
         }
