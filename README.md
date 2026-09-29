@@ -8,6 +8,18 @@ with a D1 database, on Astro.
 The story and puzzle design live in `PHASE13-story/ctf-story-bible.md`; how each slot plays and how
 it was verified is in `CHALLENGE-AUDIT.md`.
 
+## Stack
+
+Astro and React on Cloudflare Workers, D1 (SQLite) through Drizzle, Tailwind, Vitest and
+Playwright. Challenge evidence (audio, images, documents) is generated per player at request time.
+
+## Documentation
+
+- `PHASE13-story/ctf-story-bible.md`: the story, characters, and puzzle design
+- `CHALLENGE-AUDIT.md`: how each challenge plays and how it was verified
+- `PROGRESS.md`: build progress
+- `CONTRIBUTING.md`: how to contribute
+
 ## Requirements
 
 - Node 22.12 or later, pnpm 11
