@@ -2,15 +2,16 @@
  * Q18 — For You
  *
  * A voicemail arrives on the investigation line. Nobody speaks: the caller keyed
- * the message in Morse over a hissing line. The decoded phrase is the answer.
+ * the message in Morse over a hissing line, and the message names the owner this
+ * player uncovered at Q11. Someone knows what you found. The phrase is the answer.
  *
  * Artifact (served by /{event}/evidence/18/voicemail.wav): 8 kHz mono WAV with
- * line noise, the phrase keyed at 1 kHz, and a quiet 440 Hz carrier keyed "TC"
- * on repeat. The page offers a spectrogram view of the same file.
- * Personalized: phrase, keying speed and noise from ctx.rng. The phrase never
- * appears in page text or page data.
+ * line noise, the phrase keyed at 1 kHz, and a quiet 440 Hz carrier keyed
+ * "NAMES REMAIN" on repeat. The page offers a spectrogram view of the same file.
+ * Personalized: template, keying speed and noise from ctx.rng; the name comes from
+ * this player's own Q11 answer. The phrase never appears in page text or data.
  *
- * Q29 contribution: the 440 Hz carrier spells TC in Morse.
+ * Q29 contribution: the carrier spells NAMES REMAIN, one doctrine line.
  * Mutable: no
  */
 import { oneOf } from '../../src/lib/challenges/validators';
@@ -38,24 +39,21 @@ export function buildVoicemail(p: Q18Private): Uint8Array<ArrayBuffer> {
 	const buf = new Float32Array(seconds * RATE);
 	const rnd = noise(p.seed);
 	for (let i = 0; i < buf.length; i++) buf[i] = 0.08 * rnd();
-	const tc = morse('TC');
-	for (let t = 0.3; t < seconds - 1; t += tc.units * 0.12) keyTone(buf, tc.on, 0.12, t, 440, 0.05);
+	const doctrine = morse(CARRIER);
+	for (let t = 0.3; t + doctrine.units * 0.1 < seconds; t += doctrine.units * 0.1) keyTone(buf, doctrine.on, 0.1, t, 440, 0.05);
 	keyTone(buf, msg.on, unit, lead, 1000, 0.35);
 	return wav(buf);
 }
 
-/** Message phrases, all addressed to the investigator. Exported for test access. */
-export const SPOKEN_PHRASES: readonly string[] = [
-	'YOU FOUND THE TRANSFER RECORD',
-	'YOU HAVE THE LEDGER ENTRY',
-	'THE ACQUISITION DATE YOU FOUND IS CORRECT',
-	'YOU ACCESSED THE ARCHIVE',
-	'THE OWNER CHAIN IS COMPLETE',
-	'THE PROVENANCE IS BROKEN',
-	'YOU KNOW WHO HELD THE LOT',
-	'THE RECORD CONFIRMS IT',
-	'YOU FOUND THE SUPPRESSED NAME',
-	'THE CHAIN LEADS FURTHER BACK',
+export const CARRIER = 'NAMES REMAIN';
+
+/** Message templates; {NAME} and {SURNAME} come from this player's Q11 answer. Exported for tests. */
+export const TEMPLATES: readonly string[] = [
+	'YOU FOUND {NAME}',
+	'{NAME} WAS NEVER MEANT TO BE FOUND',
+	'LEAVE {SURNAME} IN THE ARCHIVE',
+	'{SURNAME} HELD IT BEFORE VALE',
+	'STOP READING ABOUT {SURNAME}',
 ];
 
 const challenge: ChallengeModule<Public, Q18Private> = {
@@ -80,7 +78,10 @@ const challenge: ChallengeModule<Public, Q18Private> = {
 
 	async generate(ctx): Promise<GeneratedChallenge<Public, Q18Private>> {
 		const token = await ctx.rng.string(8, ALPHABETS.upper);
-		const phrase = await ctx.rng.choice(SPOKEN_PHRASES);
+		const owner = ((await ctx.related(11)).privateData as { answer: string }).answer;
+		const phrase = (await ctx.rng.choice(TEMPLATES))
+			.replace('{NAME}', owner)
+			.replace('{SURNAME}', owner.split(' ').pop()!);
 		const unitMs = 70 + (await ctx.rng.int(0, 21));
 		const seed = await ctx.rng.string(12, ALPHABETS.upper);
 
@@ -94,9 +95,9 @@ const challenge: ChallengeModule<Public, Q18Private> = {
 			'',
 			'A voicemail arrived on the case contact line after the archive was accessed.',
 			'The caller identity was suppressed at source.',
-			'Background carrier tone at 440Hz, faintly keyed.',
+			'A quieter tone runs underneath the whole message. Keyed, not steady.',
 			'',
-			'The caller did not speak. Whoever it was knew what you have found.',
+			'The caller did not speak. Whoever it was knew what you found.',
 			'Play the recording, or open it as a spectrogram.',
 			'',
 			'What message did the caller send?',

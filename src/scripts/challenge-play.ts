@@ -71,6 +71,7 @@ if (root) {
 		(li.children[0] as HTMLElement).textContent = `H${data.hintNumber}`;
 		(li.children[1] as HTMLElement).textContent = data.text;
 		hintList?.appendChild(li);
+		root.querySelector('[data-hints]')?.classList.remove('hidden');
 		if (data.hintNumber < 2) {
 			hintBtn.dataset.nextHint = String(data.hintNumber + 1);
 			hintBtn.childNodes[0].textContent = `Request hint ${data.hintNumber + 1} `;

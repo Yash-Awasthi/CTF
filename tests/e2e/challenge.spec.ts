@@ -39,10 +39,10 @@ test('LIVE → open current challenge → stable content → future locked', asy
 	await link.click();
 
 	await page.waitForURL(`**/${SLUG}/challenge/1`);
-	await expect(page.getByRole('heading', { name: /Placeholder challenge 1/ })).toBeVisible();
+	await expect(page.getByText('INTERNAL MEMORANDUM')).toBeVisible();
 
 	// Capture the personalized token, then reload → identical (deterministic).
-	const tokenLocator = page.locator('dd.font-mono');
+	const tokenLocator = page.locator('dt:text-is("Session") + dd');
 	const token1 = (await tokenLocator.textContent())?.trim();
 	expect(token1).toBeTruthy();
 	await page.reload();
@@ -52,7 +52,7 @@ test('LIVE → open current challenge → stable content → future locked', asy
 	// Future challenge locked → URL manipulation redirects back to current (1).
 	await page.goto(`/${SLUG}/challenge/2`);
 	await page.waitForURL(`**/${SLUG}/challenge/1`);
-	await expect(page.getByRole('heading', { name: /Placeholder challenge 1/ })).toBeVisible();
+	await expect(page.getByText('INTERNAL MEMORANDUM')).toBeVisible();
 
 	// API enforces the same progression guard (slot 2 locked → 403).
 	const res = await page.request.get(`/api/challenges/2`);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defineChallengeTests, ctx } from './helpers/challenge-factory';
 import { generateChallengeForParticipant, validateChallengeAnswer } from '../../src/lib/challenges/engine';
-import q18, { type Q18Private } from '../../challenges/18/index';
+import q18, { CARRIER, type Q18Private } from '../../challenges/18/index';
 import { RATE } from '../../challenges/shared/audio';
 
 const CODE: Record<string, string> = {
@@ -49,7 +49,9 @@ defineChallengeTests({
           const file = (await q18.artifact!(instance as any, 'voicemail.wav'))!;
           expect(file.contentType).toBe('audio/wav');
           expect(decode(file.body as Uint8Array, 1000, 0.08)).toBe(priv.answer);
-          expect(decode(file.body as Uint8Array, 440, 0.015, RATE / 25).replace(/\s/g, '')).toMatch(/^(TC)+/);
+          expect(decode(file.body as Uint8Array, 440, 0.015, RATE / 25).replace(/\s/g, '')).toContain(CARRIER.replace(' ', ''));
+          const owner = ((await generateChallengeForParticipant(ctx(roll), 11)).instance.privateData as { answer: string }).answer;
+          expect(priv.answer).toContain(owner.split(' ').pop()!);
           expect(JSON.stringify(instance.publicData).toUpperCase()).not.toContain(priv.answer);
         }
       });

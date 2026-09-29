@@ -135,6 +135,12 @@ export async function generateChallengeForParticipant(
 			slot,
 			rng,
 			attributionAnswer,
+			related: async (earlier) => {
+				if (!Number.isInteger(earlier) || earlier < 1 || earlier >= slot) {
+					throw new GenerationError(`slot ${slot}: related(${earlier}) must name an earlier slot`);
+				}
+				return (await generateChallengeForParticipant(ctx, earlier)).instance;
+			},
 		});
 		return { module, instance };
 	} catch (err) {

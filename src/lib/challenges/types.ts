@@ -51,6 +51,11 @@ export interface ChallengeGenerationContext {
 	 * module's `attributionEnabled` is true (engine guarantees this).
 	 */
 	readonly attributionAnswer?: string;
+	/**
+	 * This participant's instance of an earlier slot, so evidence can echo what
+	 * they found before. Only lower slots are allowed, which rules out cycles.
+	 */
+	readonly related: (slot: number) => Promise<GeneratedChallenge>;
 }
 
 /**

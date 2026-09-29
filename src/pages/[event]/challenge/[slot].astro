@@ -381,7 +381,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<!-- Revealed hints -->
 				<div
 					data-hints
-					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-7 py-4'}
+					class={`border-b border-neutral-800 px-7 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}
 				>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
@@ -612,7 +612,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<!-- Revealed hints -->
 				<div
 					data-hints
-					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-7 py-4'}
+					class={`border-b border-neutral-800 px-7 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}
 				>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
@@ -834,7 +834,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<!-- Revealed hints -->
 				<div
 					data-hints
-					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-7 py-4'}
+					class={`border-b border-neutral-800 px-7 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}
 				>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
@@ -1045,7 +1045,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<!-- Revealed hints -->
 				<div
 					data-hints
-					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-7 py-4'}
+					class={`border-b border-neutral-800 px-7 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}
 				>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
@@ -1249,7 +1249,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<!-- Revealed hints -->
 				<div
 					data-hints
-					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-7 py-4'}
+					class={`border-b border-neutral-800 px-7 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}
 				>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
@@ -1427,7 +1427,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<!-- Revealed hints -->
 				<div
 					data-hints
-					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-7 py-4'}
+					class={`border-b border-neutral-800 px-7 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}
 				>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
@@ -1717,7 +1717,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<!-- Revealed hints -->
 				<div
 					data-hints
-					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-5 py-4'}
+					class={`border-b border-neutral-800 px-5 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}
 				>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
@@ -1960,7 +1960,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<!-- Revealed hints -->
 				<div
 					data-hints
-					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-7 py-4'}
+					class={`border-b border-neutral-800 px-7 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}
 				>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
@@ -2289,7 +2289,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<!-- Revealed hints -->
 				<div
 					data-hints
-					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-7 py-4'}
+					class={`border-b border-neutral-800 px-7 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}
 				>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
@@ -2444,7 +2444,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<!-- Revealed hints -->
 				<div
 					data-hints
-					class={revealedHints.length === 0 ? 'hidden' : 'border-b border-neutral-800 px-5 py-4'}
+					class={`border-b border-neutral-800 px-5 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}
 				>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
@@ -2637,7 +2637,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				)}
 
 				<!-- Hints -->
-				<div data-hints class={revealedHints.length === 0 ? 'hidden' : 'border-t border-neutral-800 px-6 py-4'}>
+				<div data-hints class={`border-t border-neutral-800 px-6 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}>
 					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Field Notes</p>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
@@ -2788,7 +2788,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				)}
 
 				<!-- Hints -->
-				<div data-hints class={revealedHints.length === 0 ? 'hidden' : 'border-t border-neutral-800 px-6 py-4'}>
+				<div data-hints class={`border-t border-neutral-800 px-6 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}>
 					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Investigator Notes</p>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
@@ -2887,7 +2887,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				)}
 
 				<!-- Hints -->
-				<div data-hints class={revealedHints.length === 0 ? 'hidden' : 'border-t border-neutral-800 px-6 py-4'}>
+				<div data-hints class={`border-t border-neutral-800 px-6 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}>
 					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Examiner Notes</p>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
@@ -2984,7 +2984,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				)}
 
 				<!-- Hints -->
-				<div data-hints class={revealedHints.length === 0 ? 'hidden' : 'border-t border-neutral-800 px-6 py-4'}>
+				<div data-hints class={`border-t border-neutral-800 px-6 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}>
 					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Bureau Notes</p>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
@@ -3084,7 +3084,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				)}
 
 				<!-- Hints -->
-				<div data-hints class={revealedHints.length === 0 ? 'hidden' : 'border-t border-neutral-800 px-6 py-4'}>
+				<div data-hints class={`border-t border-neutral-800 px-6 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}>
 					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Research Notes</p>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
@@ -3195,7 +3195,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				)}
 
 				<!-- Hints -->
-				<div data-hints class={revealedHints.length === 0 ? 'hidden' : 'border-t border-neutral-800 px-6 py-4'}>
+				<div data-hints class={`border-t border-neutral-800 px-6 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}>
 					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">
 						{isQ30 ? 'Case Notes' : 'Terminal Notes'}
 					</p>

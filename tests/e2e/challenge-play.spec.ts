@@ -6,7 +6,7 @@ import { generateChallengeForParticipant } from '../../src/lib/challenges';
 
 const SLUG = 'case-files-dev-2026';
 const ROLL = 25_115_031;
-const SLOT = 1; // ordinary placeholder challenge (not attribution 8/16)
+const SLOT = 1; // Q1, not attribution-enabled
 
 function sql(command: string) {
 	execSync(
@@ -62,7 +62,7 @@ test('hint reveal persists + incorrect then correct solve advances', async ({ pa
 
 	await login(page);
 	await page.goto(`/${SLUG}/challenge/${SLOT}`);
-	await expect(page.getByRole('heading', { name: /Placeholder challenge 1/ })).toBeVisible();
+	await expect(page.getByText('INTERNAL MEMORANDUM')).toBeVisible();
 
 	// Reveal hint 1 → appears.
 	await page.click('[data-hint-button]');
@@ -75,17 +75,17 @@ test('hint reveal persists + incorrect then correct solve advances', async ({ pa
 	// Incorrect submission shows a safe error, no advance.
 	await page.fill('input[name="answer"]', 'definitely-wrong');
 	await page.click('[data-submit-form] button[type="submit"]');
-	await expect(page.locator('[data-result]')).toHaveText(/Incorrect/);
+	await expect(page.locator('[data-result]')).toHaveText(/not recognised/);
 
 	// Correct submission → advances to challenge 2.
 	const answer = await correctAnswer();
 	await page.fill('input[name="answer"]', answer);
 	await page.click('[data-submit-form] button[type="submit"]');
 	await page.waitForURL(`**/${SLUG}/challenge/2`);
-	await expect(page.getByRole('heading', { name: /Placeholder challenge 2/ })).toBeVisible();
+	await expect(page.getByText('OFFICIAL CASE RECORD')).toBeVisible();
 
 	// Previously solved challenge 1 is now read-only (no submit form).
 	await page.goto(`/${SLUG}/challenge/1`);
-	await expect(page.getByText(/Solved — read-only/)).toBeVisible();
+	await expect(page.getByText(/now read-only/)).toBeVisible();
 	await expect(page.locator('[data-submit-form]')).toHaveCount(0);
 });
