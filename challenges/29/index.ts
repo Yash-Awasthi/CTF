@@ -35,7 +35,7 @@ const challenge: ChallengeModule<Public, Private> = {
 	hints: [
 		{
 			order: 1,
-			text: 'Ten small things you probably dismissed. Bring them together: the "THE" underlines, the TC- prefix, the .cts extension, the skipped 71, the leftover cipher chars, the voicemail tone, the unused symbols, the archival mark, the spacing pattern, and the marginal doctrine fragments.',
+			text: 'Ten small things you probably dismissed. Bring them together: the "THE" underlines, the TC- prefix, the .cts extension, the skipped 71, the leftover cipher chars, the voicemail tone, the cipher phrase, the archival mark, the spacing pattern, and the marginal doctrine fragments.',
 		},
 		{
 			order: 2,
@@ -56,8 +56,8 @@ const challenge: ChallengeModule<Public, Private> = {
 			'',
 			'--- SECONDARY ANOMALY BOARD ---',
 			'',
-			'[Q3]  Mira underlined \'THE\' throughout her notebook — 9 instances,',
-			'      at consistent intervals. Not random emphasis.',
+			'[Q3]  Mira underlined \'THE\' every time she wrote it.',
+			'      Not random emphasis.',
 			'',
 			'[Q5]  The blocked robots.txt path carried an unexplained prefix: TC-',
 			'      This is not a Blackwood Bureau standard. Source unknown.',
@@ -74,8 +74,8 @@ const challenge: ChallengeModule<Public, Private> = {
 			'[Q18] Voicemail carrier tone carried amplitude modulation.',
 			'      The encoded phrase has been archived.',
 			'',
-			'[Q20] Mira\'s substitution cipher had unused key assignments.',
-			'      The unused assignments form a word.',
+			'[Q20] Mira\'s cipher phrase: IT CHANGES WHEN OBSERVED.',
+			'      She meant the records, not the people.',
 			'',
 			'[Q25] Photograph reverse: archival stamp TC-III-W',
 			'      Not a Blackwood format. TC = unknown. III = Cycle 3. W = Witness.',

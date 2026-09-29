@@ -13,19 +13,21 @@ import { exactMatch } from '../../src/lib/challenges/validators';
 import { ALPHABETS } from '../../src/lib/crypto/constants';
 import type { ChallengeModule, GeneratedChallenge } from '../../src/lib/challenges/types';
 
-interface Public {
+export interface Q12Public {
 	prompt: string;
 	token: string;
 }
-interface Private {
+/** `listing` and `credential` are served only by the portal route after a correct password. */
+export interface Q12Private {
 	answer: string;
+	credential: string;
+	listing: string[];
 }
 
-/** Archive document topic variants. Exported for test access. */
+/** Distractor document topics in Daniel's archive. Exported for test access. */
 export const FILE_TOPICS: readonly string[] = [
 	'vale-estate-inventory',
 	'provenance-chain-notes',
-	'collection-transfer-record',
 	'acquisition-correspondence',
 	'doll-catalogue-complete',
 	'estate-appraisal-notes',
@@ -35,7 +37,7 @@ export const FILE_TOPICS: readonly string[] = [
 	'solicitor-instruction-file',
 ];
 
-const challenge: ChallengeModule<Public, Private> = {
+const challenge: ChallengeModule<Q12Public, Q12Private> = {
 	metadata: {
 		slot: 12,
 		key: 'daniel-reyes',
@@ -55,7 +57,7 @@ const challenge: ChallengeModule<Public, Private> = {
 		},
 	],
 
-	async generate(ctx): Promise<GeneratedChallenge<Public, Private>> {
+	async generate(ctx): Promise<GeneratedChallenge<Q12Public, Q12Private>> {
 		const token = await ctx.rng.string(8, ALPHABETS.upper);
 
 		// Derive a 6-char credential from RNG — Daniel reused this as his reference code
@@ -63,10 +65,19 @@ const challenge: ChallengeModule<Public, Private> = {
 		const credNums = await ctx.rng.string(3, ALPHABETS.digits);
 		const credential = `${credChars}${credNums}`;
 
-		// Archive filename
-		const topic = await ctx.rng.choice(FILE_TOPICS);
-		const year = 2013 + (await ctx.rng.int(0, 3));
-		const filename = `${topic}-${year}.pdf`;
+		// The transfer record carries a per-participant serial; the rest are distractors.
+		const year = 2013 + (await ctx.rng.int(0, 2));
+		const serial = await ctx.rng.string(3, ALPHABETS.digits);
+		const filename = `collection-transfer-${year}-${serial}.pdf`;
+		const others: string[] = [];
+		for (const t of await ctx.rng.sample(FILE_TOPICS, 3)) others.push(`${t}-${2013 + (await ctx.rng.int(0, 2))}.pdf`);
+		const listing = await ctx.rng.shuffle([
+			filename,
+			...others,
+			'daniel-personal-notes-redacted.pdf',
+			'MEMO-draft-v1.html',
+			'MEMO-published.html',
+		]);
 
 		const prompt = [
 			'DANIEL REYES — CONTACT RECEIVED',
@@ -76,27 +87,20 @@ const challenge: ChallengeModule<Public, Private> = {
 			'',
 			"--- MESSAGE ---",
 			'"I have been assisting with the Vale estate provenance review since',
-			'before Mira was contracted. I have files that may be relevant to your',
-			`work. Reference code: ${credential}`,
-			'(This is also the portal password — I keep it simple for quick access.)',
-			'Please review the collection transfer documents."',
+			'before Mira was contracted. My private archive portal is linked below.',
+			`Reference code: ${credential}`,
+			'Please review the collection transfer document first."',
 			'— D. REYES',
 			'--- END MESSAGE ---',
 			'',
-			'He offered his own password without being asked.',
-			'',
-			'Archive contents — daniel-reyes-private-archive/:',
-			`  ${filename}`,
-			'  daniel-personal-notes-redacted.pdf',
-			'  MEMO-draft-v1.html',
-			'  MEMO-published.html',
+			'The portal asks for a password. He never sent one.',
 			'',
 			'What is the filename of the collection transfer document?',
 		].join('\n');
 
 		return {
 			publicData: { prompt, token },
-			privateData: { answer: filename },
+			privateData: { answer: filename, credential, listing },
 		};
 	},
 

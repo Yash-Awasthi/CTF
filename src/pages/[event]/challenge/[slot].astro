@@ -121,9 +121,9 @@ const isQ9  = view.key === 'the-catalogue';
 const isQ11 = view.key === 'verified';
 
 // Q12–Q30 discriminants
-const isQ12 = view.key === 'the-file-clerk';
-const isQ13 = view.key === 'the-holt-collection';
-const isQ14 = view.key === 'the-pre-vale-dates';
+const isQ12 = view.key === 'daniel-reyes';
+const isQ13 = view.key === 'the-redacted-owner';
+const isQ14 = view.key === 'before-vale';
 const isQ15 = view.key === 'the-memo';
 const isQ16 = view.key === 'there-were-six';
 const isQ17 = view.key === 'the-dead-website';
@@ -169,9 +169,9 @@ type QMeta = {
 	solvedMsg:    string;
 };
 const QMETA: Record<string, QMeta> = {
-	'the-file-clerk':          { systemLabel: 'Vale Archive File System',                       sourceRef: 'Investigator file access · Case 71-C',            promptLabel: 'Archive Listing',          placeholder: 'Active file reference (e.g. vale-estate-inventory)',        msgVerifying: 'Checking archive index…',                       msgCorrect: 'File reference confirmed. Archive entry locked.',                        msgIncorrect: 'Reference not found. Check the active file listing.',                              solvedMsg: 'File reference confirmed. Archive entry locked.' },
-	'the-holt-collection':     { systemLabel: 'Blackwood Evidence Management',                  sourceRef: 'Document EVD-71C-HOLT · Ownership history',        promptLabel: 'Recovered Document',       placeholder: 'Name of original 1948 owner',                               msgVerifying: 'Cross-referencing ownership records…',          msgCorrect: 'Owner identified. Provenance record filed.',                            msgIncorrect: 'Name not confirmed. Check the restored title carefully.',                          solvedMsg: 'Original owner confirmed. This document record is now read-only.' },
-	'the-pre-vale-dates':      { systemLabel: 'Blackwood Evidence Management',                  sourceRef: 'Ledger cipher · Decoded acquisition dates',        promptLabel: 'Cipher Document',          placeholder: 'Pre-Vale acquisition date (YYYY-MM-DD)',                    msgVerifying: 'Verifying date against the ledger…',            msgCorrect: 'Date confirmed. Ledger entry filed.',                                   msgIncorrect: 'Date not recognised. Check your cipher decode.',                                   solvedMsg: 'Date confirmed. This ledger entry is now read-only.' },
+	'daniel-reyes':            { systemLabel: 'Vale Archive File System',                       sourceRef: 'Investigator file access · Case 71-C',            promptLabel: 'Archive Listing',          placeholder: 'Filename of the transfer document',                        msgVerifying: 'Checking archive index…',                       msgCorrect: 'File reference confirmed. Archive entry locked.',                        msgIncorrect: 'Reference not found. Check the active file listing.',                              solvedMsg: 'File reference confirmed. Archive entry locked.' },
+	'the-redacted-owner':      { systemLabel: 'Blackwood Evidence Management',                  sourceRef: 'Document EVD-71C-HOLT · Ownership history',        promptLabel: 'Recovered Document',       placeholder: 'Name of original 1948 owner',                               msgVerifying: 'Cross-referencing ownership records…',          msgCorrect: 'Owner identified. Provenance record filed.',                            msgIncorrect: 'Name not confirmed. Check the restored title carefully.',                          solvedMsg: 'Original owner confirmed. This document record is now read-only.' },
+	'before-vale':             { systemLabel: 'Blackwood Evidence Management',                  sourceRef: 'Ledger cipher · Decoded acquisition dates',        promptLabel: 'Cipher Document',          placeholder: 'Pre-Vale acquisition date (YYYY-MM-DD)',                    msgVerifying: 'Verifying date against the ledger…',            msgCorrect: 'Date confirmed. Ledger entry filed.',                                   msgIncorrect: 'Date not recognised. Check your cipher decode.',                                   solvedMsg: 'Date confirmed. This ledger entry is now read-only.' },
 	'the-memo':                { systemLabel: 'Blackwood Evidence Management',                  sourceRef: 'MEMO-published.html · Version comparison',         promptLabel: 'Document',                 placeholder: 'Year buried in the source (e.g. 2001)',                     msgVerifying: 'Verifying year against source record…',         msgCorrect: 'Year confirmed. Archive discrepancy filed.',                            msgIncorrect: 'Year not confirmed. Check all versions of the memo.',                              solvedMsg: 'Version discrepancy confirmed. This record is now read-only.' },
 	'there-were-six':          { systemLabel: 'Vale Archive Photograph Record',                 sourceRef: 'Photograph comparison · Case 71-C',               promptLabel: 'Photograph Analysis',      placeholder: 'EXIF modification timestamp (YYYY:MM:DD HH:MM:SS)',         msgVerifying: 'Verifying against photograph metadata…',        msgCorrect: 'Timestamp confirmed. Photograph alteration logged.',             msgIncorrect: 'Timestamp not confirmed. Check the EXIF data on the current image.', solvedMsg: 'Alteration timestamp confirmed. This photograph record is now read-only.' },
 	'the-dead-website':        { systemLabel: 'Web Archive — Vale Estate Site',                 sourceRef: 'Last-Modified header · Archive retrieval',         promptLabel: 'Archive Response',         placeholder: 'Last-Modified date (YYYY-MM-DD)',                           msgVerifying: 'Checking archive header…',                      msgCorrect: 'Date confirmed. Archive record closed.',                                msgIncorrect: 'Date not confirmed. Check the Last-Modified header precisely.',                    solvedMsg: 'Last-Modified date confirmed. This archive record is now read-only.' },
@@ -185,7 +185,7 @@ const QMETA: Record<string, QMeta> = {
 	'1963':                    { systemLabel: 'Blackwood Forensic Evidence Unit',               sourceRef: 'Photograph provenance · Three-source verification',promptLabel: 'Verification Report',      placeholder: 'Year the photograph dates to',                              msgVerifying: 'Verifying against three independent sources…',  msgCorrect: 'Year confirmed. Photograph evidence filed.',                            msgIncorrect: 'Year not confirmed. All three sources must agree.',                                solvedMsg: 'Date confirmed. This photograph record is now read-only.' },
 	'daniel-reyes-again':      { systemLabel: 'Blackwood Bureau — Personnel Archive',           sourceRef: 'Enumeration result · Case 71-C',                   promptLabel: 'Search Result',            placeholder: 'Number of distinct records',                                msgVerifying: 'Counting distinct records…',                    msgCorrect: 'Count confirmed. Personnel anomaly logged.',                            msgIncorrect: 'Count not confirmed. Count distinct records, not distinct mentions.',              solvedMsg: 'Record count confirmed. This archive entry is now read-only.' },
 	'stop-looking-for-people': { systemLabel: 'Blackwood Evidence Management',                  sourceRef: "Mira Castellan · Notebook final page (v3)",        promptLabel: 'Notebook — Final Page',    placeholder: 'Second sentence from the final note (start: FOLLOW…)',     msgVerifying: "Filing Mira's instruction…",                    msgCorrect: 'Instruction confirmed. Notebook entry filed.',                          msgIncorrect: 'Instruction not confirmed. Submit the second sentence exactly.',                   solvedMsg: 'Final instruction confirmed. This notebook entry is now read-only.' },
-	'the-ledger':              { systemLabel: 'The Ledger — Historical Records Database',       sourceRef: 'Access via Blackwood Case 71-C',                   promptLabel: 'Database Output',          placeholder: 'Role currently unassigned in Cycle 6',                     msgVerifying: 'Querying Ledger record…',                       msgCorrect: 'Role confirmed. Ledger entry sealed.',                                  msgIncorrect: "Role not confirmed. Identify the PENDING role that fits the Investigator's structural position.", solvedMsg: 'Role confirmed. The Ledger record is now sealed and read-only.' },
+	'the-ledger':              { systemLabel: 'The Ledger — Historical Records Database',       sourceRef: 'Access via Blackwood Case 71-C',                   promptLabel: 'Database Output',          placeholder: 'Role Daniel Reyes holds in every cycle',                    msgVerifying: 'Querying Ledger record…',                       msgCorrect: 'Role confirmed. Ledger entry sealed.',                                  msgIncorrect: 'Role not confirmed. Check which role is never filled by anyone but him.', solvedMsg: 'Role confirmed. The Ledger record is now sealed and read-only.' },
 	'the-continuity':          { systemLabel: 'Blackwood Evidence Correlation Terminal',        sourceRef: 'Restricted access — Senior Investigator only',     promptLabel: 'Terminal Output',          placeholder: 'Name of the system',                                        msgVerifying: 'Filing system identification…',                 msgCorrect: 'System identified. Case continuity resolved.',                          msgIncorrect: 'System not identified. Assemble the doctrine and infer the name from the TC prefix.', solvedMsg: 'System identified. Continuity resolved. This terminal is now read-only.' },
 	'the-subject':             { systemLabel: 'THE CONTINUITY',                                 sourceRef: 'Final record — Cycle 6, current',                  promptLabel: 'Final Query',              placeholder: 'Your investigator codename',                                msgVerifying: 'Querying Continuity record…',                   msgCorrect: 'Identity confirmed. The Continuity record is complete.',                msgIncorrect: 'Codename not confirmed. Look at what you were told before the case began.', solvedMsg: 'Identity confirmed. The Continuity record is complete.' },
 };
@@ -328,8 +328,8 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 						This bureau has received administrative direction to reopen file 71-C,
 						originally logged in October 2015. The file concerns the disappearance
 						of Mira Castellan, a freelance investigator contracted to catalogue and
-						appraise the estate of Silas Vale following his death in the early part
-						of this decade.
+						appraise the estate of Silas Vale following his death in the spring
+						of 2015.
 					</p>
 					<p class="text-sm leading-relaxed text-neutral-400">
 						Castellan's engagement was routine in scope. She was tasked with
@@ -2552,6 +2552,19 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					</div>
 				</div>
 
+				<!-- Q12: Daniel's private archive portal -->
+				{isQ12 && (
+					<div class="px-6 pb-5">
+						<form id="q12-portal" class="flex gap-2 rounded border border-neutral-800 bg-neutral-950 px-4 py-3">
+							<span class="self-center font-mono text-[10px] tracking-[0.15em] text-neutral-600 uppercase">reyes-archive login</span>
+							<input id="q12-password" type="password" autocomplete="off" placeholder="password"
+								class="flex-1 rounded border border-neutral-800 bg-black px-3 py-1.5 font-mono text-xs text-neutral-200 focus:border-neutral-600 focus:outline-none" />
+							<button type="submit" class="rounded border border-neutral-700 px-3 font-mono text-[10px] tracking-[0.15em] text-neutral-400 uppercase hover:text-neutral-200">Log in</button>
+						</form>
+						<pre id="q12-output" class="mt-2 whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-neutral-300"></pre>
+					</div>
+				)}
+
 				<!-- Q17: clickable link to the live archive site -->
 				{isQ17 && (
 					<div class="px-6 pb-5">
@@ -3131,7 +3144,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 						<p class="font-mono text-[9px] tracking-[0.4em] text-neutral-700 uppercase mb-2">
 							{'━'.repeat(36)}
 						</p>
-						<p class="font-mono text-sm font-semibold tracking-[0.35em] text-neutral-300 uppercase">The Continuity</p>
+						<p class="font-mono text-sm font-semibold tracking-[0.35em] text-neutral-300 uppercase">{isSolved ? 'The Continuity' : qm.systemLabel}</p>
 						<p class="font-mono text-[9px] tracking-[0.4em] text-neutral-700 uppercase mt-2">
 							{'━'.repeat(36)}
 						</p>
@@ -3228,7 +3241,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 			</div>
 			<div class="mt-5 flex items-center justify-between font-mono text-[10px] text-neutral-800">
-				<span>THE CONTINUITY</span>
+				<span>{isQ30 || isSolved ? 'THE CONTINUITY' : 'BLACKWOOD — EVIDENCE CORRELATION'}</span>
 				<span>FILE 71-C</span>
 			</div>
 		</main>
@@ -3384,6 +3397,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 <script>
 	import '../../../scripts/challenge-play';
+	import '../../../scripts/challenge-widgets';
 </script>
 
 </Layout>

@@ -40,25 +40,25 @@ import { oneOf } from '../../src/lib/challenges/validators';
 import { ALPHABETS } from '../../src/lib/crypto/constants';
 import type { ChallengeModule, GeneratedChallenge } from '../../src/lib/challenges/types';
 
-/** Pool of address variants. Multi-digit street numbers leave enough digits
- *  visible for reconstruction even when partially obscured. */
+/** Pool of address variants, all in Pembridge so Q4's district registry follows.
+ *  Multi-digit street numbers stay legible even when partially obscured. */
 const ADDRESSES: readonly string[] = [
 	'14 Ashwick Road, Pembridge',
-	'22 Corvin Lane, Thornfield',
-	'37 Harlow Street, Caldwell',
-	'31 Morrow Passage, Greystone',
-	'19 Inkwell Court, Saltmere',
-	'43 Fallow End, Wickhurst',
-	'18 Dredge Row, Aldmoor',
-	'55 Bastion Close, Fernwick',
-	'27 Lacuna Walk, Dunhollow',
-	'11 Remnant Yard, Stave Cross',
-	'60 Vestige Lane, Harrowfield',
-	'63 Cairn Street, Moorside',
-	'88 Threshold Road, Clearwater',
-	'15 Reliquary Alley, Greyfen',
-	'33 Sextant Row, Portwick',
-	'72 Wanderer Close, Ashfen',
+	'22 Corvin Lane, Pembridge',
+	'37 Harlow Street, Pembridge',
+	'31 Morrow Passage, Pembridge',
+	'19 Inkwell Court, Pembridge',
+	'43 Fallow End, Pembridge',
+	'18 Dredge Row, Pembridge',
+	'55 Bastion Close, Pembridge',
+	'27 Lacuna Walk, Pembridge',
+	'11 Remnant Yard, Pembridge',
+	'60 Vestige Lane, Pembridge',
+	'63 Cairn Street, Pembridge',
+	'88 Threshold Road, Pembridge',
+	'15 Reliquary Alley, Pembridge',
+	'33 Sextant Row, Pembridge',
+	'72 Wanderer Close, Pembridge',
 ];
 
 /**

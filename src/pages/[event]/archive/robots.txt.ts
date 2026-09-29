@@ -64,10 +64,12 @@ export const GET: APIRoute = async ({ params, locals }) => {
 		'Disallow: /cgi-bin/',
 		'Disallow: /drafts/',
 		`Disallow: /${archivePath}/`,
+		'Disallow: /TC-ledger/',
 		'',
 		'# BPHA: Bremwick-Pembridge Heritage Archive digitisation project (2004)',
 		'# Archive paths with BPHA- prefix are managed by the digitisation system.',
 		'# Sub-collections pending classification review are excluded from crawling.',
+		'# TC- paths are held for an external custodian. Not a BPHA collection.',
 	].join('\n');
 
 	return new Response(body, {
