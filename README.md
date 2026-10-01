@@ -1,5 +1,7 @@
 # Case Files
 
+[![CI](https://github.com/Yash-Awasthi/CTF/actions/workflows/ci.yml/badge.svg)](https://github.com/Yash-Awasthi/CTF/actions/workflows/ci.yml)
+
 A browser capture-the-flag event: thirty sequential challenges that tell one investigation, Case
 71-C. Every player gets their own evidence (names, dates, files, audio, images) derived from an
 event secret, so copied answers are traced back to their owner. It runs on Cloudflare Workers
