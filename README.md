@@ -33,7 +33,7 @@ Playwright. Challenge evidence (audio, images, documents) is generated per playe
 ```bash
 pnpm install
 cp .env.example .dev.vars        # then replace the three dev secrets (openssl rand -hex 32)
-pnpm db:reset:local              # create the local D1, apply migrations, seed the dev event
+pnpm db:reset:local              # fresh local D1 (migrated, seeded) and live/rate-limit state
 pnpm dev                         # http://localhost:4321
 ```
 
