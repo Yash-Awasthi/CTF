@@ -3,3 +3,5 @@ allowBuilds:
   esbuild: true
   workerd: true
   sharp: false
+minimumReleaseAgeExclude:
+  - zod@4.6.7
