@@ -75,6 +75,8 @@ test('announcements reach an open player page over the live WebSocket', async ({
 	await page.click('button[type="submit"]');
 	await page.waitForURL(`**/${SLUG}/home`);
 	const ws = await socket;
+	// The replayed state frame proves the socket is open before anything is announced.
+	await ws.waitForEvent('framereceived', (f) => String(f.payload).includes('"type":"state"'));
 
 	const message = `Live check ${Date.now()}`;
 	const frame = ws.waitForEvent('framereceived', (f) => String(f.payload).includes(message));
