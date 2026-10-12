@@ -3,8 +3,10 @@ import { createDb } from '../../../lib/db/client';
 import { getEnv } from '../../../lib/runtime';
 import {
 	createAdminSession, setAdminCookie, verifyAdminPassword, isSameOrigin,
-	hashIp, checkAdminRateLimit, recordAdminFailure, resetAdminFailures,
+	hashIp, recordAdminFailure,
 } from '../../../lib/admin';
+import { allowAttempt } from '../../../lib/auth/rate-limit';
+import { RATE_LIMIT_PERIOD_SECONDS } from '../../../lib/auth/constants';
 
 export const prerender = false;
 
@@ -23,9 +25,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
 	const ip = clientIp(request);
 	const ipHash = ip ? await hashIp(ip, env.RATE_LIMIT_SECRET) : null;
-	if (ipHash) {
-		const rl = await checkAdminRateLimit(db, ipHash);
-		if (rl.blocked) return json({ error: 'rate_limited', retryAfterSeconds: rl.retryAfterSeconds }, 429, { 'retry-after': String(rl.retryAfterSeconds) });
+	if (ipHash && !(await allowAttempt(env.ADMIN_LOGIN_LIMITER, ipHash))) {
+		return json({ error: 'rate_limited', retryAfterSeconds: RATE_LIMIT_PERIOD_SECONDS }, 429, { 'retry-after': String(RATE_LIMIT_PERIOD_SECONDS) });
 	}
 
 	let body: unknown;
@@ -37,7 +38,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 		if (ipHash) await recordAdminFailure(db, ipHash);
 		return json({ error: 'invalid_credentials' }, 401);
 	}
-	if (ipHash) await resetAdminFailures(db, ipHash);
 
 	const { rawToken } = await createAdminSession(db);
 	setAdminCookie(cookies, rawToken);

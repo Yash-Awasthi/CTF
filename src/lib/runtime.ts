@@ -7,5 +7,5 @@ import { env } from 'cloudflare:workers';
  * and production. `env` is typed as the generated global `Env`.
  */
 export function getEnv(): Env {
-	return env as unknown as Env;
+	return env;
 }

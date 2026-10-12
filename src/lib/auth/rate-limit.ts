@@ -1,10 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import type { DB } from '../db/client';
 import { loginRateLimit, type RATE_LIMIT_SCOPES } from '../db/schema';
-import {
-	RATE_LIMIT_MAX_FAILURES,
-	RATE_LIMIT_WINDOW_SECONDS,
-} from './constants';
+import { FAILURE_AUDIT_WINDOW_SECONDS } from './constants';
 
 type Scope = (typeof RATE_LIMIT_SCOPES)[number];
 
@@ -13,17 +10,6 @@ interface ScopeKey {
 	scope: Scope;
 	subject: string;
 }
-
-/** Throttle policy. Defaults preserve the login policy for existing callers. */
-export interface RateLimitPolicy {
-	maxFailures: number;
-	windowSeconds: number;
-}
-
-const LOGIN_POLICY: RateLimitPolicy = {
-	maxFailures: RATE_LIMIT_MAX_FAILURES,
-	windowSeconds: RATE_LIMIT_WINDOW_SECONDS,
-};
 
 /**
  * Privacy-preserving IP identifier: HMAC-SHA256(ip, RATE_LIMIT_SECRET), hex.
@@ -47,50 +33,20 @@ export async function hashIp(ip: string, secret: string): Promise<string> {
 		.join('');
 }
 
-export interface RateLimitStatus {
-	blocked: boolean;
-	retryAfterSeconds: number;
+/** Spend one attempt from a Workers rate limiter; false once the key is over its limit. */
+export async function allowAttempt(limiter: RateLimit, key: string): Promise<boolean> {
+	return (await limiter.limit({ key })).success;
 }
 
-function windowExpired(windowStart: Date, now: Date, windowSeconds: number): boolean {
-	return (now.getTime() - windowStart.getTime()) / 1000 >= windowSeconds;
+function windowExpired(windowStart: Date, now: Date): boolean {
+	return (now.getTime() - windowStart.getTime()) / 1000 >= FAILURE_AUDIT_WINDOW_SECONDS;
 }
 
-/** Read-only check: is this scope currently in cooldown? */
-export async function checkRateLimit(
-	db: DB,
-	key: ScopeKey,
-	now: Date = new Date(),
-	policy: RateLimitPolicy = LOGIN_POLICY,
-): Promise<RateLimitStatus> {
-	const row = await db
-		.select()
-		.from(loginRateLimit)
-		.where(
-			and(
-				eq(loginRateLimit.eventId, key.eventId),
-				eq(loginRateLimit.scope, key.scope),
-				eq(loginRateLimit.subject, key.subject),
-			),
-		)
-		.get();
-
-	if (!row || windowExpired(row.windowStart, now, policy.windowSeconds)) {
-		return { blocked: false, retryAfterSeconds: 0 };
-	}
-	const elapsed = (now.getTime() - row.windowStart.getTime()) / 1000;
-	return {
-		blocked: row.failureCount >= policy.maxFailures,
-		retryAfterSeconds: Math.max(0, Math.ceil(policy.windowSeconds - elapsed)),
-	};
-}
-
-/** Record one failed attempt; resets the window if the prior one lapsed. */
+/** Audit one failed attempt; starts a new window if the prior one lapsed. */
 export async function recordFailure(
 	db: DB,
 	key: ScopeKey,
 	now: Date = new Date(),
-	policy: RateLimitPolicy = LOGIN_POLICY,
 ): Promise<void> {
 	const row = await db
 		.select()
@@ -115,7 +71,7 @@ export async function recordFailure(
 		return;
 	}
 
-	if (windowExpired(row.windowStart, now, policy.windowSeconds)) {
+	if (windowExpired(row.windowStart, now)) {
 		await db
 			.update(loginRateLimit)
 			.set({ windowStart: now, failureCount: 1 })
@@ -126,20 +82,4 @@ export async function recordFailure(
 			.set({ failureCount: row.failureCount + 1 })
 			.where(eq(loginRateLimit.id, row.id));
 	}
-}
-
-/** Clear failed-attempt state for a scope (called on successful login). */
-export async function resetFailures(
-	db: DB,
-	key: ScopeKey,
-): Promise<void> {
-	await db
-		.delete(loginRateLimit)
-		.where(
-			and(
-				eq(loginRateLimit.eventId, key.eventId),
-				eq(loginRateLimit.scope, key.scope),
-				eq(loginRateLimit.subject, key.subject),
-			),
-		);
 }

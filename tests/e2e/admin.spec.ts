@@ -65,3 +65,22 @@ test('admin timer extension respects the 48h cap and freeze works', async ({ req
 	const freeze = await request.post('/api/admin/freeze', { data: { eventSlug: SLUG } });
 	expect(freeze.status()).toBe(200);
 });
+
+test('announcements reach an open player page over the live WebSocket', async ({ page, request }) => {
+	sql(`UPDATE events SET state='LIVE', started_at=unixepoch(), duration_seconds=3600 WHERE slug='${SLUG}';`);
+	const socket = page.waitForEvent('websocket', (ws) => ws.url().includes('/api/events/live'));
+	await page.goto(`/${SLUG}/login`);
+	await page.fill('input[name="rollNumber"]', '25115041');
+	await page.fill('input[name="password"]', '25115041');
+	await page.click('button[type="submit"]');
+	await page.waitForURL(`**/${SLUG}/home`);
+	const ws = await socket;
+
+	const message = `Live check ${Date.now()}`;
+	const frame = ws.waitForEvent('framereceived', (f) => String(f.payload).includes(message));
+	await request.post('/api/admin/login', { data: { password: adminPassword() } });
+	const res = await request.post('/api/admin/announce', { data: { eventSlug: SLUG, message } });
+	expect(res.status()).toBe(200);
+	await frame;
+	await expect(page.getByRole('status').filter({ hasText: message })).toBeVisible();
+});

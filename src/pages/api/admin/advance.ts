@@ -2,6 +2,8 @@ import type { APIRoute } from 'astro';
 import { guardAdmin, adminJson } from '../../../lib/admin/guard';
 import { advanceSchema } from '../../../lib/validation/admin';
 import { markEventReady, startEvent, beginEventReview, publishEventResults, archiveEvent } from '../../../lib/event/state';
+import { getEnv } from '../../../lib/runtime';
+import { syncLive } from '../../../lib/live';
 
 export const prerender = false;
 
@@ -21,6 +23,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 			case 'publish': await publishEventResults(g.db, id); break;
 			case 'archive': await archiveEvent(g.db, id); break;
 		}
+		await syncLive(getEnv(), id);
 		return adminJson({ ok: true }, 200);
 	} catch (e) {
 		return adminJson({ error: (e as Error).message }, 409);

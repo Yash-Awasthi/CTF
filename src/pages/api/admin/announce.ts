@@ -2,6 +2,8 @@ import type { APIRoute } from 'astro';
 import { guardAdmin, adminJson } from '../../../lib/admin/guard';
 import { announceSchema } from '../../../lib/validation/admin';
 import { createAnnouncement } from '../../../lib/admin';
+import { getEnv } from '../../../lib/runtime';
+import { syncLive } from '../../../lib/live';
 
 export const prerender = false;
 
@@ -13,6 +15,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 	const g = await guardAdmin(request, cookies, parsed.data.eventSlug, { mutation: true });
 	if (g instanceof Response) return g;
 	const res = await createAnnouncement(g.db, { eventId: g.event.id, message: parsed.data.message });
+	await syncLive(getEnv(), g.event.id);
 
 	return adminJson({ ok: true, id: res.id }, 200);
 };
