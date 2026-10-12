@@ -29,8 +29,10 @@ jobs:
       - name: Generate Worker types
         run: pnpm generate-types
 
+      # tsgo is the TypeScript 7 compiler; astro check still needs the TypeScript 6
+      # language service, so both are installed.
       - name: Run type checks
-        run: pnpm exec tsc --noEmit
+        run: pnpm typecheck
 
       - name: Run Astro checks
         run: pnpm astro check
