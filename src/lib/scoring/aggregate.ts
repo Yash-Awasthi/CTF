@@ -10,7 +10,7 @@
  *     path from the source-of-truth solves.
  */
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
-import type { AnySQLiteDb } from '../db/client';
+import type { DB } from '../db/client';
 import type { EventRow } from '../auth/types';
 import { participants, solves } from '../db/schema';
 import { calculateSolveScoreForEvent } from './calculate';
@@ -40,7 +40,7 @@ export interface RecordSolveResult {
  * a no-op for scoring — score is never double-added.
  */
 export async function recordSolve(
-	db: AnySQLiteDb,
+	db: DB,
 	input: RecordSolveInput,
 ): Promise<RecordSolveResult> {
 	const { event, participantId, challengeId, basePoints, hintUsed, solvedAt } = input;
@@ -79,7 +79,7 @@ export async function recordSolve(
 
 /** Sum of a participant's solve final scores (source-of-truth, milli-points). */
 export async function recomputeParticipantScore(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 	participantId: number,
 ): Promise<number> {
@@ -93,7 +93,7 @@ export async function recomputeParticipantScore(
 
 /** Consistency check: cached participants.score vs recomputed sum of solves. */
 export async function verifyParticipantScore(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 	participantId: number,
 ): Promise<{ cached: number; recomputed: number; consistent: boolean }> {
@@ -122,7 +122,7 @@ export interface LeaderboardRow {
  * then roll number ASC as a final deterministic tiebreak.
  */
 export async function getLeaderboard(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 ): Promise<LeaderboardRow[]> {
 	const lastSolve = sql<number | null>`MAX(${solves.solvedAt})`;
@@ -159,7 +159,7 @@ export async function getLeaderboard(
 
 /** Per-participant solve history (most recent first). */
 export async function getSolveHistory(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 	participantId: number,
 ) {
@@ -172,7 +172,7 @@ export async function getSolveHistory(
 
 /** Per-challenge solve counts for an event (challengeId → count). */
 export async function getChallengeSolveCounts(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 ): Promise<Map<number, number>> {
 	const rows = await db

@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm';
-import type { AnySQLiteDb } from '../db/client';
+import type { DB } from '../db/client';
 import { adminActions, events } from '../db/schema';
 import type { EventRow } from '../auth/types';
 import {
@@ -15,14 +15,14 @@ import type { EventTiming } from './types';
 
 // ── internals ───────────────────────────────────────────────────────────────
 
-async function loadEvent(db: AnySQLiteDb, eventId: number): Promise<EventRow> {
+async function loadEvent(db: DB, eventId: number): Promise<EventRow> {
 	const row = await db.select().from(events).where(eq(events.id, eventId)).get();
 	if (!row) throw new Error('event_not_found');
 	return row;
 }
 
 async function audit(
-	db: AnySQLiteDb,
+	db: DB,
 	args: {
 		eventId: number;
 		actionType: string;
@@ -43,7 +43,7 @@ async function audit(
  * only one caller wins under concurrency. Rejects skips/backward/self/from-ARCHIVED.
  */
 async function advance(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 	to: EventState,
 	actionType: string,
@@ -72,13 +72,13 @@ async function advance(
 
 // ── lifecycle operations ────────────────────────────────────────────────────
 
-export function markEventReady(db: AnySQLiteDb, eventId: number, actor = ACTOR_ADMIN) {
+export function markEventReady(db: DB, eventId: number, actor = ACTOR_ADMIN) {
 	return advance(db, eventId, 'READY', EVENT_ACTIONS.markedReady, actor);
 }
 
 /** READY → LIVE, atomically stamping the authoritative server start time. */
 export async function startEvent(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 	actor = ACTOR_ADMIN,
 	now: Date = new Date(),
@@ -109,19 +109,19 @@ export async function startEvent(
 }
 
 /** Manual LIVE → FROZEN before natural expiry. */
-export function freezeEvent(db: AnySQLiteDb, eventId: number, actor = ACTOR_ADMIN) {
+export function freezeEvent(db: DB, eventId: number, actor = ACTOR_ADMIN) {
 	return advance(db, eventId, 'FROZEN', EVENT_ACTIONS.manualFreeze, actor);
 }
 
-export function beginEventReview(db: AnySQLiteDb, eventId: number, actor = ACTOR_ADMIN) {
+export function beginEventReview(db: DB, eventId: number, actor = ACTOR_ADMIN) {
 	return advance(db, eventId, 'REVIEW', EVENT_ACTIONS.reviewStarted, actor);
 }
 
-export function publishEventResults(db: AnySQLiteDb, eventId: number, actor = ACTOR_ADMIN) {
+export function publishEventResults(db: DB, eventId: number, actor = ACTOR_ADMIN) {
 	return advance(db, eventId, 'RESULTS_PUBLISHED', EVENT_ACTIONS.resultsPublished, actor);
 }
 
-export function archiveEvent(db: AnySQLiteDb, eventId: number, actor = ACTOR_ADMIN) {
+export function archiveEvent(db: DB, eventId: number, actor = ACTOR_ADMIN) {
 	return advance(db, eventId, 'ARCHIVED', EVENT_ACTIONS.archived, actor);
 }
 
@@ -130,7 +130,7 @@ export function archiveEvent(db: AnySQLiteDb, eventId: number, actor = ACTOR_ADM
  * only via extendEvent(). secret_version is never touched here.
  */
 export async function setEventDuration(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 	durationSeconds: number,
 	actor = ACTOR_ADMIN,
@@ -167,7 +167,7 @@ export async function setEventDuration(
  * capped at the 6-hour TOTAL maximum. Rejects non-LIVE / non-positive / over-cap.
  */
 export async function extendEvent(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 	additionalSeconds: number,
 	actor = ACTOR_ADMIN,
@@ -207,7 +207,7 @@ export async function extendEvent(
  * depends on event state should route through this first.
  */
 export async function ensureCurrentEventState(
-	db: AnySQLiteDb,
+	db: DB,
 	event: EventRow,
 	now: Date = new Date(),
 ): Promise<EventRow> {

@@ -18,7 +18,7 @@
  *    (the solve already exists → no double score; the guard still advances once).
  */
 import { and, eq } from 'drizzle-orm';
-import type { AnySQLiteDb } from '../db/client';
+import type { DB } from '../db/client';
 import type { SecretEnv } from '../crypto/secrets';
 import type { EventRow, ParticipantRow } from '../auth/types';
 import { challenges, participants, solves, submissions } from '../db/schema';
@@ -64,7 +64,7 @@ export interface ProcessSubmissionInput {
  * authoritative LIVE event state. Persists EVERY attempt in `submissions`.
  */
 export async function processSubmission(
-	db: AnySQLiteDb,
+	db: DB,
 	input: ProcessSubmissionInput,
 ): Promise<SubmitOutcome> {
 	const { env, event, participant, slot, rawAnswer, now } = input;

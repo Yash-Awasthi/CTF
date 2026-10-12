@@ -12,7 +12,7 @@
  */
 import { and, eq, isNull } from 'drizzle-orm';
 import type { AstroCookies } from 'astro';
-import type { AnySQLiteDb } from '../db/client';
+import type { DB } from '../db/client';
 import { adminSessions } from '../db/schema';
 import { generateSessionToken, hashSessionToken } from '../auth/session-token';
 
@@ -39,7 +39,7 @@ export function verifyAdminPassword(env: AdminEnv, password: string): boolean {
 
 /** Mint a new opaque admin session. Returns the RAW token (hash-only in D1). */
 export async function createAdminSession(
-	db: AnySQLiteDb,
+	db: DB,
 	now: Date = new Date(),
 ): Promise<{ rawToken: string; expiresAt: Date }> {
 	const rawToken = generateSessionToken(); // 256-bit CSPRNG, base64url
@@ -51,7 +51,7 @@ export async function createAdminSession(
 
 /** True iff the raw token maps to a live (non-revoked, non-expired) session. */
 export async function isValidAdminSession(
-	db: AnySQLiteDb,
+	db: DB,
 	rawToken: string | undefined,
 	now: Date = new Date(),
 ): Promise<boolean> {
@@ -68,7 +68,7 @@ export async function isValidAdminSession(
 
 /** Revoke the session for a raw token (idempotent). Used by logout/reset. */
 export async function revokeAdminSession(
-	db: AnySQLiteDb,
+	db: DB,
 	rawToken: string | undefined,
 	now: Date = new Date(),
 ): Promise<void> {
@@ -98,7 +98,7 @@ export function readAdminCookie(cookies: AstroCookies): string | undefined {
 }
 
 /** True iff the request carries a valid admin session cookie. */
-export async function isAdmin(cookies: AstroCookies, db: AnySQLiteDb): Promise<boolean> {
+export async function isAdmin(cookies: AstroCookies, db: DB): Promise<boolean> {
 	return isValidAdminSession(db, readAdminCookie(cookies));
 }
 

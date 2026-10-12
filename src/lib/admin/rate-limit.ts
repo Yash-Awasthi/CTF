@@ -5,7 +5,7 @@
  * participant `login_rate_limit` is event-scoped and admin login is not.
  */
 import { eq } from 'drizzle-orm';
-import type { AnySQLiteDb } from '../db/client';
+import type { DB } from '../db/client';
 import { adminLoginRateLimit } from '../db/schema';
 import { RATE_LIMIT_MAX_FAILURES, RATE_LIMIT_WINDOW_SECONDS } from '../auth/constants';
 
@@ -17,7 +17,7 @@ function windowExpired(windowStart: Date, now: Date): boolean {
 
 /** Is this IP currently in admin-login cooldown? */
 export async function checkAdminRateLimit(
-	db: AnySQLiteDb,
+	db: DB,
 	ipHash: string,
 	now: Date = new Date(),
 ): Promise<{ blocked: boolean; retryAfterSeconds: number }> {
@@ -36,7 +36,7 @@ export async function checkAdminRateLimit(
 
 /** Record one failed admin login (resets the window if it lapsed). */
 export async function recordAdminFailure(
-	db: AnySQLiteDb,
+	db: DB,
 	ipHash: string,
 	now: Date = new Date(),
 ): Promise<void> {
@@ -57,6 +57,6 @@ export async function recordAdminFailure(
 }
 
 /** Clear failed-attempt state for an IP (on successful login). */
-export async function resetAdminFailures(db: AnySQLiteDb, ipHash: string): Promise<void> {
+export async function resetAdminFailures(db: DB, ipHash: string): Promise<void> {
 	await db.delete(adminLoginRateLimit).where(eq(adminLoginRateLimit.ipHash, ipHash));
 }

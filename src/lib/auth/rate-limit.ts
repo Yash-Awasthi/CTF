@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm';
-import type { AnySQLiteDb } from '../db/client';
+import type { DB } from '../db/client';
 import { loginRateLimit, type RATE_LIMIT_SCOPES } from '../db/schema';
 import {
 	RATE_LIMIT_MAX_FAILURES,
@@ -58,7 +58,7 @@ function windowExpired(windowStart: Date, now: Date, windowSeconds: number): boo
 
 /** Read-only check: is this scope currently in cooldown? */
 export async function checkRateLimit(
-	db: AnySQLiteDb,
+	db: DB,
 	key: ScopeKey,
 	now: Date = new Date(),
 	policy: RateLimitPolicy = LOGIN_POLICY,
@@ -87,7 +87,7 @@ export async function checkRateLimit(
 
 /** Record one failed attempt; resets the window if the prior one lapsed. */
 export async function recordFailure(
-	db: AnySQLiteDb,
+	db: DB,
 	key: ScopeKey,
 	now: Date = new Date(),
 	policy: RateLimitPolicy = LOGIN_POLICY,
@@ -130,7 +130,7 @@ export async function recordFailure(
 
 /** Clear failed-attempt state for a scope (called on successful login). */
 export async function resetFailures(
-	db: AnySQLiteDb,
+	db: DB,
 	key: ScopeKey,
 ): Promise<void> {
 	await db

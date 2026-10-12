@@ -1,9 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { freshDb, type Db } from './db';
 import { challenges } from '../../src/lib/db/schema';
 import { DEV_EVENT, seedEvent } from '../../src/lib/db/seed';
 import {
@@ -14,22 +11,11 @@ import {
 import { getEventRoster } from '../../src/lib/challenges/roster';
 import { RegistryDbMismatchError } from '../../src/lib/challenges/errors';
 
-const MIGRATIONS_DIR = join(process.cwd(), 'migrations');
-const MIGRATION_SQL = readdirSync(MIGRATIONS_DIR)
-	.filter((f) => f.endsWith('.sql'))
-	.sort()
-	.map((f) => readFileSync(join(MIGRATIONS_DIR, f), 'utf8'))
-	.join('\n');
-
-type Db = ReturnType<typeof drizzle>;
 let db: Db;
 let eventId: number;
 
 beforeEach(async () => {
-	const sqlite = new Database(':memory:');
-	sqlite.pragma('foreign_keys = ON');
-	sqlite.exec(MIGRATION_SQL);
-	db = drizzle(sqlite);
+	db = await freshDb();
 	const res = await seedEvent(db, DEV_EVENT);
 	eventId = res.eventId;
 });

@@ -10,7 +10,7 @@
  *    exclude eliminated participants, and show unmasked roll numbers.
  */
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
-import type { AnySQLiteDb } from '../db/client';
+import type { DB } from '../db/client';
 import type { EventRow } from '../auth/types';
 import { antiCheatEvents, participants, solves } from '../db/schema';
 import { ELIMINATED_STATUS } from '../anti-cheat';
@@ -32,7 +32,7 @@ export interface AdminLeaderboardEntry extends LeaderboardEntry {
 const lastSolve = sql<number | null>`MAX(${solves.solvedAt})`;
 
 /** Base standings query for an event, in locked deterministic order. */
-async function standings(db: AnySQLiteDb, eventId: number): Promise<LeaderboardEntry[]> {
+async function standings(db: DB, eventId: number): Promise<LeaderboardEntry[]> {
 	const rows = await db
 		.select({
 			participantId: participants.id,
@@ -65,7 +65,7 @@ async function standings(db: AnySQLiteDb, eventId: number): Promise<LeaderboardE
 
 /** Admin live standings — everyone (incl. eliminated), with strike counts. */
 export async function getAdminLeaderboard(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 ): Promise<AdminLeaderboardEntry[]> {
 	const base = await standings(db, eventId);
@@ -93,7 +93,7 @@ export class LeaderboardNotPublicError extends Error {
  * participants. Unmasked roll numbers. Throws before publication.
  */
 export async function getPublicLeaderboard(
-	db: AnySQLiteDb,
+	db: DB,
 	event: EventRow,
 ): Promise<LeaderboardEntry[]> {
 	if (event.state !== 'RESULTS_PUBLISHED') throw new LeaderboardNotPublicError();

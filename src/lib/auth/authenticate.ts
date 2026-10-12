@@ -1,5 +1,5 @@
 import type { AstroCookies } from 'astro';
-import type { AnySQLiteDb } from '../db/client';
+import type { DB } from '../db/client';
 import { canParticipantLogin } from '../event/access';
 import { readSessionCookie } from './cookies';
 import { findValidSession } from './sessions';
@@ -20,7 +20,7 @@ export function isLoginAllowed(state: EventRow['state']): boolean {
  */
 export async function getAuthenticatedParticipant(
 	cookies: AstroCookies,
-	db: AnySQLiteDb,
+	db: DB,
 	now?: Date,
 ): Promise<AuthContext | null> {
 	const rawToken = readSessionCookie(cookies);

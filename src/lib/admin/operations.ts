@@ -4,7 +4,7 @@
  * directly. Timer extend / freeze / lifecycle reuse the Phase 3 event service.
  */
 import { and, desc, eq, isNull, sql } from 'drizzle-orm';
-import type { AnySQLiteDb } from '../db/client';
+import type { DB } from '../db/client';
 import type { EventRow } from '../auth/types';
 import {
 	adminActions,
@@ -26,7 +26,7 @@ import { ADMIN_ACTIONS } from './constants';
 const ACTOR = 'admin';
 
 async function audit(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 	actionType: string,
 	payload?: Record<string, unknown>,
@@ -45,7 +45,7 @@ async function audit(
  * session row is revoked). Audited.
  */
 export async function resetParticipantSession(
-	db: AnySQLiteDb,
+	db: DB,
 	params: { eventId: number; participantId: number },
 ): Promise<{ revoked: number }> {
 	const revoked = await db
@@ -75,7 +75,7 @@ export class BypassError extends Error {}
  * Distinct from a legitimate solve (no `solves` row is created). Audited.
  */
 export async function bypassChallenge(
-	db: AnySQLiteDb,
+	db: DB,
 	params: { eventId: number; slot: number; reason?: string },
 ): Promise<{ challengeId: number; advanced: number }> {
 	if (!Number.isInteger(params.slot) || params.slot < 1 || params.slot > TOTAL_SLOTS) {
@@ -122,7 +122,7 @@ export async function bypassChallenge(
 
 /** Create an event-scoped announcement (persisted first; SSE is notification). */
 export async function createAnnouncement(
-	db: AnySQLiteDb,
+	db: DB,
 	params: { eventId: number; message: string },
 ): Promise<{ id: number }> {
 	const inserted = await db
@@ -134,7 +134,7 @@ export async function createAnnouncement(
 }
 
 /** Event-scoped announcements (newest first). Also used by participant fetch. */
-export async function listAnnouncements(db: AnySQLiteDb, eventId: number) {
+export async function listAnnouncements(db: DB, eventId: number) {
 	return db
 		.select({ id: announcements.id, message: announcements.message, createdAt: announcements.createdAt })
 		.from(announcements)
@@ -143,7 +143,7 @@ export async function listAnnouncements(db: AnySQLiteDb, eventId: number) {
 }
 
 /** A consolidated read-only operational snapshot for the dashboard. */
-export async function getAdminOverview(db: AnySQLiteDb, event: EventRow, now: Date = new Date()) {
+export async function getAdminOverview(db: DB, event: EventRow, now: Date = new Date()) {
 	const timing = getEventTiming(event, now);
 
 	const statusRows = await db
@@ -216,7 +216,7 @@ export async function getAdminOverview(db: AnySQLiteDb, event: EventRow, now: Da
 }
 
 /** Recent audit log for the event (admin visibility). */
-export async function listAuditLog(db: AnySQLiteDb, eventId: number, limit = 50) {
+export async function listAuditLog(db: DB, eventId: number, limit = 50) {
 	return db
 		.select()
 		.from(adminActions)

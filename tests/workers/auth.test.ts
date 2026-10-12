@@ -1,9 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { and, eq, isNull } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { freshDb, type Db } from './db';
 import {
 	events,
 	participants,
@@ -36,21 +33,6 @@ import {
 	SUBMIT_RATE_LIMIT_MAX_FAILURES,
 	SUBMIT_RATE_LIMIT_WINDOW_SECONDS,
 } from '../../src/lib/auth/constants';
-
-const MIGRATIONS_DIR = join(process.cwd(), 'migrations');
-const MIGRATION_SQL = readdirSync(MIGRATIONS_DIR)
-	.filter((f) => f.endsWith('.sql'))
-	.sort()
-	.map((f) => readFileSync(join(MIGRATIONS_DIR, f), 'utf8'))
-	.join('\n');
-
-function makeDb() {
-	const sqlite = new Database(':memory:');
-	sqlite.pragma('foreign_keys = ON');
-	sqlite.exec(MIGRATION_SQL);
-	return { sqlite, db: drizzle(sqlite) };
-}
-type Db = ReturnType<typeof makeDb>['db'];
 
 async function setup(
 	db: Db,
@@ -104,14 +86,14 @@ describe('credentials', () => {
 	});
 
 	it('falls back to the roll number when no access code is set', async () => {
-		const { db } = makeDb();
+		const db = await freshDb();
 		const { p } = await setup(db);
 		expect(await validateParticipantCredentials(p, '25115000')).toBe(true);
 		expect(await validateParticipantCredentials(p, '99999999')).toBe(false);
 	});
 
 	it('requires the access code, ignoring case and dashes, once one is set', async () => {
-		const { db } = makeDb();
+		const db = await freshDb();
 		const { p } = await setup(db);
 		const coded = { ...p, accessCodeHash: await hashAccessCode('K7PD-XQ3M-2WHN') };
 		expect(await validateParticipantCredentials(coded, 'k7pd xq3m 2whn')).toBe(true);
@@ -122,15 +104,15 @@ describe('credentials', () => {
 
 describe('sessions', () => {
 	let db: Db;
-	beforeEach(() => {
-		db = makeDb().db;
+	beforeEach(async () => {
+		db = await freshDb();
 	});
 
 	it('creates a session resolvable back to participant + event; raw token is NOT stored', async () => {
 		const { ev, p } = await setup(db);
 		const { rawToken } = await createSession(db, { event: ev, participant: p });
 
-		const row = db.select().from(sessions).all()[0];
+		const [row] = await db.select().from(sessions).all();
 		expect(row.tokenHash).toBe(await hashSessionToken(rawToken));
 		expect(row.tokenHash).not.toBe(rawToken);
 
@@ -147,7 +129,7 @@ describe('sessions', () => {
 		expect(await findValidSession(db, first.rawToken)).toBeNull();
 		expect(await findValidSession(db, second.rawToken)).not.toBeNull();
 
-		const active = db
+		const active = await db
 			.select()
 			.from(sessions)
 			.where(
@@ -161,7 +143,7 @@ describe('sessions', () => {
 		const { ev, p } = await setup(db);
 		await createSession(db, { event: ev, participant: p });
 		// Force a second non-revoked session directly → must violate the invariant.
-		expect(() =>
+		await expect(
 			db
 				.insert(sessions)
 				.values({
@@ -171,7 +153,7 @@ describe('sessions', () => {
 					expiresAt: new Date(Date.now() + 3_600_000),
 				})
 				.run(),
-		).toThrow();
+		).rejects.toThrow();
 	});
 
 	it('logout (revoke) invalidates the session', async () => {
@@ -198,7 +180,7 @@ describe('sessions', () => {
 		const a = await setup(db, { slug: 'event-a', roll: 25_115_000 });
 		await setup(db, { slug: 'event-b', roll: 25_115_050 });
 		// roll 25115000 exists only in event-a; lookup scoped to event-b finds nothing
-		const found = db
+		const found = await db
 			.select()
 			.from(participants)
 			.where(
@@ -230,8 +212,8 @@ describe('event-state login policy', () => {
 
 describe('rate limiting', () => {
 	let db: Db;
-	beforeEach(() => {
-		db = makeDb().db;
+	beforeEach(async () => {
+		db = await freshDb();
 	});
 
 	it('blocks after the configured failures and resets on success', async () => {
