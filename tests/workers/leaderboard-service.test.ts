@@ -1,30 +1,19 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { and, eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { freshDb, type Db } from './db';
 import { antiCheatEvents, challenges, events, participants, solves } from '../../src/lib/db/schema';
 import { DEV_EVENT, seedEvent } from '../../src/lib/db/seed';
 import { syncChallengeRows } from '../../src/lib/challenges/sync';
 import { getAdminLeaderboard, getPublicLeaderboard, LeaderboardNotPublicError } from '../../src/lib/leaderboard/index';
 import type { EventRow } from '../../src/lib/auth/types';
 
-const MIGRATION_SQL = readdirSync(join(process.cwd(), 'migrations'))
-	.filter((f) => f.endsWith('.sql')).sort()
-	.map((f) => readFileSync(join(process.cwd(), 'migrations', f), 'utf8')).join('\n');
-
-type Db = ReturnType<typeof drizzle>;
 let db: Db;
 let event: EventRow;
 let pids: number[];
 let ch1: number;
 
 beforeEach(async () => {
-	const sqlite = new Database(':memory:');
-	sqlite.pragma('foreign_keys = ON');
-	sqlite.exec(MIGRATION_SQL);
-	db = drizzle(sqlite);
+	db = await freshDb();
 	const res = await seedEvent(db, DEV_EVENT);
 	await syncChallengeRows(db, res.eventId);
 	event = (await db.select().from(events).where(eq(events.id, res.eventId)).get()) as EventRow;

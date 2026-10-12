@@ -8,7 +8,7 @@
  * challenge slot — never the solver. SSE (Phase 12) broadcasts it.
  */
 import { and, asc, eq } from 'drizzle-orm';
-import type { AnySQLiteDb } from '../db/client';
+import type { DB } from '../db/client';
 import { firstBloods } from '../db/schema';
 
 export interface FirstBloodClaim {
@@ -18,7 +18,7 @@ export interface FirstBloodClaim {
 
 /** Attempt to claim first blood. Idempotent, race-safe. */
 export async function claimFirstBlood(
-	db: AnySQLiteDb,
+	db: DB,
 	params: { eventId: number; challengeId: number; participantId: number; now?: Date },
 ): Promise<FirstBloodClaim> {
 	const values: {
@@ -43,7 +43,7 @@ export async function claimFirstBlood(
 }
 
 /** All first-blood rows for an event (ascending claim order). */
-export async function getFirstBloods(db: AnySQLiteDb, eventId: number) {
+export async function getFirstBloods(db: DB, eventId: number) {
 	return db
 		.select()
 		.from(firstBloods)
@@ -53,7 +53,7 @@ export async function getFirstBloods(db: AnySQLiteDb, eventId: number) {
 
 /** Whether a specific challenge already has first blood (event-scoped). */
 export async function hasFirstBlood(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 	challengeId: number,
 ): Promise<boolean> {

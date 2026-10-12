@@ -35,15 +35,14 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@cloudflare/vitest-plugin": "^1.4.0",
     "@playwright/test": "^1.64.0",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^26.6.5",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
-    "better-sqlite3": "^12.11.1",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.10",
+    "vitest": "^5.0.4",
     "wrangler": "^4.149.0"
   }
 }

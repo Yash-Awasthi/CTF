@@ -9,7 +9,7 @@
  * returned AFTER a successful server-side reveal — never before consumption.
  */
 import { and, asc, eq } from 'drizzle-orm';
-import type { AnySQLiteDb } from '../db/client';
+import type { DB } from '../db/client';
 import { hintUsage } from '../db/schema';
 import { getChallengeHints } from '../challenges/engine';
 import { getChallengeBySlot } from '../challenges/registry';
@@ -28,7 +28,7 @@ export class HintError extends Error {
 
 /** How many hints this participant has revealed for this challenge (0..2). */
 export async function getRevealedHintCount(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 	participantId: number,
 	challengeId: number,
@@ -48,7 +48,7 @@ export async function getRevealedHintCount(
 
 /** True iff ANY hint was used — the scoring hint_used flag. */
 export async function hasUsedHint(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 	participantId: number,
 	challengeId: number,
@@ -63,7 +63,7 @@ export interface RevealedHint {
 
 /** The already-revealed hints (ordered), for re-rendering after refresh. */
 export async function getRevealedHints(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 	participantId: number,
 	challengeId: number,
@@ -103,7 +103,7 @@ export interface RevealResult {
  * Persistence guarded by UNIQUE(event,participant,challenge,hint_number).
  */
 export async function revealHint(
-	db: AnySQLiteDb,
+	db: DB,
 	params: {
 		eventId: number;
 		participantId: number;

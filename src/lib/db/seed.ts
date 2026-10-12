@@ -1,13 +1,10 @@
-import type { AnySQLiteDb } from './client';
+import type { DB } from './client';
 import { events, participants } from './schema';
 
 /**
  * Event-scoped seeding. The roster (roll range) is a parameter so future events
  * can seed different participants. This is the reusable programmatic path used
  * by tests; the local-D1 dev seed lives in `scripts/seed-dev.sql`.
- *
- * `db` is any Drizzle client whose insert(...).values(...).returning() works
- * synchronously-or-async (better-sqlite3 in tests, D1 at runtime) — hence await.
  */
 export interface SeedEventOptions {
 	name: string;
@@ -35,14 +32,8 @@ export const DEV_EVENT: SeedEventOptions = {
 	rollEnd: 25_115_115,
 };
 
-// Narrow structural type so this file has no hard dependency on a specific
-// Drizzle driver (D1 vs better-sqlite3). Derived from the driver-agnostic alias
-// rather than hand-written: a hand-written `values(rows: unknown)` is not
-// assignable from a typed driver, because the parameter is contravariant.
-type InsertableDb = Pick<AnySQLiteDb, 'insert'>;
-
 export async function seedEvent(
-	db: InsertableDb,
+	db: DB,
 	opts: SeedEventOptions,
 ): Promise<SeedEventResult> {
 	if (opts.rollEnd < opts.rollStart) {
@@ -59,11 +50,15 @@ export async function seedEvent(
 		})
 		.returning();
 
-	const rows = [];
+	const rows: (typeof participants.$inferInsert)[] = [];
 	for (let roll = opts.rollStart; roll <= opts.rollEnd; roll++) {
 		rows.push({ eventId: event.id, rollNumber: roll });
 	}
-	await db.insert(participants).values(rows).returning();
+	// D1 binds at most 100 parameters per statement; a participant row binds 5.
+	const [head, ...tail] = Array.from({ length: Math.ceil(rows.length / 20) }, (_, i) =>
+		db.insert(participants).values(rows.slice(i * 20, i * 20 + 20)),
+	);
+	await db.batch([head, ...tail]);
 
 	return {
 		eventId: event.id,

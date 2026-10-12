@@ -18,7 +18,7 @@
  * "incorrect"; the source participant is never revealed to the submitter.
  */
 import { and, eq } from 'drizzle-orm';
-import type { AnySQLiteDb } from '../db/client';
+import type { DB } from '../db/client';
 import type { SecretEnv } from '../crypto/secrets';
 import type { EventRow, ParticipantRow } from '../auth/types';
 import { antiCheatEvents, participants } from '../db/schema';
@@ -44,7 +44,7 @@ export interface AntiCheatResult {
 
 /** Count distinct strikes (anti_cheat_events rows) for a participant. */
 export async function getStrikeCount(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 	participantId: number,
 ): Promise<number> {
@@ -75,7 +75,7 @@ export interface ClassifyInput {
  * eliminate. Returns server-only classification (caller must NOT expose it).
  */
 export async function classifyIncorrectSubmission(
-	db: AnySQLiteDb,
+	db: DB,
 	input: ClassifyInput,
 ): Promise<AntiCheatResult> {
 	const { env, event, participant, slot, challengeId, rawAnswer, roster } = input;

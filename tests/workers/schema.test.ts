@@ -1,9 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { eq, sql } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { freshDb, type Db } from './db';
 import {
 	challenges,
 	events,
@@ -13,33 +10,6 @@ import {
 	solves,
 } from '../../src/lib/db/schema';
 import { DEV_EVENT, seedEvent } from '../../src/lib/db/seed';
-
-const MIGRATIONS_DIR = join(process.cwd(), 'migrations');
-
-function loadMigrationSql(): string {
-	const files = readdirSync(MIGRATIONS_DIR)
-		.filter((f) => f.endsWith('.sql'))
-		.sort();
-	if (files.length === 0) {
-		throw new Error(
-			'No migrations found — run `pnpm db:generate` before the schema tests.',
-		);
-	}
-	return files
-		.map((f) => readFileSync(join(MIGRATIONS_DIR, f), 'utf8'))
-		.join('\n');
-}
-
-const MIGRATION_SQL = loadMigrationSql();
-
-function makeDb() {
-	const sqlite = new Database(':memory:');
-	sqlite.pragma('foreign_keys = ON');
-	sqlite.exec(MIGRATION_SQL);
-	return { sqlite, db: drizzle(sqlite) };
-}
-
-type Db = ReturnType<typeof makeDb>['db'];
 
 async function addChallenge(db: Db, eventId: number, slot = 1) {
 	const [c] = await db
@@ -52,15 +22,15 @@ async function addChallenge(db: Db, eventId: number, slot = 1) {
 describe('Phase 1 schema', () => {
 	let db: Db;
 
-	beforeEach(() => {
-		db = makeDb().db;
+	beforeEach(async () => {
+		db = await freshDb();
 	});
 
 	it('seeds exactly 116 participants into a dev event (first 25115000, last 25115115)', async () => {
 		const res = await seedEvent(db, DEV_EVENT);
 		expect(res.count).toBe(116);
 
-		const rows = db
+		const rows = await db
 			.select({ roll: participants.rollNumber })
 			.from(participants)
 			.where(eq(participants.eventId, res.eventId))
@@ -77,12 +47,12 @@ describe('Phase 1 schema', () => {
 			rollStart: 25_115_000,
 			rollEnd: 25_115_002,
 		});
-		expect(() =>
+		await expect(
 			db
 				.insert(participants)
 				.values({ eventId, rollNumber: 25_115_000 })
 				.run(),
-		).toThrow();
+		).rejects.toThrow();
 	});
 
 	it('allows the same roll number in two different events', async () => {
@@ -100,7 +70,7 @@ describe('Phase 1 schema', () => {
 		});
 		expect(a.eventId).not.toBe(b.eventId);
 
-		const count = db
+		const count = await db
 			.select({ n: sql<number>`count(*)` })
 			.from(participants)
 			.where(eq(participants.rollNumber, 25_115_000))
@@ -114,7 +84,7 @@ describe('Phase 1 schema', () => {
 			rollStart: 25_115_000,
 			rollEnd: 25_115_000,
 		});
-		const [p] = db.select().from(participants).all();
+		const [p] = await db.select().from(participants).all();
 		const challengeId = await addChallenge(db, eventId);
 		const solveRow = {
 			eventId,
@@ -124,8 +94,8 @@ describe('Phase 1 schema', () => {
 			hintFactor: 1000,
 			finalScore: 100_000,
 		};
-		db.insert(solves).values(solveRow).run();
-		expect(() => db.insert(solves).values(solveRow).run()).toThrow();
+		await db.insert(solves).values(solveRow).run();
+		await expect(db.insert(solves).values(solveRow).run()).rejects.toThrow();
 	});
 
 	it('rejects duplicate hint usage for the same hint number but allows the other hint', async () => {
@@ -134,26 +104,24 @@ describe('Phase 1 schema', () => {
 			rollStart: 25_115_000,
 			rollEnd: 25_115_000,
 		});
-		const [p] = db.select().from(participants).all();
+		const [p] = await db.select().from(participants).all();
 		const challengeId = await addChallenge(db, eventId);
 
-		db.insert(hintUsage)
+		await db.insert(hintUsage)
 			.values({ eventId, participantId: p.id, challengeId, hintNumber: 1 })
 			.run();
 		// same hint number → rejected
-		expect(() =>
+		await expect(
 			db
 				.insert(hintUsage)
 				.values({ eventId, participantId: p.id, challengeId, hintNumber: 1 })
 				.run(),
-		).toThrow();
+		).rejects.toThrow();
 		// the other hint number → allowed
-		expect(() =>
-			db
-				.insert(hintUsage)
-				.values({ eventId, participantId: p.id, challengeId, hintNumber: 2 })
-				.run(),
-		).not.toThrow();
+		await db
+			.insert(hintUsage)
+			.values({ eventId, participantId: p.id, challengeId, hintNumber: 2 })
+			.run();
 	});
 
 	it('rejects a duplicate first blood for the same event/challenge', async () => {
@@ -162,28 +130,28 @@ describe('Phase 1 schema', () => {
 			rollStart: 25_115_000,
 			rollEnd: 25_115_001,
 		});
-		const ps = db.select().from(participants).all();
+		const ps = await db.select().from(participants).all();
 		const challengeId = await addChallenge(db, eventId);
 
-		db.insert(firstBloods)
+		await db.insert(firstBloods)
 			.values({ eventId, challengeId, participantId: ps[0].id })
 			.run();
 		// a different participant cannot also claim first blood for the same challenge
-		expect(() =>
+		await expect(
 			db
 				.insert(firstBloods)
 				.values({ eventId, challengeId, participantId: ps[1].id })
 				.run(),
-		).toThrow();
+		).rejects.toThrow();
 	});
 
-	it('enforces foreign keys (bad event_id rejected)', () => {
-		expect(() =>
+	it('enforces foreign keys (bad event_id rejected)', async () => {
+		await expect(
 			db
 				.insert(participants)
 				.values({ eventId: 999_999, rollNumber: 25_115_000 })
 				.run(),
-		).toThrow();
+		).rejects.toThrow();
 	});
 
 	it('cascades deletes from events to child rows', async () => {
@@ -192,9 +160,9 @@ describe('Phase 1 schema', () => {
 			rollStart: 25_115_000,
 			rollEnd: 25_115_010,
 		});
-		expect(db.select().from(participants).all().length).toBe(11);
+		expect((await db.select().from(participants).all()).length).toBe(11);
 
-		db.delete(events).where(eq(events.id, eventId)).run();
-		expect(db.select().from(participants).all().length).toBe(0);
+		await db.delete(events).where(eq(events.id, eventId)).run();
+		expect((await db.select().from(participants).all()).length).toBe(0);
 	});
 });

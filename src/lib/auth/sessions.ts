@@ -1,5 +1,5 @@
 import { and, eq, isNull } from 'drizzle-orm';
-import type { AnySQLiteDb } from '../db/client';
+import type { DB } from '../db/client';
 import { events, participants, sessions } from '../db/schema';
 import { SESSION_TTL_SECONDS } from './constants';
 import { generateSessionToken, hashSessionToken } from './session-token';
@@ -13,7 +13,7 @@ import type { AuthContext, EventRow, ParticipantRow } from './types';
  * Returns the RAW token (only hash is persisted).
  */
 export async function createSession(
-	db: AnySQLiteDb,
+	db: DB,
 	args: { event: EventRow; participant: ParticipantRow; now?: Date },
 ): Promise<{ rawToken: string; expiresAt: Date }> {
 	const now = args.now ?? new Date();
@@ -43,7 +43,7 @@ export async function createSession(
 
 /** Revoke the session identified by a raw token (idempotent). */
 export async function revokeSessionByRawToken(
-	db: AnySQLiteDb,
+	db: DB,
 	rawToken: string,
 	now: Date = new Date(),
 ): Promise<void> {
@@ -59,7 +59,7 @@ export async function revokeSessionByRawToken(
  * unknown, revoked, or expired. Server-side lookup by token HASH.
  */
 export async function findValidSession(
-	db: AnySQLiteDb,
+	db: DB,
 	rawToken: string | undefined,
 	now: Date = new Date(),
 ): Promise<AuthContext | null> {

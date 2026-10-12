@@ -10,7 +10,7 @@
  * data, correct answers, ownership maps, or anti-cheat internals.
  */
 import { and, asc, gt, eq } from 'drizzle-orm';
-import type { AnySQLiteDb } from '../db/client';
+import type { DB } from '../db/client';
 import type { EventRow } from '../auth/types';
 import { announcements, challenges, firstBloods } from '../db/schema';
 import { getEventTiming } from '../event/timer';
@@ -50,7 +50,7 @@ export function stateVersion(event: EventRow, timing: EventTiming): string {
 
 /** Read authoritative D1 updates newer than the given cursors. */
 export async function readUpdates(
-	db: AnySQLiteDb,
+	db: DB,
 	event: EventRow,
 	cursors: UpdateCursors,
 	now: Date = new Date(),

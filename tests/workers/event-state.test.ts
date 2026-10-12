@@ -1,9 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { freshDb, type Db } from './db';
 import { adminActions, events } from '../../src/lib/db/schema';
 import type { EventRow } from '../../src/lib/auth/types';
 import { getEventTiming } from '../../src/lib/event/timer';
@@ -30,20 +27,6 @@ import {
 	type EventState,
 } from '../../src/lib/event/constants';
 
-const MIGRATION_SQL = readdirSync(join(process.cwd(), 'migrations'))
-	.filter((f) => f.endsWith('.sql'))
-	.sort()
-	.map((f) => readFileSync(join(process.cwd(), 'migrations', f), 'utf8'))
-	.join('\n');
-
-function makeDb() {
-	const sqlite = new Database(':memory:');
-	sqlite.pragma('foreign_keys = ON');
-	sqlite.exec(MIGRATION_SQL);
-	return drizzle(sqlite);
-}
-type Db = ReturnType<typeof makeDb>;
-
 async function insertEvent(
 	db: Db,
 	opts: { state?: EventState; durationSeconds?: number; startedAt?: Date; slug?: string } = {},
@@ -61,14 +44,15 @@ async function insertEvent(
 	return ev;
 }
 
-function auditCount(db: Db, actionType: string): number {
-	return db.select().from(adminActions).all().filter((a) => a.actionType === actionType).length;
+async function auditCount(db: Db, actionType: string): Promise<number> {
+	const rows = await db.select().from(adminActions).all();
+	return rows.filter((a) => a.actionType === actionType).length;
 }
 
 describe('lifecycle transitions', () => {
 	let db: Db;
-	beforeEach(() => {
-		db = makeDb();
+	beforeEach(async () => {
+		db = await freshDb();
 	});
 
 	it('walks the full forward path', async () => {
@@ -99,8 +83,8 @@ describe('lifecycle transitions', () => {
 
 describe('start behavior', () => {
 	let db: Db;
-	beforeEach(() => {
-		db = makeDb();
+	beforeEach(async () => {
+		db = await freshDb();
 	});
 
 	it('sets started_at, preserves duration, derives end, cannot start twice or from DRAFT', async () => {
@@ -122,7 +106,7 @@ describe('start behavior', () => {
 
 describe('timer derivation', () => {
 	it('READY: not started, no active countdown', async () => {
-		const db = makeDb();
+		const db = await freshDb();
 		const ev = await insertEvent(db, { state: 'READY', durationSeconds: 3600 });
 		const t = getEventTiming(ev, new Date());
 		expect(t.hasStarted).toBe(false);
@@ -132,7 +116,7 @@ describe('timer derivation', () => {
 	});
 
 	it('LIVE: elapsed/remaining correct, remaining never negative, expiry reports ended', async () => {
-		const db = makeDb();
+		const db = await freshDb();
 		const start = new Date(2_000_000_000_000);
 		const ev = await insertEvent(db, { state: 'LIVE', durationSeconds: 3600, startedAt: start });
 		const mid = new Date(start.getTime() + 600_000); // +10 min
@@ -150,7 +134,7 @@ describe('timer derivation', () => {
 	});
 
 	it('FROZEN reports ended', async () => {
-		const db = makeDb();
+		const db = await freshDb();
 		const ev = await insertEvent(db, { state: 'FROZEN', durationSeconds: 3600, startedAt: new Date() });
 		expect(getEventTiming(ev, new Date()).hasEnded).toBe(true);
 		expect(getEventTiming(ev, new Date()).isLive).toBe(false);
@@ -159,8 +143,8 @@ describe('timer derivation', () => {
 
 describe('automatic lazy expiry', () => {
 	let db: Db;
-	beforeEach(() => {
-		db = makeDb();
+	beforeEach(async () => {
+		db = await freshDb();
 	});
 
 	it('freezes an expired LIVE event, audits exactly once, idempotent under repeat', async () => {
@@ -171,11 +155,11 @@ describe('automatic lazy expiry', () => {
 		const first = await ensureCurrentEventState(db, ev, after);
 		expect(first.state).toBe('FROZEN');
 		// Re-read fresh row and refresh again → still FROZEN, no extra audit.
-		const reread = db.select().from(events).where(eq(events.id, ev.id)).get()!;
+		const reread = (await db.select().from(events).where(eq(events.id, ev.id)).get())!;
 		const second = await ensureCurrentEventState(db, reread, after);
 		expect(second.state).toBe('FROZEN');
 
-		expect(auditCount(db, EVENT_ACTIONS.autoFreeze)).toBe(1);
+		expect(await auditCount(db, EVENT_ACTIONS.autoFreeze)).toBe(1);
 	});
 
 	it('does not freeze a still-running LIVE event', async () => {
@@ -183,14 +167,14 @@ describe('automatic lazy expiry', () => {
 		const ev = await insertEvent(db, { state: 'LIVE', durationSeconds: 3600, startedAt: start });
 		const soon = new Date(start.getTime() + 60_000);
 		expect((await ensureCurrentEventState(db, ev, soon)).state).toBe('LIVE');
-		expect(auditCount(db, EVENT_ACTIONS.autoFreeze)).toBe(0);
+		expect(await auditCount(db, EVENT_ACTIONS.autoFreeze)).toBe(0);
 	});
 });
 
 describe('extension', () => {
 	let db: Db;
-	beforeEach(() => {
-		db = makeDb();
+	beforeEach(async () => {
+		db = await freshDb();
 	});
 
 	async function liveEvent(durationSeconds: number) {
@@ -205,7 +189,7 @@ describe('extension', () => {
 		const t = await extendEvent(db, ev.id, 1800, undefined, now);
 		expect(t.durationSeconds).toBe(5400);
 		expect(t.endsAt).toBe(t.startedAt! + 5400);
-		expect(auditCount(db, EVENT_ACTIONS.extended)).toBe(1);
+		expect(await auditCount(db, EVENT_ACTIONS.extended)).toBe(1);
 	});
 
 	it('rejects zero, negative, over-cap, and non-LIVE extensions', async () => {
@@ -222,8 +206,8 @@ describe('extension', () => {
 
 describe('duration configuration', () => {
 	let db: Db;
-	beforeEach(() => {
-		db = makeDb();
+	beforeEach(async () => {
+		db = await freshDb();
 	});
 
 	it('allows in DRAFT/READY, rejects invalid, rejects >6h, locks after LIVE', async () => {
@@ -240,12 +224,12 @@ describe('duration configuration', () => {
 
 describe('secret_version stability after LIVE', () => {
 	it('is not changed by start or extend', async () => {
-		const db = makeDb();
+		const db = await freshDb();
 		const ev = await insertEvent(db, { state: 'READY', durationSeconds: 3600 });
 		const before = ev.secretVersion;
 		await startEvent(db, ev.id, undefined, new Date(1_700_000_000_000));
 		await extendEvent(db, ev.id, 600, undefined, new Date(1_700_000_060_000));
-		const after = db.select().from(events).where(eq(events.id, ev.id)).get()!;
+		const after = (await db.select().from(events).where(eq(events.id, ev.id)).get())!;
 		expect(after.secretVersion).toBe(before);
 	});
 });
@@ -263,7 +247,7 @@ describe('access policies', () => {
 	});
 
 	it('competition access follows authoritative time, not just state', async () => {
-		const db = makeDb();
+		const db = await freshDb();
 		const start = new Date(1_800_000_000_000);
 		const live = await insertEvent(db, { state: 'LIVE', durationSeconds: 3600, startedAt: start });
 		expect(canAccessCompetition(live, new Date(start.getTime() + 60_000))).toBe(true);
@@ -275,11 +259,11 @@ describe('access policies', () => {
 
 describe('audit metadata', () => {
 	it('records before/after values and distinguishes manual vs automatic freeze', async () => {
-		const db = makeDb();
+		const db = await freshDb();
 		const ev = await insertEvent(db, { state: 'READY', durationSeconds: 60 });
 		await startEvent(db, ev.id, undefined, new Date(1_900_000_000_000));
 		await freezeEvent(db, ev.id); // manual
-		const rows = db.select().from(adminActions).all();
+		const rows = await db.select().from(adminActions).all();
 		const manual = rows.find((r) => r.actionType === EVENT_ACTIONS.manualFreeze);
 		expect(manual).toBeTruthy();
 		const meta = JSON.parse(manual!.payload!);
@@ -289,7 +273,7 @@ describe('audit metadata', () => {
 		// automatic on a separate expired event
 		const ev2 = await insertEvent(db, { state: 'LIVE', durationSeconds: 60, startedAt: new Date(1_900_000_000_000), slug: 'e-auto' });
 		await ensureCurrentEventState(db, ev2, new Date(1_900_000_120_000));
-		expect(auditCount(db, EVENT_ACTIONS.autoFreeze)).toBe(1);
-		expect(auditCount(db, EVENT_ACTIONS.manualFreeze)).toBe(1);
+		expect(await auditCount(db, EVENT_ACTIONS.autoFreeze)).toBe(1);
+		expect(await auditCount(db, EVENT_ACTIONS.manualFreeze)).toBe(1);
 	});
 });

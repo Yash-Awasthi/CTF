@@ -7,12 +7,12 @@
  * assignment uses, so the roster passed in and the assignment agree.
  */
 import { asc, eq } from 'drizzle-orm';
-import type { AnySQLiteDb } from '../db/client';
+import type { DB } from '../db/client';
 import { participants } from '../db/schema';
 
 /** Roll numbers for an event, ascending. */
 export async function getEventRoster(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 ): Promise<number[]> {
 	const rows = await db

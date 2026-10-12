@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import type { AnySQLiteDb } from '../db/client';
+import type { DB } from '../db/client';
 import { events } from '../db/schema';
 import type { EventRow } from '../auth/types';
 
@@ -9,7 +9,7 @@ import type { EventRow } from '../auth/types';
  * event-scoped route.
  */
 export async function resolveEventBySlug(
-	db: AnySQLiteDb,
+	db: DB,
 	slug: string,
 ): Promise<EventRow | null> {
 	const row = await db

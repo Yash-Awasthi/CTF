@@ -11,7 +11,7 @@
  * The stable JOIN key between the two worlds is (event_id, slot).
  */
 import { and, eq } from 'drizzle-orm';
-import type { AnySQLiteDb } from '../db/client';
+import type { DB } from '../db/client';
 import { challenges } from '../db/schema';
 import { RegistryDbMismatchError } from './errors';
 import { getAllChallenges, TOTAL_SLOTS } from './registry';
@@ -21,7 +21,7 @@ import { getAllChallenges, TOTAL_SLOTS } from './registry';
  * keyed by (event_id, slot). Idempotent — safe to run on every migrate/reseed.
  */
 export async function syncChallengeRows(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 ): Promise<void> {
 	for (const m of getAllChallenges()) {
@@ -44,7 +44,7 @@ export async function syncChallengeRows(
  * @throws RegistryDbMismatchError on any disagreement.
  */
 export async function validateChallengeConsistency(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 ): Promise<void> {
 	const rows = await db
@@ -85,7 +85,7 @@ export async function validateChallengeConsistency(
 
 /** Resolve the DB challenge row id for (event, slot) — the FK later phases use. */
 export async function getChallengeRowId(
-	db: AnySQLiteDb,
+	db: DB,
 	eventId: number,
 	slot: number,
 ): Promise<number | undefined> {

@@ -1,7 +1,9 @@
 allowBuilds:
-  better-sqlite3: true
   esbuild: true
   workerd: true
   sharp: false
 minimumReleaseAgeExclude:
   - zod@4.6.7
+  - '@vitest/mocker@5.0.4'
+  - '@vitest/spy@5.0.4'
+  - vitest@5.0.4
