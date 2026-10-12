@@ -1,9 +1,8 @@
 /**
- * Phase 12 live updates — D1 is the single source of truth. There is NO
- * module-global broadcaster (Cloudflare Workers are multi-isolate; an in-memory
- * subscriber map would not be globally reliable). Instead every SSE stream (and
- * the polling fallback) READS authoritative D1 state and diffs against the
- * client's cursors. Missed events are always recoverable from D1 on reconnect.
+ * Live updates — D1 is the single source of truth. The event's Durable Object,
+ * the SSE fallback and the polling fallback all READ authoritative D1 state and
+ * diff against a cursor pair. Missed events are always recoverable from D1 on
+ * reconnect.
  *
  * Payloads are minimal + typed: event-state/timing, first-blood (challenge slot
  * only — never the solver), announcements. No secrets, seeds, private challenge

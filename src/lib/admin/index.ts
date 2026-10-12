@@ -13,9 +13,7 @@ export {
 } from './auth';
 export {
 	hashIp,
-	checkAdminRateLimit,
 	recordAdminFailure,
-	resetAdminFailures,
 } from './rate-limit';
 export { ADMIN_ACTIONS } from './constants';
 export {

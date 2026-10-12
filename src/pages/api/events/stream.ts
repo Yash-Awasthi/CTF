@@ -12,11 +12,10 @@ const POLL_MS = 4000; // NOT a timer tick — the browser computes the countdown
 const MAX_ITERATIONS = 20; // ~80s, then close; EventSource auto-reconnects.
 
 /**
- * Participant live-update stream (SSE). Authenticated + event-scoped. Reads
+ * SSE fallback for networks that block WebSockets; the primary channel is the
+ * event's Durable Object (src/lib/live). Authenticated + event-scoped. Reads
  * authoritative D1 every POLL_MS and emits diffs (state/timing changes, first
- * blood, announcements). No timer ticks are streamed. Cross-isolate correctness
- * comes from each stream reading D1 itself — not a shared in-memory broadcaster.
- * Missed events are recoverable via the persisted state on reconnect.
+ * blood, announcements). Missed events are recoverable from D1 on reconnect.
  */
 export const GET: APIRoute = async ({ locals, url, request }) => {
 	const auth = locals.auth;

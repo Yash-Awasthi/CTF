@@ -5,11 +5,9 @@ import { ensureCurrentEventState } from '../../lib/event/state';
 import { canSubmit } from '../../lib/event/access';
 import { submitSchema } from '../../lib/validation/submission';
 import { processSubmission } from '../../lib/submission';
-import { checkRateLimit, recordFailure } from '../../lib/auth/rate-limit';
-import {
-	SUBMIT_RATE_LIMIT_MAX_FAILURES,
-	SUBMIT_RATE_LIMIT_WINDOW_SECONDS,
-} from '../../lib/auth/constants';
+import { allowAttempt, recordFailure } from '../../lib/auth/rate-limit';
+import { RATE_LIMIT_PERIOD_SECONDS } from '../../lib/auth/constants';
+import { syncLive } from '../../lib/live';
 
 export const prerender = false;
 
@@ -54,14 +52,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
 		scope: 'submit' as const,
 		subject: String(auth.participant.id),
 	};
-	const policy = {
-		maxFailures: SUBMIT_RATE_LIMIT_MAX_FAILURES,
-		windowSeconds: SUBMIT_RATE_LIMIT_WINDOW_SECONDS,
-	};
-	const status = await checkRateLimit(db, limitKey, now, policy);
-	if (status.blocked) {
-		return json({ error: 'rate_limited', retryAfterSeconds: status.retryAfterSeconds }, 429, {
-			'retry-after': String(status.retryAfterSeconds),
+	if (!(await allowAttempt(getEnv().PLAYER_ACTION_LIMITER, `submit:${auth.participant.id}`))) {
+		return json({ error: 'rate_limited', retryAfterSeconds: RATE_LIMIT_PERIOD_SECONDS }, 429, {
+			'retry-after': String(RATE_LIMIT_PERIOD_SECONDS),
 		});
 	}
 
@@ -84,9 +77,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
 		case 'already_solved':
 			return json({ correct: true, alreadySolved: true }, 200);
 		case 'incorrect':
-			await recordFailure(db, limitKey, now, policy);
+			await recordFailure(db, limitKey, now);
 			return json({ correct: false }, 200);
 		case 'correct':
+			if (outcome.firstBlood) await syncLive(getEnv(), event.id);
 			return json(
 				{
 					correct: true,

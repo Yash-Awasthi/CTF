@@ -8,11 +8,8 @@ import { challenges } from '../../lib/db/schema';
 import { hintSchema } from '../../lib/validation/submission';
 import { getChallengeAccessStatus } from '../../lib/challenges';
 import { HintError, revealHint } from '../../lib/hints';
-import { checkRateLimit, recordFailure } from '../../lib/auth/rate-limit';
-import {
-	SUBMIT_RATE_LIMIT_MAX_FAILURES,
-	SUBMIT_RATE_LIMIT_WINDOW_SECONDS,
-} from '../../lib/auth/constants';
+import { allowAttempt, recordFailure } from '../../lib/auth/rate-limit';
+import { RATE_LIMIT_PERIOD_SECONDS } from '../../lib/auth/constants';
 
 export const prerender = false;
 
@@ -55,22 +52,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
 	if (!parsed.success) return json({ error: 'invalid_input' }, 400);
 	const { slot, hintNumber } = parsed.data;
 
-	// A rejected reveal tells the client something about the hint index, so the
-	// walk has to cost the prober the same budget a wrong answer does. Counts
-	// rejected reveals only; a successful reveal already costs the score factor.
+	// A rejected reveal tells the client something about the hint index, so reveals
+	// spend from the same per-player budget as answers; rejected ones are audited.
 	const limitKey = {
 		eventId: event.id,
 		scope: 'hint' as const,
 		subject: String(auth.participant.id),
 	};
-	const policy = {
-		maxFailures: SUBMIT_RATE_LIMIT_MAX_FAILURES,
-		windowSeconds: SUBMIT_RATE_LIMIT_WINDOW_SECONDS,
-	};
-	const limitStatus = await checkRateLimit(db, limitKey, now, policy);
-	if (limitStatus.blocked) {
-		return json({ error: 'rate_limited', retryAfterSeconds: limitStatus.retryAfterSeconds }, 429, {
-			'retry-after': String(limitStatus.retryAfterSeconds),
+	if (!(await allowAttempt(getEnv().PLAYER_ACTION_LIMITER, `hint:${auth.participant.id}`))) {
+		return json({ error: 'rate_limited', retryAfterSeconds: RATE_LIMIT_PERIOD_SECONDS }, 429, {
+			'retry-after': String(RATE_LIMIT_PERIOD_SECONDS),
 		});
 	}
 
@@ -97,7 +88,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 		return json(reveal, 200);
 	} catch (e) {
 		if (e instanceof HintError) {
-			await recordFailure(db, limitKey, now, policy);
+			await recordFailure(db, limitKey, now);
 			const code = e.code === 'out_of_order' ? 409 : 400;
 			return json({ error: e.code }, code);
 		}

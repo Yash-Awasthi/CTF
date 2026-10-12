@@ -1,5 +1,5 @@
-// Shared SSE feed: first-blood and announcement toasts on every in-game page.
-// Reads only server snapshots; polling covers browsers without EventSource.
+// Shared live feed: first-blood and announcement toasts on every in-game page.
+// WebSocket to the event's Durable Object first; SSE, then polling, as fallbacks.
 export type FeedOptions = { onStateChange?: () => void };
 
 function toast(msg: string, kind: 'blood' | 'note') {
@@ -56,7 +56,7 @@ export async function startLiveFeed({ onStateChange }: FeedOptions = {}) {
 	};
 	const show = (kind: 'fb' | 'ann', id: string | number, message: string) => {
 		const key = kind + id;
-		if (seen.has(key)) return;
+		if (seen.has(key) || Number(id) <= cursors![kind]) return;
 		seen.add(key);
 		cursors![kind] = Math.max(cursors![kind], Number(id) || 0);
 		try {
@@ -65,7 +65,7 @@ export async function startLiveFeed({ onStateChange }: FeedOptions = {}) {
 		toast(message, kind === 'fb' ? 'blood' : 'note');
 	};
 
-	if (typeof EventSource === 'undefined') {
+	const poll = () => {
 		setInterval(async () => {
 			try {
 				const res = await fetch(`/api/events/updates?fb=${cursors!.fb}&ann=${cursors!.ann}`);
@@ -78,18 +78,36 @@ export async function startLiveFeed({ onStateChange }: FeedOptions = {}) {
 				/* offline: next tick retries against D1 */
 			}
 		}, 6000);
-		return;
-	}
+	};
 
-	const connect = () => {
+	const connectSse = () => {
+		if (typeof EventSource === 'undefined') return poll();
 		const es = new EventSource(`/api/events/stream?fb=${cursors!.fb}&ann=${cursors!.ann}`);
 		es.addEventListener('state', (e) => checkState(JSON.parse((e as MessageEvent).data).stateVersion));
 		es.addEventListener('firstblood', (e) => show('fb', (e as MessageEvent).lastEventId, JSON.parse((e as MessageEvent).data).message));
 		es.addEventListener('announcement', (e) => show('ann', (e as MessageEvent).lastEventId, JSON.parse((e as MessageEvent).data).message));
 		es.onerror = () => {
 			es.close();
-			setTimeout(connect, 3000);
+			setTimeout(connectSse, 3000);
 		};
 	};
-	connect();
+
+	// A socket that never opens means WebSockets are blocked on this network: fall back to SSE.
+	const connectWs = () => {
+		if (typeof WebSocket === 'undefined') return connectSse();
+		const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+		const ws = new WebSocket(`${proto}//${location.host}/api/events/live?fb=${cursors!.fb}&ann=${cursors!.ann}`);
+		let opened = false;
+		ws.onopen = () => {
+			opened = true;
+		};
+		ws.onmessage = (e) => {
+			const m = JSON.parse(e.data);
+			if (m.type === 'state') checkState(m.stateVersion);
+			else if (m.type === 'firstblood') show('fb', m.id, m.message);
+			else if (m.type === 'announcement') show('ann', m.id, m.message);
+		};
+		ws.onclose = () => (opened ? setTimeout(connectWs, 3000) : connectSse());
+	};
+	connectWs();
 }

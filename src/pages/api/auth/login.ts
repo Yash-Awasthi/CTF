@@ -8,12 +8,8 @@ import { isLoginAllowed } from '../../../lib/auth/authenticate';
 import { validateParticipantCredentials } from '../../../lib/auth/credentials';
 import { createSession } from '../../../lib/auth/sessions';
 import { setSessionCookie } from '../../../lib/auth/cookies';
-import {
-	checkRateLimit,
-	hashIp,
-	recordFailure,
-	resetFailures,
-} from '../../../lib/auth/rate-limit';
+import { allowAttempt, hashIp, recordFailure } from '../../../lib/auth/rate-limit';
+import { RATE_LIMIT_PERIOD_SECONDS } from '../../../lib/auth/constants';
 import { loginSchema } from '../../../lib/validation/auth';
 
 export const prerender = false;
@@ -108,12 +104,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 			}
 		: null;
 
-	const rollStatus = await checkRateLimit(db, rollKey);
-	const ipStatus = ipKey
-		? await checkRateLimit(db, ipKey)
-		: { blocked: false, retryAfterSeconds: 0 };
-	if (rollStatus.blocked || ipStatus.blocked) {
-		const retry = Math.max(rollStatus.retryAfterSeconds, ipStatus.retryAfterSeconds);
+	// Every attempt spends from both limiters, so the IP limit is sized above the roster.
+	const rollOk = await allowAttempt(env.LOGIN_ROLL_LIMITER, `${event.id}:${rollNumber}`);
+	const ipOk = ipKey ? await allowAttempt(env.LOGIN_IP_LIMITER, `${event.id}:${ipKey.subject}`) : true;
+	if (!rollOk || !ipOk) {
+		const retry = RATE_LIMIT_PERIOD_SECONDS;
 		return isForm
 			? redirect(`${loginUrl}?error=rate_limited&retry=${retry}`)
 			: json({ error: 'rate_limited', retryAfterSeconds: retry }, 429, {
@@ -142,9 +137,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 			: json({ error: 'invalid_credentials' }, 401);
 	}
 
-	// 5. Success → clear failures, replace session, set opaque cookie.
-	await resetFailures(db, rollKey);
-	if (ipKey) await resetFailures(db, ipKey);
+	// 5. Success → replace session, set opaque cookie.
 
 	const { rawToken } = await createSession(db, { event, participant });
 	setSessionCookie(cookies, rawToken);

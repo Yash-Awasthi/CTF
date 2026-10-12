@@ -1,8 +1,10 @@
 import { and, eq, isNull } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { freshDb, type Db } from './db';
 import {
 	events,
+	loginRateLimit,
 	participants,
 	sessions,
 } from '../../src/lib/db/schema';
@@ -21,18 +23,8 @@ import {
 	revokeSessionByRawToken,
 } from '../../src/lib/auth/sessions';
 import { isLoginAllowed } from '../../src/lib/auth/authenticate';
-import {
-	checkRateLimit,
-	hashIp,
-	recordFailure,
-	resetFailures,
-} from '../../src/lib/auth/rate-limit';
-import {
-	RATE_LIMIT_MAX_FAILURES,
-	RATE_LIMIT_WINDOW_SECONDS,
-	SUBMIT_RATE_LIMIT_MAX_FAILURES,
-	SUBMIT_RATE_LIMIT_WINDOW_SECONDS,
-} from '../../src/lib/auth/constants';
+import { allowAttempt, hashIp, recordFailure } from '../../src/lib/auth/rate-limit';
+import { FAILURE_AUDIT_WINDOW_SECONDS } from '../../src/lib/auth/constants';
 
 async function setup(
 	db: Db,
@@ -216,73 +208,25 @@ describe('rate limiting', () => {
 		db = await freshDb();
 	});
 
-	it('blocks after the configured failures and resets on success', async () => {
-		const { ev } = await setup(db);
-		const key = { eventId: ev.id, scope: 'roll' as const, subject: '25115000' };
-
-		for (let i = 0; i < RATE_LIMIT_MAX_FAILURES - 1; i++) {
-			await recordFailure(db, key);
+	it('spends attempts from the binding until the key is over its limit', async () => {
+		// LOGIN_ROLL_LIMITER allows 10 attempts per period (wrangler.jsonc).
+		for (let i = 0; i < 10; i++) {
+			expect(await allowAttempt(env.LOGIN_ROLL_LIMITER, 'limit-test:1')).toBe(true);
 		}
-		expect((await checkRateLimit(db, key)).blocked).toBe(false);
-
-		await recordFailure(db, key); // hits the threshold
-		expect((await checkRateLimit(db, key)).blocked).toBe(true);
-
-		await resetFailures(db, key); // success clears it → never a permanent lock
-		expect((await checkRateLimit(db, key)).blocked).toBe(false);
+		expect(await allowAttempt(env.LOGIN_ROLL_LIMITER, 'limit-test:1')).toBe(false);
+		expect(await allowAttempt(env.LOGIN_ROLL_LIMITER, 'limit-test:2')).toBe(true);
 	});
 
-	it('applies a stricter policy to submission scopes', async () => {
-		const { ev } = await setup(db);
-		const policy = {
-			maxFailures: SUBMIT_RATE_LIMIT_MAX_FAILURES,
-			windowSeconds: SUBMIT_RATE_LIMIT_WINDOW_SECONDS,
-		};
-		const key = { eventId: ev.id, scope: 'submit' as const, subject: '1' };
-
-		for (let i = 0; i < SUBMIT_RATE_LIMIT_MAX_FAILURES - 1; i++) {
-			await recordFailure(db, key, new Date(), policy);
-		}
-		expect((await checkRateLimit(db, key, new Date(), policy)).blocked).toBe(false);
-
-		await recordFailure(db, key, new Date(), policy);
-		expect((await checkRateLimit(db, key, new Date(), policy)).blocked).toBe(true);
-
-		// Same row read under the login policy is still under its higher ceiling:
-		// proves the policy argument is what decides, not a shared constant.
-		expect((await checkRateLimit(db, key)).blocked).toBe(false);
-
-		await resetFailures(db, key);
-		expect((await checkRateLimit(db, key, new Date(), policy)).blocked).toBe(false);
-	});
-
-	it('lapses the submission window on its own shorter budget', async () => {
-		const { ev } = await setup(db);
-		const policy = {
-			maxFailures: SUBMIT_RATE_LIMIT_MAX_FAILURES,
-			windowSeconds: SUBMIT_RATE_LIMIT_WINDOW_SECONDS,
-		};
-		const key = { eventId: ev.id, scope: 'hint' as const, subject: '1' };
-		const t0 = new Date();
-		for (let i = 0; i < SUBMIT_RATE_LIMIT_MAX_FAILURES; i++) {
-			await recordFailure(db, key, t0, policy);
-		}
-		expect((await checkRateLimit(db, key, t0, policy)).blocked).toBe(true);
-
-		const after = new Date(t0.getTime() + (SUBMIT_RATE_LIMIT_WINDOW_SECONDS + 1) * 1000);
-		expect((await checkRateLimit(db, key, after, policy)).blocked).toBe(false);
-	});
-
-	it('lapses the window (no permanent lock)', async () => {
+	it('audits failures per window and starts a new window once it lapses', async () => {
 		const { ev } = await setup(db);
 		const key = { eventId: ev.id, scope: 'roll' as const, subject: '25115000' };
 		const t0 = new Date();
-		for (let i = 0; i < RATE_LIMIT_MAX_FAILURES; i++) {
-			await recordFailure(db, key, t0);
-		}
-		expect((await checkRateLimit(db, key, t0)).blocked).toBe(true);
-		const later = new Date(t0.getTime() + (RATE_LIMIT_WINDOW_SECONDS + 1) * 1000);
-		expect((await checkRateLimit(db, key, later)).blocked).toBe(false);
+		for (let i = 0; i < 3; i++) await recordFailure(db, key, t0);
+		const count = async () => (await db.select().from(loginRateLimit).get())?.failureCount;
+		expect(await count()).toBe(3);
+
+		await recordFailure(db, key, new Date(t0.getTime() + (FAILURE_AUDIT_WINDOW_SECONDS + 1) * 1000));
+		expect(await count()).toBe(1);
 	});
 
 	it('hashes IPs privately: deterministic, secret-dependent, never the raw IP', async () => {

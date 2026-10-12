@@ -19,15 +19,13 @@ import {
 	createAdminSession,
 	isValidAdminSession,
 	revokeAdminSession,
-	checkAdminRateLimit,
 	recordAdminFailure,
-	resetAdminFailures,
 	bypassChallenge,
 	createAnnouncement,
 	listAnnouncements,
 	resetParticipantSession,
 } from '../../src/lib/admin';
-import { adminSessions } from '../../src/lib/db/schema';
+import { adminLoginRateLimit, adminSessions } from '../../src/lib/db/schema';
 import { hashSessionToken } from '../../src/lib/auth/session-token';
 import { extendEvent, startEvent, markEventReady } from '../../src/lib/event/state';
 import type { EventRow } from '../../src/lib/auth/types';
@@ -98,13 +96,12 @@ describe('admin auth + opaque sessions', () => {
 	});
 });
 
-describe('admin login rate limiting', () => {
-	it('blocks after MAX failures within the window, resets on success', async () => {
-		const ipHash = 'iphash-1';
-		for (let i = 0; i < 10; i++) await recordAdminFailure(db, ipHash);
-		expect((await checkAdminRateLimit(db, ipHash)).blocked).toBe(true);
-		await resetAdminFailures(db, ipHash);
-		expect((await checkAdminRateLimit(db, ipHash)).blocked).toBe(false);
+describe('admin login failure audit', () => {
+	it('counts failed admin logins per hashed IP', async () => {
+		for (let i = 0; i < 3; i++) await recordAdminFailure(db, 'iphash-1');
+		await recordAdminFailure(db, 'iphash-2');
+		const rows = await db.select().from(adminLoginRateLimit).all();
+		expect(Object.fromEntries(rows.map((r) => [r.ipHash, r.failureCount]))).toEqual({ 'iphash-1': 3, 'iphash-2': 1 });
 	});
 });
 
