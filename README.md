@@ -12,7 +12,7 @@ it was verified is in `CHALLENGE-AUDIT.md`.
 
 ## Stack
 
-Astro and React on Cloudflare Workers, D1 (SQLite) through Drizzle, Tailwind, Vitest and
+Astro on Cloudflare Workers, D1 (SQLite) through Drizzle, Tailwind, Vitest and
 Playwright. Challenge evidence (audio, images, documents) is generated per player at request time.
 
 ## Documentation
@@ -24,7 +24,7 @@ Playwright. Challenge evidence (audio, images, documents) is generated per playe
 
 ## Requirements
 
-- Node 22.12 or later, pnpm 11
+- Node 24 or later (26 recommended), pnpm 12
 - A Cloudflare account (only for deploying)
 
 ## Run it locally

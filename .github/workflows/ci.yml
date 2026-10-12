@@ -9,32 +9,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '22'
+          node-version: '26'
           cache: 'pnpm'
 
       # The repository is a pnpm project: packageManager pins pnpm and
-      # pnpm-lock.yaml is the tracked lockfile. package-lock.json is gitignored,
-      # so an `npm ci` step could never have resolved.
+      # pnpm-lock.yaml is the tracked lockfile.
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # worker-configuration.d.ts is gitignored and generated from wrangler.jsonc.
+      - name: Generate Worker types
+        run: pnpm generate-types
+
+      - name: Run type checks
+        run: pnpm exec tsc --noEmit
+
+      - name: Run Astro checks
+        run: pnpm astro check
+
       - name: Run tests
         run: pnpm test
-
-      # Not blocking while 29 errors remain, all in parked modules and test
-      # helpers. continue-on-error still reports the job as failed, unlike
-      # appending `|| true`, which reported it as passing.
-      - name: Run type checks
-        continue-on-error: true
-        run: npx tsc --noEmit
 
       - name: Build
         run: pnpm build
