@@ -73,6 +73,14 @@ pnpm build && pnpm wrangler deploy
 pnpm event:create --slug ... --name ... --hours 3 --rolls ... --apply remote
 ```
 
+A database created before migrations moved to one folder each (Drizzle Kit 1.0) needs its migration
+history relabelled once, before the next `pnpm db:migrate:remote`; otherwise Wrangler would try to
+re-run every migration:
+
+```bash
+pnpm wrangler d1 execute case-files-db --remote --file scripts/d1-migrations-drizzle-v1.sql
+```
+
 Never change `EVENT_SECRET` once an event has started: every player's evidence and answers are
 derived from it.
 
