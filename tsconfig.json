@@ -7,12 +7,5 @@
   ],
   "exclude": [
     "dist"
-  ],
-  "compilerOptions": {
-    "jsx": "react-jsx",
-    "jsxImportSource": "react",
-    "paths": {
-      "better-auth/adapters/drizzle": ["./node_modules/better-auth/dist/adapters/drizzle-adapter/index.d.mts"]
-    }
-  }
+  ]
 }

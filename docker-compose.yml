@@ -2,8 +2,6 @@
 # Usage: docker compose up
 # Then open http://localhost:4321
 
-version: "3.8"
-
 services:
   dev:
     image: node:22.6-alpine
