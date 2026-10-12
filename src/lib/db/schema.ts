@@ -51,7 +51,7 @@ export const CHALLENGE_TIERS = ['easy', 'medium', 'hard', 'capstone'] as const;
 export const events = sqliteTable('events', {
 	id: integer('id').primaryKey({ autoIncrement: true }),
 	name: text('name').notNull(),
-	slug: text('slug').notNull().unique(),
+	slug: text('slug').notNull(),
 	state: text('state', { enum: EVENT_STATES }).notNull().default('DRAFT'),
 	// null until the admin starts the event (server-authoritative clock).
 	startedAt: integer('started_at', { mode: 'timestamp' }),
@@ -60,7 +60,7 @@ export const events = sqliteTable('events', {
 	// never stored in the DB — it comes from the runtime env. Frozen once LIVE.
 	secretVersion: text('secret_version').notNull().default('v1'),
 	createdAt: createdAt(),
-});
+}, (t) => [uniqueIndex('events_slug_unique').on(t.slug)]);
 
 // ── participants ────────────────────────────────────────────────────────────
 export const participants = sqliteTable(
@@ -101,12 +101,13 @@ export const sessions = sqliteTable(
 		participantId: integer('participant_id')
 			.notNull()
 			.references(() => participants.id, { onDelete: 'cascade' }),
-		tokenHash: text('token_hash').notNull().unique(),
+		tokenHash: text('token_hash').notNull(),
 		createdAt: createdAt(),
 		expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
 		revokedAt: integer('revoked_at', { mode: 'timestamp' }),
 	},
 	(t) => [
+		uniqueIndex('sessions_token_hash_unique').on(t.tokenHash),
 		index('sessions_participant_idx').on(t.participantId),
 		index('sessions_event_idx').on(t.eventId),
 		// One active (non-revoked) session per participant, enforced at the DB
@@ -373,11 +374,11 @@ export const loginRateLimit = sqliteTable(
 // session can never authenticate as admin and vice-versa.
 export const adminSessions = sqliteTable('admin_sessions', {
 	id: integer('id').primaryKey({ autoIncrement: true }),
-	tokenHash: text('token_hash').notNull().unique(),
+	tokenHash: text('token_hash').notNull(),
 	createdAt: createdAt(),
 	expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
 	revokedAt: integer('revoked_at', { mode: 'timestamp' }),
-});
+}, (t) => [uniqueIndex('admin_sessions_token_hash_unique').on(t.tokenHash)]);
 
 // ── admin_login_rate_limit (global, non-event-scoped) ───────────────────────
 // Fixed-window failed-attempt counter for admin login, keyed by HMAC(ip,
@@ -385,29 +386,9 @@ export const adminSessions = sqliteTable('admin_sessions', {
 // because admin login is NOT event-scoped (that table requires event_id).
 export const adminLoginRateLimit = sqliteTable('admin_login_rate_limit', {
 	id: integer('id').primaryKey({ autoIncrement: true }),
-	ipHash: text('ip_hash').notNull().unique(),
+	ipHash: text('ip_hash').notNull(),
 	windowStart: integer('window_start', { mode: 'timestamp' })
 		.notNull()
 		.default(sql`(unixepoch())`),
 	failureCount: integer('failure_count').notNull().default(0),
-});
-
-export const schema = {
-	events,
-	participants,
-	sessions,
-	challenges,
-	submissions,
-	solves,
-	hintUsage,
-	antiCheatEvents,
-	firstBloods,
-	adminActions,
-	announcements,
-	challengeBypasses,
-	loginRateLimit,
-	adminSessions,
-	adminLoginRateLimit,
-};
-
-export type Schema = typeof schema;
+}, (t) => [uniqueIndex('admin_login_rate_limit_ip_hash_unique').on(t.ipHash)]);
