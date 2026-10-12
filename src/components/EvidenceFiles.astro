@@ -2,10 +2,10 @@
 /** Evidence files for a slot, served by /{event}/evidence/{slot}/{name}. */
 interface Props {
 	slug: string;
-	slot: number;
+	challengeSlot: number;
 	files: { name: string; label: string; kind: 'image' | 'audio' | 'link' }[];
 }
-const { slug, slot, files } = Astro.props;
+const { slug, challengeSlot: slot, files } = Astro.props;
 const href = (name: string) => `/${slug}/evidence/${slot}/${name}`;
 ---
 <div class="space-y-4 px-6 pb-5">

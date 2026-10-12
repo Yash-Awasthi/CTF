@@ -2591,7 +2591,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 						<pre class="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-neutral-300">{cp.prompt}</pre>
 					</div>
 				</div>
-				{evidence && <EvidenceFiles slug={slug} slot={view.slot} files={evidence} />}
+				{evidence && <EvidenceFiles slug={slug} challengeSlot={slot} files={evidence} />}
 
 				<!-- Q12: Daniel's private archive portal -->
 				{isQ12 && (
@@ -2787,7 +2787,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<!-- Q18: voicemail recording and spectrogram -->
 				{isQ18 && evidence && (
 					<div class="mx-6 mb-5 rounded border border-neutral-800 bg-neutral-950 py-4">
-						<EvidenceFiles slug={slug} slot={view.slot} files={evidence} />
+						<EvidenceFiles slug={slug} challengeSlot={slot} files={evidence} />
 						<div class="px-6">
 							<button type="button" data-spectrogram={`/${slug}/evidence/18/voicemail.wav`}
 								class="rounded border border-neutral-700 bg-neutral-900 px-3 py-1.5 font-mono text-[10px] tracking-[0.1em] text-neutral-400 uppercase hover:text-neutral-200">
@@ -2894,7 +2894,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 						<pre class="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-neutral-300">{cp.prompt}</pre>
 					</div>
 				</div>
-				{evidence && <EvidenceFiles slug={slug} slot={view.slot} files={evidence} />}
+				{evidence && <EvidenceFiles slug={slug} challengeSlot={slot} files={evidence} />}
 
 				<!-- Solved banner -->
 				{isSolved && (
@@ -3378,7 +3378,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 						<pre class="whitespace-pre-wrap font-mono text-sm leading-relaxed text-neutral-300">{gp.prompt}</pre>
 					</div>
 				</div>
-				{evidence && <EvidenceFiles slug={slug} slot={view.slot} files={evidence} />}
+				{evidence && <EvidenceFiles slug={slug} challengeSlot={slot} files={evidence} />}
 
 				<!-- Solved banner -->
 				{isSolved && (

@@ -113,8 +113,8 @@ export const prerender = true;
 		});
 
 		// Load static manifest + leaderboard (plain static assets, no live backend).
-		fetch('./challenges.json').then((r) => r.json()).then((d) => { challenges = d.challenges; render(); });
-		fetch('./leaderboard.json').then((r) => r.ok ? r.json() : { standings: [] }).then((d) => {
+		fetch('./challenges.json').then((r) => r.json() as Promise<{ challenges: typeof challenges }>).then((d) => { challenges = d.challenges; render(); });
+		fetch('./leaderboard.json').then((r): Promise<{ standings?: unknown[] }> => r.ok ? r.json() : Promise.resolve({ standings: [] })).then((d) => {
 			const tb = $('[data-leaderboard]');
 			const rows = (d.standings ?? []) as { rank: number; rollNumber: number; score: number }[];
 			tb.innerHTML = rows.length

@@ -144,7 +144,7 @@ if (authed) {
 		const result = root.querySelector<HTMLElement>('[data-act-result]');
 		const post = async (path: string, body: Record<string, unknown>) => {
 			const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ eventSlug, ...body }) });
-			const data = await res.json().catch(() => ({}));
+			const data = (await res.json().catch(() => ({}))) as { error?: string };
 			if (result) result.textContent = res.ok ? 'OK' : `Error: ${data.error ?? res.status}`;
 			if (res.ok) setTimeout(() => location.reload(), 500);
 		};
