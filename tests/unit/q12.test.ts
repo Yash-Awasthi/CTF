@@ -17,7 +17,9 @@ defineChallengeTests({
           const { instance } = await generateChallengeForParticipant(ctx(roll), 12);
           const priv = instance.privateData as Q12Private;
           expect(JSON.stringify(instance.publicData)).not.toContain(priv.answer);
-          expect(JSON.stringify(instance.publicData)).toContain(priv.credential);
+          expect(JSON.stringify(instance.publicData)).not.toContain(priv.credential);
+          const word = /=\?UTF-8\?B\?([A-Za-z0-9+/=]+)\?=/.exec((instance.publicData as { prompt: string }).prompt)![1];
+          expect(atob(word)).toContain(`ref ${priv.credential}`);
           expect(priv.listing).toContain(priv.answer);
           expect(priv.listing.filter((f) => f.startsWith('collection-transfer'))).toHaveLength(1);
         }

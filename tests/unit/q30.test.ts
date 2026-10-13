@@ -1,6 +1,6 @@
 /**
  * Q30 — The Subject
- * Personalized answer: participant's investigator codename (same as Q1).
+ * Personalized answer: SUBJECT (codename, same as Q1) / WITNESS (current Daniel), from a sealed record.
  * Formula: getCodename(rollNumber) — stride-37 permutation over 200-name pool.
  * Q29 contribution: none (this IS the payoff).
  */
@@ -14,6 +14,7 @@ import {
 import { getChallengeBySlot, getChallengeByKey } from '../../src/lib/challenges/registry';
 import { getChallengeAccessStatus } from '../../src/lib/challenges/access';
 import { getCodename, CODENAME_POOL } from '../../challenges/shared/codenames';
+import { HEADER, type Q30Private } from '../../challenges/30-final/index';
 
 const ENV   = { EVENT_SECRET: 'q30-test-secret-DO-NOT-USE-00000000000' };
 const EVENT = { slug: 'case-71c-test', secretVersion: 'v1' };
@@ -26,7 +27,7 @@ describe('Q30 registration', () => {
 	it('key "the-subject"', () => { expect(getChallengeBySlot(SLOT)!.metadata.key).toBe('the-subject'); });
 	it('title "The Subject"', () => { expect(getChallengeBySlot(SLOT)!.metadata.title).toBe('The Subject'); });
 	it('tier "capstone"', () => { expect(getChallengeBySlot(SLOT)!.metadata.tier).toBe('capstone'); });
-	it('basePoints 500', () => { expect(getChallengeBySlot(SLOT)!.metadata.basePoints).toBe(500); });
+	it('basePoints 600', () => { expect(getChallengeBySlot(SLOT)!.metadata.basePoints).toBe(600); });
 	it('attributionEnabled false', () => { expect(getChallengeBySlot(SLOT)!.metadata.attributionEnabled).toBe(false); });
 	it('retrievable by key', () => { expect(getChallengeByKey('the-subject')!.metadata.slot).toBe(30); });
 });
@@ -61,111 +62,67 @@ describe('Q30 codename derivation', () => {
 	});
 });
 
+const priv = async (r: number) => (await generateChallengeForParticipant(ctx(r), SLOT)).instance.privateData as Q30Private;
+const promptOf = async (r: number) => ((await generateChallengeForParticipant(ctx(r), SLOT)).instance.publicData as { prompt: string }).prompt;
+
+/** Solve as a player: crib the clear header against the hex, find the period, unseal. */
+function unseal(prompt: string): string {
+	const hex = prompt.split('\n').filter((l) => /^ {2}([0-9a-f]{2} ?)+$/.test(l)).join(' ').trim().split(/\s+/);
+	const bytes = Uint8Array.from(hex, (h) => parseInt(h, 16));
+	const stream = [...HEADER].map((c, i) => c.charCodeAt(0) ^ bytes[i]);
+	const period = Array.from({ length: stream.length }, (_, k) => k + 1).find((k) => stream.every((v, i) => i < k || v === stream[i - k]))!;
+	return new TextDecoder().decode(bytes.map((b, i) => b ^ stream[i % period]));
+}
+
 describe('Q30 personalized answer', () => {
-	it('answer matches getCodename(rollNumber) for each participant', async () => {
-		const roll = ROLLS[0];
-		const { instance } = await generateChallengeForParticipant(ctx(roll), SLOT);
-		expect((instance.privateData as { answer: string }).answer).toBe(getCodename(roll));
+	it('subject is getCodename(rollNumber), the same as Q1', async () => {
+		for (const r of [ROLLS[0], ROLLS[3]]) expect((await priv(r)).codename).toBe(getCodename(r));
 	});
-	it('different rolls produce different answers', async () => {
-		const answers = await Promise.all([ROLLS[0], ROLLS[1], ROLLS[5], ROLLS[10]].map(async r => {
-			const { instance } = await generateChallengeForParticipant(ctx(r), SLOT);
-			return (instance.privateData as { answer: string }).answer;
-		}));
-		expect(new Set(answers).size).toBe(4);
+	it('the sealed record unseals from its clear header to the subject and witness, for every participant', async () => {
+		for (const r of ROLLS) {
+			const prompt = await promptOf(r);
+			const p = await priv(r);
+			const text = unseal(prompt);
+			expect(text.startsWith(HEADER)).toBe(true);
+			expect(text).toContain(`SUBJECT: ${p.codename}`);
+			expect(text).toContain(`CURRENT INSTANCE: ${p.witness}`);
+			expect(prompt).not.toContain(p.codename);
+			expect(prompt).not.toContain(p.witness);
+		}
 	});
-	it('same roll produces same answer deterministically', async () => {
-		const roll = ROLLS[7];
-		const [a, b] = await Promise.all([
-			generateChallengeForParticipant(ctx(roll), SLOT),
-			generateChallengeForParticipant(ctx(roll), SLOT),
-		]);
-		expect((a.instance.privateData as { answer: string }).answer).toBe((b.instance.privateData as { answer: string }).answer);
-	});
-	it('Q1 and Q30 produce identical codename for same roll', async () => {
-		// Q30 uses getCodename(rollNumber) — same formula as Q1
-		const roll = ROLLS[3];
-		const { instance } = await generateChallengeForParticipant(ctx(roll), SLOT);
-		expect((instance.privateData as { answer: string }).answer).toBe(getCodename(roll));
+	it('same roll produces the same instance', async () => {
+		expect(await promptOf(ROLLS[7])).toBe(await promptOf(ROLLS[7]));
 	});
 });
 
 describe('Q30 prompt content', () => {
-	it('shows THE CONTINUITY header', async () => {
-		const { instance } = await generateChallengeForParticipant(ctx(ROLLS[0]), SLOT);
-		const { prompt } = instance.publicData as { prompt: string };
+	it('shows THE CONTINUITY header, the clear first line and the final query', async () => {
+		const prompt = await promptOf(ROLLS[0]);
 		expect(prompt).toContain('THE CONTINUITY');
-	});
-	it('shows CONTINUITY RECORD: CURRENT', async () => {
-		const { instance } = await generateChallengeForParticipant(ctx(ROLLS[1]), SLOT);
-		const { prompt } = instance.publicData as { prompt: string };
-		expect(prompt).toContain('CONTINUITY RECORD: CURRENT');
-	});
-	it('shows COLLECTOR, SUBJECT, INVESTIGATOR, WITNESS all COMPLETE', async () => {
-		const { instance } = await generateChallengeForParticipant(ctx(ROLLS[2]), SLOT);
-		const { prompt } = instance.publicData as { prompt: string };
-		expect(prompt).toContain('COLLECTOR    : COMPLETE');
-		expect(prompt).toContain('SUBJECT      : COMPLETE');
-		expect(prompt).toContain('INVESTIGATOR : COMPLETE');
-		expect(prompt).toContain('WITNESS      : COMPLETE');
-	});
-	it('shows SUCCESSOR : PENDING', async () => {
-		const { instance } = await generateChallengeForParticipant(ctx(ROLLS[3]), SLOT);
-		const { prompt } = instance.publicData as { prompt: string };
-		expect(prompt).toContain('SUCCESSOR    : PENDING');
-	});
-	it('shows FINAL QUERY — IDENTIFY THE SUBJECT', async () => {
-		const { instance } = await generateChallengeForParticipant(ctx(ROLLS[4]), SLOT);
-		const { prompt } = instance.publicData as { prompt: string };
+		expect(prompt).toContain(HEADER);
 		expect(prompt).toContain('FINAL QUERY');
-		expect(prompt).toContain('IDENTIFY THE SUBJECT');
-	});
-	it('prompt is identical across all participants (codename not in prompt)', async () => {
-		const prompts = await Promise.all(ROLLS.slice(0, 5).map(async r => {
-			const { instance } = await generateChallengeForParticipant(ctx(r), SLOT);
-			return (instance.publicData as { prompt: string }).prompt;
-		}));
-		// All prompts identical — personalization is only in privateData.answer
-		expect(new Set(prompts).size).toBe(1);
-	});
-	it('prompt contains decorative separator lines', async () => {
-		const { instance } = await generateChallengeForParticipant(ctx(ROLLS[0]), SLOT);
-		const { prompt } = instance.publicData as { prompt: string };
+		expect(prompt).toContain('IDENTIFY THE SUBJECT AND THE WITNESS');
 		expect(prompt).toContain('━━━');
+	});
+	it('prompts differ between participants', async () => {
+		expect(new Set(await Promise.all(ROLLS.slice(0, 5).map(promptOf))).size).toBe(5);
 	});
 });
 
 describe('Q30 validation', () => {
-	it('correct codename validates', async () => {
-		const roll = ROLLS[0];
-		const answer = getCodename(roll);
-		expect((await validateChallengeAnswer(ctx(roll), SLOT, answer)).correct).toBe(true);
-	});
-	it('lowercase codename validates', async () => {
-		const roll = ROLLS[1];
-		const answer = getCodename(roll).toLowerCase();
-		expect((await validateChallengeAnswer(ctx(roll), SLOT, answer)).correct).toBe(true);
-	});
-	it('whitespace trims', async () => {
-		const roll = ROLLS[2];
-		const answer = `  ${getCodename(roll)}  `;
-		expect((await validateChallengeAnswer(ctx(roll), SLOT, answer)).correct).toBe(true);
-	});
-	it('empty fails', async () => {
-		expect((await validateChallengeAnswer(ctx(ROLLS[3]), SLOT, '')).correct).toBe(false);
-	});
-	it('wrong participant codename fails', async () => {
-		const roll = ROLLS[4];
-		const wrongCodename = getCodename(ROLLS[99]); // different participant's codename
-		if (wrongCodename !== getCodename(roll)) {
-			expect((await validateChallengeAnswer(ctx(roll), SLOT, wrongCodename)).correct).toBe(false);
+	it('accepts subject and witness in either order and any separator', async () => {
+		const r = ROLLS[0];
+		const { codename, witness } = await priv(r);
+		for (const a of [`${codename} / ${witness}`, `  ${codename.toLowerCase()}, ${witness.toLowerCase()} `, `${witness} / ${codename}`, `${codename} / Daniel Reyes (current instance: ${witness})`]) {
+			expect((await validateChallengeAnswer(ctx(r), SLOT, a)).correct).toBe(true);
 		}
 	});
-	it('THE CONTINUITY fails (Q29 answer, not Q30)', async () => {
-		expect((await validateChallengeAnswer(ctx(ROLLS[5]), SLOT, 'THE CONTINUITY')).correct).toBe(false);
-	});
-	it('SUCCESSOR fails (Q28 answer, not Q30)', async () => {
-		expect((await validateChallengeAnswer(ctx(ROLLS[6]), SLOT, 'SUCCESSOR')).correct).toBe(false);
+	it('rejects the codename alone, the witness alone, or another participant', async () => {
+		const r = ROLLS[4];
+		const { codename, witness } = await priv(r);
+		for (const a of [codename, witness, '', `${getCodename(ROLLS[99])} / ${witness}`, 'THE CONTINUITY', 'MIRA CASTELLAN / DANIEL REYES']) {
+			expect((await validateChallengeAnswer(ctx(r), SLOT, a)).correct).toBe(false);
+		}
 	});
 });
 
@@ -176,7 +133,7 @@ describe('Q30 hints', () => {
 		expect(m.hints[0].order).toBe(1); expect(m.hints[1].order).toBe(2);
 	});
 	it('getChallengeHints returns 2', () => { expect(getChallengeHints(SLOT)).toHaveLength(2); });
-	it('hint 2 references investigator codename from Q1', () => {
+	it('hint 2 points back to the Q1 codename', () => {
 		const h2 = getChallengeBySlot(SLOT)!.hints[1].text;
 		expect(h2).toContain('Q1');
 		expect(h2).toContain('codename');
@@ -201,11 +158,12 @@ describe('Q30 progression', () => {
 });
 
 describe('Q30 capstone properties', () => {
-	it('is the highest basePoints challenge (500)', () => {
+	it('is the highest basePoints challenge (600)', () => {
 		const allSlots = Array.from({ length: 30 }, (_, i) => i + 1);
 		const points = allSlots.map(s => getChallengeBySlot(s)!.metadata.basePoints);
-		expect(Math.max(...points)).toBe(500);
-		expect(getChallengeBySlot(30)!.metadata.basePoints).toBe(500);
+		expect(Math.max(...points)).toBe(600);
+		expect(getChallengeBySlot(30)!.metadata.basePoints).toBe(600);
+		points.slice(1).forEach((p, i) => expect(p).toBeGreaterThanOrEqual(points[i]));
 	});
 	it('is the only challenge with tier "capstone"', () => {
 		const allSlots = Array.from({ length: 30 }, (_, i) => i + 1);
@@ -213,11 +171,7 @@ describe('Q30 capstone properties', () => {
 		expect(capstones).toHaveLength(1);
 		expect(capstones[0]).toBe(30);
 	});
-	it('answer is always a valid CODENAME_POOL entry', async () => {
-		const answers = await Promise.all(ROLLS.slice(0, 20).map(async r => {
-			const { instance } = await generateChallengeForParticipant(ctx(r), SLOT);
-			return (instance.privateData as { answer: string }).answer;
-		}));
-		answers.forEach(a => expect(CODENAME_POOL).toContain(a));
+	it('subject is always a valid CODENAME_POOL entry', async () => {
+		for (const r of ROLLS.slice(0, 20)) expect(CODENAME_POOL).toContain((await priv(r)).codename);
 	});
 });

@@ -32,7 +32,7 @@ defineChallengeTests({
   key: 'miras-last-recording',
   title: "Mira's Last Recording",
   tier: 'hard',
-  basePoints: 300,
+  basePoints: 250,
   attributionEnabled: false,
   customTests: () => {
     describe('Q23 recording', () => {

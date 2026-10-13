@@ -1,22 +1,21 @@
 /**
  * Q30 — The Subject
  *
- * The final terminal. After Q29, the interface strips Blackwood branding and
- * presents a THE CONTINUITY shell. The prompt shows the Cycle 6 row with
- * SUCCESSOR: PENDING. The final query asks: "IDENTIFY THE SUBJECT."
+ * The final terminal. After Q29 the interface strips Blackwood branding and shows
+ * a THE CONTINUITY shell holding the current record, sealed: its first line is
+ * printed in clear, the whole record is given as hex XORed with a repeating key
+ * shorter than that line. The clear line is the crib that recovers the key.
  *
- * The answer is the participant's own investigator codename — assigned silently
- * at Q1, never emphasized, visible only in small UI chrome throughout the event.
- * The codename is derived deterministically from rollNumber (same formula as Q1).
+ * Unsealed, the record names the SUBJECT, the participant's own codename (assigned
+ * silently at Q1, visible only in small UI chrome), and the WITNESS: the man
+ * currently answering to "Daniel Reyes", whose real name appears nowhere else.
+ * Answer: SUBJECT / WITNESS. Neither half can be guessed for the other.
  *
- * NOT attribution-enabled: the codename is derived from getCodename(rollNumber),
- * not from the attribution engine. This guarantees Q1 and Q30 give the same
- * answer without depending on the attribution bijection.
- *
+ * The codename is derived from getCodename(rollNumber), the same formula as Q1.
+ * Personalized: key, key length and the current Daniel's name, from ctx.rng.
  * Q29 contribution: none (this IS the payoff)
  * Mutable: no
  */
-import { exactMatch } from '../../src/lib/challenges/validators';
 import { ALPHABETS } from '../../src/lib/crypto/constants';
 import { getCodename } from '../shared/codenames';
 import type { ChallengeModule, GeneratedChallenge } from '../../src/lib/challenges/types';
@@ -25,66 +24,95 @@ interface Public {
 	prompt: string;
 	token: string;
 }
-interface Private {
+export interface Q30Private {
 	answer: string;
+	codename: string;
+	witness: string;
 }
 
-const challenge: ChallengeModule<Public, Private> = {
+export const HEADER = 'CONTINUITY RECORD: CURRENT';
+const FIRST = ['ARTHUR', 'HAROLD', 'LEONARD', 'WALTER', 'GRAHAM', 'COLIN', 'MARTIN', 'EDMUND', 'SIMON', 'FELIX', 'OWEN', 'JULIAN'];
+const LAST = ['ASHBY', 'BRENNAN', 'CROFT', 'DALLOWAY', 'FENWICK', 'GARROD', 'HOLLIS', 'KEMBLE', 'LOWRY', 'OAKES', 'PRYCE', 'SAXBY', 'TALBOT'];
+
+export function record(codename: string, witness: string): string {
+	return [
+		HEADER,
+		'CYCLE: VI',
+		'COLLECTOR: BLACKWOOD ARCHIVE',
+		`SUBJECT: ${codename}`,
+		`INVESTIGATOR: ${codename}`,
+		`WITNESS: DANIEL REYES (CURRENT INSTANCE: ${witness})`,
+		'SUCCESSOR: PENDING',
+		'NOTE: THE SUBJECT IS ALWAYS THE LAST PERSON TO READ THE FILE.',
+	].join('\n');
+}
+
+export function xor(bytes: Uint8Array, key: Uint8Array): Uint8Array {
+	return bytes.map((b, i) => b ^ key[i % key.length]);
+}
+
+const clean = (s: string) => s.toUpperCase().replace(/[^A-Z]+/g, ' ').trim();
+
+const challenge: ChallengeModule<Public, Q30Private> = {
 	metadata: {
 		slot: 30,
 		key: 'the-subject',
 		title: 'The Subject',
 		tier: 'capstone',
-		basePoints: 500,
+		basePoints: 600,
 		attributionEnabled: false,
 	},
 	hints: [
 		{
 			order: 1,
-			text: 'You were told this before the game began. It has been visible throughout — not in the case files, but in the interface.',
+			text: 'The record is sealed with a short key used over and over. You already have the start of the plaintext.',
 		},
 		{
 			order: 2,
-			text: 'Not a person you investigated. Someone you are. Your investigator codename, assigned at Q1.',
+			text: 'XOR the clear first line against the first bytes of the hex to get the key stream, find where it repeats, then unseal the rest. One of the names is your own Q1 codename.',
 		},
 	],
 
-	async generate(ctx): Promise<GeneratedChallenge<Public, Private>> {
+	async generate(ctx): Promise<GeneratedChallenge<Public, Q30Private>> {
 		const token = await ctx.rng.string(8, ALPHABETS.upper);
 		const codename = getCodename(ctx.rollNumber);
+		const witness = `${await ctx.rng.choice(FIRST)} ${await ctx.rng.choice(LAST)}`;
+		const key = await ctx.rng.bytes(7 + (await ctx.rng.int(0, 7)));
+		const sealed = xor(new TextEncoder().encode(record(codename, witness)), key);
+		const hex = Array.from(sealed, (b) => b.toString(16).padStart(2, '0'));
+		const lines: string[] = [];
+		for (let i = 0; i < hex.length; i += 24) lines.push(`  ${hex.slice(i, i + 24).join(' ')}`);
 
 		const prompt = [
 			'━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
 			'  THE CONTINUITY',
 			'━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
 			'',
-			'CONTINUITY RECORD: CURRENT',
+			HEADER,
+			`[RECORD SEALED — ${sealed.length} BYTES, KEY SHORTER THAN THIS LINE]`,
 			'',
-			'  COLLECTOR    : COMPLETE',
-			'  SUBJECT      : COMPLETE',
-			'  INVESTIGATOR : COMPLETE',
-			'  WITNESS      : COMPLETE',
-			'  SUCCESSOR    : PENDING',
-			'',
-			'  NOTE: the subject is always the last person to read the file.',
+			...lines,
 			'',
 			'━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
 			'',
 			'FINAL QUERY',
 			'',
-			'IDENTIFY THE SUBJECT.',
+			'IDENTIFY THE SUBJECT AND THE WITNESS.',
+			'(Format: SUBJECT / WITNESS)',
 			'',
 			'━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
 		].join('\n');
 
 		return {
 			publicData: { prompt, token },
-			privateData: { answer: codename },
+			privateData: { answer: `${codename} / ${witness}`, codename, witness },
 		};
 	},
 
 	validate(instance, normalizedAnswer) {
-		return exactMatch(normalizedAnswer, instance.privateData.answer);
+		const { codename, witness } = instance.privateData;
+		const got = clean(normalizedAnswer.replace(/daniel reyes|current instance/g, ' '));
+		return { correct: got === clean(`${codename} ${witness}`) || got === clean(`${witness} ${codename}`) };
 	},
 };
 

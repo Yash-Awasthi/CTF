@@ -8,11 +8,11 @@
  *   Q3 THE · Q5 TC- path · Q6 .cts · Q10 missing entry 071 · Q25 TC-III-W point
  *   at who keeps it.
  * A terminal command checks a reconstructed doctrine and, when right, shows the
- * initials it is signed with. The answer is the name those initials stand for.
- * Fixed answer: THE CONTINUITY.
+ * initials it is signed with and a countersign enciphered (Vigenère) under the
+ * keeper's full name. Naming the system is the key; the countersign in clear is
+ * the answer, unique per player (attribution-enabled).
  * Mutable: no
  */
-import { oneOf } from '../../src/lib/challenges/validators';
 import { ALPHABETS } from '../../src/lib/crypto/constants';
 import type { ChallengeModule, GeneratedChallenge } from '../../src/lib/challenges/types';
 
@@ -20,11 +20,13 @@ interface Public {
 	prompt: string;
 	token: string;
 }
-interface Private {
+export interface Q29Private {
 	answer: string;
 }
 
 export const DOCTRINE = ['PEOPLE CHANGE', 'NAMES REMAIN', 'RECORDS CHANGE', 'ROLES REMAIN', 'THE INVESTIGATION MUST CONTINUE'];
+export const KEEPER = 'THE CONTINUITY';
+const WORDS = ['ARCHIVE', 'CINDER', 'LANTERN', 'HOLLOW', 'VESTIGE', 'LACUNA', 'REMNANT', 'THRESHOLD', 'RELIQUARY', 'SEXTANT', 'CAIRN', 'BASTION', 'FALLOW', 'INKWELL', 'DREDGE', 'WANDERER'];
 
 /** True when text holds the five doctrine lines, in any order and any punctuation. */
 export function isDoctrine(text: string): boolean {
@@ -32,27 +34,37 @@ export function isDoctrine(text: string): boolean {
 	return lines.length === DOCTRINE.length && DOCTRINE.every((d) => lines.includes(d));
 }
 
-const challenge: ChallengeModule<Public, Private> = {
+/** Vigenère over A–Z (other characters pass through, key advances on letters only). */
+export function vigenere(text: string, key: string, decrypt = false): string {
+	const k = key.replace(/[^A-Z]/g, '');
+	let i = 0;
+	return text.replace(/[A-Z]/g, (c) => {
+		const shift = (k.charCodeAt(i++ % k.length) - 65) * (decrypt ? -1 : 1);
+		return String.fromCharCode(((c.charCodeAt(0) - 65 + shift + 26) % 26) + 65);
+	});
+}
+
+const challenge: ChallengeModule<Public, Q29Private> = {
 	metadata: {
 		slot: 29,
 		key: 'the-continuity',
 		title: 'Anomaly Synthesis',
 		tier: 'hard',
-		basePoints: 350,
-		attributionEnabled: false,
+		basePoints: 550,
+		attributionEnabled: true,
 	},
 	hints: [
 		{
 			order: 1,
-			text: 'Solved pages stay open. Go back: Vale\'s cipher letters, the voicemail\'s quiet tone, Mira\'s margin word and her blank line fill the four burned nouns in the Ledger note.',
+			text: 'Solved pages stay open. Four of the ten fill the burned nouns in the Ledger note; the doctrine has five lines, and the terminal checks all five.',
 		},
 		{
 			order: 2,
-			text: 'Verify the doctrine at the terminal to see its initials. The same two letters prefix the hidden robots.txt path and stamp the photograph; Mira underlined the first word of the name every time she wrote it.',
+			text: 'The countersign is a Vigenère cipher keyed with the keeper\'s full name, letters only. The initials, the TC prefix on the robots.txt path and the photograph stamp, and the word Mira underlined give you that name.',
 		},
 	],
 
-	async generate(ctx): Promise<GeneratedChallenge<Public, Private>> {
+	async generate(ctx): Promise<GeneratedChallenge<Public, Q29Private>> {
 		const token = await ctx.rng.string(8, ALPHABETS.upper);
 
 		const prompt = [
@@ -75,20 +87,26 @@ const challenge: ChallengeModule<Public, Private> = {
 			'[Q28] The doctrine in the Ledger\'s margin, its nouns burned out.',
 			'',
 			'--- TERMINAL ---',
-			'Four of these restore the doctrine. The rest point at who keeps it.',
 			'Command available:  VERIFY <doctrine>',
 			'',
-			'Identify the system responsible for maintaining the Ledger.',
+			'Whoever keeps the Ledger countersigns every doctrine it verifies.',
+			'Submit the countersign in clear.',
 		].join('\n');
 
 		return {
 			publicData: { prompt, token },
-			privateData: { answer: 'THE CONTINUITY' },
+			privateData: { answer: ctx.attributionAnswer! },
 		};
 	},
 
 	validate(instance, normalizedAnswer) {
-		return oneOf(normalizedAnswer.replace(/\s+/g, ' '), [instance.privateData.answer, 'CONTINUITY']);
+		const clean = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, '');
+		return { correct: clean(normalizedAnswer) === clean(instance.privateData.answer) };
+	},
+
+	getAttributionPool() {
+		// 1,000 countersigns covers the 195-player cap; the number alone keeps them unique.
+		return Array.from({ length: 1000 }, (_, i) => `${WORDS[(i * 7) % WORDS.length]}-${String(1000 + i * 9)}`);
 	},
 };
 

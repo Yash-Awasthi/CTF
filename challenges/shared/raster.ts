@@ -82,8 +82,16 @@ function chunk(type: string, data: Uint8Array): Uint8Array {
 	return out;
 }
 
-/** 8-bit grayscale PNG with one tEXt chunk per metadata entry (Latin-1 keys and values). */
-export async function png(img: Gray, meta: Record<string, string>): Promise<Uint8Array<ArrayBuffer>> {
+async function deflate(data: Uint8Array<ArrayBuffer>): Promise<Uint8Array> {
+	const stream = new Blob([data]).stream().pipeThrough(new CompressionStream('deflate'));
+	return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+/**
+ * 8-bit grayscale PNG with one tEXt chunk per metadata entry (Latin-1 keys and values).
+ * `zmeta` entries go into compressed zTXt chunks, which `strings` cannot read.
+ */
+export async function png(img: Gray, meta: Record<string, string>, zmeta: Record<string, string> = {}): Promise<Uint8Array<ArrayBuffer>> {
 	const ihdr = new Uint8Array(13);
 	const v = new DataView(ihdr.buffer);
 	v.setUint32(0, img.w);
@@ -96,6 +104,13 @@ export async function png(img: Gray, meta: Record<string, string>): Promise<Uint
 		Uint8Array.of(137, 80, 78, 71, 13, 10, 26, 10),
 		chunk('IHDR', ihdr),
 		...Object.entries(meta).map(([k, val]) => chunk('tEXt', latin1(`${k}\0${val}`))),
+		...(await Promise.all(Object.entries(zmeta).map(async ([k, val]) => {
+			const z = await deflate(latin1(val));
+			const body = new Uint8Array(k.length + 2 + z.length);
+			body.set(latin1(k));
+			body.set(z, k.length + 2);
+			return chunk('zTXt', body);
+		}))),
 		chunk('IDAT', storedZlib(raw)),
 		chunk('IEND', new Uint8Array()),
 	];

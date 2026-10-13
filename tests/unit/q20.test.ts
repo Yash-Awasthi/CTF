@@ -7,8 +7,8 @@ defineChallengeTests({
   slot: 20,
   key: 'mira-remembered-too',
   title: 'Mira Remembered Too',
-  tier: 'medium',
-  basePoints: 200,
+  tier: 'hard',
+  basePoints: 250,
   attributionEnabled: false,
   customTests: () => {
     describe('Q20 torn key', () => {

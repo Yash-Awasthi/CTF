@@ -388,4 +388,10 @@ WELCOME, [CODENAME].
   are the player's own Q11 and Q10 answers, Cycle 3 Witness is Daniel Reyes (Q25 stamp), Cycle 5
   Successor is the player's codename. The answer is the reference of the open role, TC-VI-S-NNNN.
 - **Q29** doctrine nouns come from Q20 (PEOPLE), Q18 (NAMES), Q14 (RECORDS), Q27 (ROLES); the Q28 note
-  supplies the verbs and the final line. The terminal's VERIFY shows the initials T. C.
+  supplies the verbs and the final line. The terminal's VERIFY shows the initials T. C. and a
+  countersign enciphered under THE CONTINUITY; the countersign in clear is the answer.
+- **Q24** files DANIEL REYES with the true value of the one exhibit the board miscopied.
+- **Q25** has no printed date: issue number with a hidden digit, weekday, zTXt sleeve, print stock.
+- **Q27** hides a Ledger folio in Mira's last words; it is the answer and the folio Q28 opens at.
+- **Q30** unseals the current record: SUBJECT is the player's codename, WITNESS the man currently
+  answering to Daniel Reyes. The answer is both.

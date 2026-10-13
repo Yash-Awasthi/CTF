@@ -24,7 +24,7 @@ FROM roster;
 -- Challenge rows: operational per-event identity for the 30 code modules,
 -- keyed by (event_id, slot). Metadata mirrors the registry (Phase 5); executable
 -- generation/validation lives in code, never in the DB. Kept in sync with
--- the challenge modules under challenges/ (tiers, base points, attribution slots 8,16).
+-- the challenge modules under challenges/ (tiers, base points, attribution slots).
 INSERT INTO challenges (event_id, slot, tier, base_points, attribution_enabled, prerequisites, created_at)
 WITH RECURSIVE slots(n) AS (
   SELECT 1
@@ -34,9 +34,9 @@ WITH RECURSIVE slots(n) AS (
 SELECT
   (SELECT id FROM events WHERE slug = 'case-files-dev-2026'),
   n,
-  CASE WHEN n = 30 THEN 'capstone' WHEN n >= 21 THEN 'hard' WHEN n >= 7 THEN 'medium' ELSE 'easy' END,
-  CASE WHEN n = 30 THEN 500 WHEN n >= 28 THEN 350 WHEN n >= 21 THEN 300 WHEN n >= 13 THEN 200 WHEN n >= 7 THEN 150 ELSE 100 END,
-  CASE WHEN n IN (8, 15, 16, 17, 28) THEN 1 ELSE 0 END,
+  CASE WHEN n = 30 THEN 'capstone' WHEN n >= 19 THEN 'hard' WHEN n >= 7 THEN 'medium' ELSE 'easy' END,
+  CASE WHEN n = 30 THEN 600 WHEN n >= 24 THEN 300 + (n - 24) * 50 WHEN n >= 19 THEN 250 WHEN n >= 13 THEN 200 WHEN n >= 7 THEN 150 ELSE 100 END,
+  CASE WHEN n IN (8, 15, 16, 17, 27, 28, 29) THEN 1 ELSE 0 END,
   NULL,
   unixepoch()
 FROM slots;

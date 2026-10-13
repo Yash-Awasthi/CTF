@@ -208,20 +208,20 @@ const QMETA: Record<string, QMeta> = {
 	'before-vale':             { systemLabel: 'Blackwood Evidence Management',                  sourceRef: 'Ledger cipher · Decoded acquisition dates',        promptLabel: 'Cipher Document',          placeholder: 'Pre-Vale acquisition date (YYYY-MM-DD)',                    msgVerifying: 'Verifying date against the ledger…',            msgCorrect: 'Date confirmed. Ledger entry filed.',                                   msgIncorrect: 'Date not recognised. Check your cipher decode.',                                   solvedMsg: 'Date confirmed. This ledger entry is now read-only.' },
 	'the-memo':                { systemLabel: 'Blackwood Evidence Management',                  sourceRef: 'MEMO-published.html · Version comparison',         promptLabel: 'Document',                 placeholder: 'Date in the earlier draft (YYYY-MM-DD)',                    msgVerifying: 'Verifying date against source record…',         msgCorrect: 'Date confirmed. Archive discrepancy filed.',                            msgIncorrect: 'Date not confirmed. Check all versions of the memo.',                              solvedMsg: 'Version discrepancy confirmed. This record is now read-only.' },
 	'there-were-six':          { systemLabel: 'Vale Archive Photograph Record',                 sourceRef: 'Photograph comparison · Case 71-C',               promptLabel: 'Photograph Analysis',      placeholder: 'EXIF modification timestamp (YYYY:MM:DD HH:MM:SS)',         msgVerifying: 'Verifying against photograph metadata…',        msgCorrect: 'Timestamp confirmed. Photograph alteration logged.',             msgIncorrect: 'Timestamp not confirmed. Check the EXIF data on the current image.', solvedMsg: 'Alteration timestamp confirmed. This photograph record is now read-only.' },
-	'the-dead-website':        { systemLabel: 'Web Archive — Vale Estate Site',                 sourceRef: 'Last-Modified header · Archive retrieval',         promptLabel: 'Archive Response',         placeholder: 'Last-Modified date (YYYY-MM-DD)',                           msgVerifying: 'Checking archive header…',                      msgCorrect: 'Date confirmed. Archive record closed.',                                msgIncorrect: 'Date not confirmed. Check the Last-Modified header precisely.',                    solvedMsg: 'Last-Modified date confirmed. This archive record is now read-only.' },
+	'the-dead-website':        { systemLabel: 'Web Archive — Vale Estate Site',                 sourceRef: 'Response headers · Archive retrieval',              promptLabel: 'Archive Response',         placeholder: 'Date the file really changed (YYYY-MM-DD)',                           msgVerifying: 'Checking archive header…',                      msgCorrect: 'Date confirmed. Archive record closed.',                                msgIncorrect: 'Date not confirmed. The headers were made to agree with the page.',              solvedMsg: 'Modification date confirmed. This archive record is now read-only.' },
 	'for-you':                 { systemLabel: 'Blackwood Evidence Management',                  sourceRef: 'Recovered voicemail · Forensic audio',             promptLabel: 'Voicemail Transcript',     placeholder: 'Decoded message',                                           msgVerifying: 'Cross-referencing audio record…',               msgCorrect: 'Phrase confirmed. Audio evidence filed.',                               msgIncorrect: 'Message not recognised. Decode the beeps again.',                                   solvedMsg: 'Spoken phrase confirmed. This audio record is now read-only.' },
 	'the-same-file':           { systemLabel: 'Blackwood Evidence Management',                  sourceRef: 'MEMO-published.html · v1 vs v2 comparison',       promptLabel: 'Comparison Report',        placeholder: 'Statement altered between versions',                        msgVerifying: 'Verifying against document record…',            msgCorrect: 'Statement confirmed. Archive discrepancy logged.',                      msgIncorrect: 'Statement not confirmed. Compare v1 and v2 of the memo carefully.',                solvedMsg: 'Altered statement confirmed. This comparison record is now read-only.' },
 	'mira-remembered-too':     { systemLabel: 'Blackwood Forensic Evidence Unit',               sourceRef: "Cipher artifact · Mira's recovered notes",         promptLabel: 'Cipher Artifact',          placeholder: 'Decoded cipher message (capitals)',                          msgVerifying: 'Verifying cipher decode…',                      msgCorrect: 'Message confirmed. Cipher artifact filed.',                             msgIncorrect: 'Message not confirmed. Check your key and decode again.',                          solvedMsg: 'Cipher message confirmed. This artifact record is now read-only.' },
 	'access-granted':          { systemLabel: 'Vale Archive Portal — Audit Log',                sourceRef: 'SQLi result · audit_log table · Case 71-C',        promptLabel: 'Injected Query Result',    placeholder: 'Timestamp of elevated write action (YYYY-MM-DD HH:MM)',    msgVerifying: 'Matching against audit record…',                msgCorrect: 'Timestamp confirmed. Audit log filed.',                                 msgIncorrect: 'Timestamp not recognised. Check the injected result precisely.',                   solvedMsg: 'Audit timestamp confirmed. This log entry is now read-only.' },
 	'the-alibi':               { systemLabel: 'Transit + Building Access Cross-Reference',      sourceRef: 'Alibi verification · Case 71-C',                   promptLabel: 'Cross-Reference Output',   placeholder: 'Location confirmed during the write window',                msgVerifying: 'Cross-referencing access records…',             msgCorrect: 'Location confirmed. Alibi destroyed. Log filed.',                       msgIncorrect: 'Location not confirmed. Cross-reference both record sets.',                        solvedMsg: 'Location confirmed. This cross-reference is now read-only.' },
 	'miras-last-recording':    { systemLabel: 'Blackwood Forensic Evidence Unit',               sourceRef: 'Audio evidence · mira-recording-2015-05.wav',      promptLabel: 'Forensic Audio Report',    placeholder: 'Box number left in the recording',                         msgVerifying: 'Verifying against forensic audio report…',     msgCorrect: 'Box confirmed. Audio evidence filed.',                                  msgIncorrect: 'Not confirmed. Look at the recording, not just listen.',                             solvedMsg: 'Audio evidence confirmed. This forensic record is now read-only.' },
-	'case-closed':             { systemLabel: 'Blackwood Bureau — Case Board',                  sourceRef: 'Synthesis · Case 71-C · All evidence threads',     promptLabel: 'Case Board',               placeholder: 'Full name of person responsible',                           msgVerifying: 'Filing case conclusion with the Bureau…',       msgCorrect: 'Case closed. Record filed with the Bureau.',                            msgIncorrect: 'Name not confirmed. All four evidence threads must agree.',                        solvedMsg: 'Case conclusion filed. This board is now read-only.' },
+	'case-closed':             { systemLabel: 'Blackwood Bureau — Case Board',                  sourceRef: 'Synthesis · Case 71-C · All evidence threads',     promptLabel: 'Case Board',               placeholder: 'FULL NAME / corrected exhibit value',                           msgVerifying: 'Filing case conclusion with the Bureau…',       msgCorrect: 'Case closed. Record filed with the Bureau.',                            msgIncorrect: 'Filing refused. The board still misquotes its evidence.',                        solvedMsg: 'Case conclusion filed. This board is now read-only.' },
 	'three-sources':           { systemLabel: 'Blackwood Forensic Evidence Unit',               sourceRef: 'Photograph provenance · Three-source verification',promptLabel: 'Verification Report',      placeholder: 'Date the photograph was taken (YYYY-MM-DD)',                msgVerifying: 'Verifying against three independent sources…',  msgCorrect: 'Date confirmed. Photograph evidence filed.',                            msgIncorrect: 'Date not confirmed. All three sources must agree.',                                solvedMsg: 'Date confirmed. This photograph record is now read-only.' },
 	'daniel-reyes-again':      { systemLabel: 'Blackwood Bureau — Personnel Archive',           sourceRef: 'Enumeration result · Case 71-C',                   promptLabel: 'Search Result',            placeholder: 'Personnel files (P-NNNN, comma-separated)',                 msgVerifying: 'Checking personnel files…',                     msgCorrect: 'Files confirmed. Personnel anomaly logged.',                            msgIncorrect: 'Not confirmed. Every Daniel Reyes file, and nothing else.',                        solvedMsg: 'Personnel files confirmed. This archive entry is now read-only.' },
-	'stop-looking-for-people': { systemLabel: 'Blackwood Evidence Management',                  sourceRef: "Mira Castellan · Notebook final page (v3)",        promptLabel: 'Notebook — Final Page',    placeholder: 'Her instruction to the next investigator',                msgVerifying: "Filing Mira's instruction…",                    msgCorrect: 'Instruction confirmed. Notebook entry filed.',                          msgIncorrect: 'Instruction not confirmed. Submit the second sentence exactly.',                   solvedMsg: 'Final instruction confirmed. This notebook entry is now read-only.' },
+	'stop-looking-for-people': { systemLabel: 'Blackwood Evidence Management',                  sourceRef: "Mira Castellan · Notebook final page (v3)",        promptLabel: 'Notebook — Final Page',    placeholder: 'The reference Mira left',                                 msgVerifying: "Filing Mira's reference…",                      msgCorrect: 'Reference confirmed. Notebook entry filed.',                            msgIncorrect: 'Not confirmed. Decode the whole line, not just its start.',                         solvedMsg: 'Reference confirmed. This notebook entry is now read-only.' },
 	'the-ledger':              { systemLabel: 'The Ledger — Historical Records Database',       sourceRef: 'Access via Blackwood Case 71-C',                   promptLabel: 'Database Output',          placeholder: 'Reference of the open role (TC-…)',                        msgVerifying: 'Querying Ledger record…',                       msgCorrect: 'Reference accepted. Your row is open.',                                  msgIncorrect: 'The Ledger issued no such reference.', solvedMsg: 'Reference accepted. The Ledger record is now read-only.' },
-	'the-continuity':          { systemLabel: 'Blackwood Evidence Correlation Terminal',        sourceRef: 'Restricted access — Senior Investigator only',     promptLabel: 'Terminal Output',          placeholder: 'Name of the system',                                        msgVerifying: 'Filing system identification…',                 msgCorrect: 'IDENTIFIED.',                          msgIncorrect: 'System not identified. Assemble the doctrine and infer the name from the TC prefix.', solvedMsg: 'System identified. Continuity resolved. This terminal is now read-only.' },
-	'the-subject':             { systemLabel: 'THE CONTINUITY',                                 sourceRef: 'Final record — Cycle 6, current',                  promptLabel: 'Final Query',              placeholder: 'Name',                                                      msgVerifying: 'Querying Continuity record…',                   msgCorrect: 'Identity confirmed. The Continuity record is complete.',                msgIncorrect: 'No subject by that name in the current record.', solvedMsg: 'Identity confirmed. The Continuity record is complete.' },
+	'the-continuity':          { systemLabel: 'Blackwood Evidence Correlation Terminal',        sourceRef: 'Restricted access — Senior Investigator only',     promptLabel: 'Terminal Output',          placeholder: 'Countersign, in clear',                                        msgVerifying: 'Filing system identification…',                 msgCorrect: 'IDENTIFIED.',                          msgIncorrect: "Countersign not recognised. Unseal it under the keeper's full name.", solvedMsg: 'System identified. Continuity resolved. This terminal is now read-only.' },
+	'the-subject':             { systemLabel: 'THE CONTINUITY',                                 sourceRef: 'Final record — Cycle 6, current',                  promptLabel: 'Final Query',              placeholder: 'SUBJECT / WITNESS',                                         msgVerifying: 'Querying Continuity record…',                   msgCorrect: 'Identity confirmed. The Continuity record is complete.',                msgIncorrect: 'The current record names no such pair.', solvedMsg: 'Identity confirmed. The Continuity record is complete.' },
 };
 const qm: QMeta | null = isCustomQ12to30 ? (QMETA[view.key] ?? null) : null;
 // Shared prompt+token view for all custom Q12-Q30 shells
@@ -284,14 +284,14 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 			</a>
 
 			<div class="flex items-center gap-3 font-mono text-[10px] tracking-[0.2em]">
-				<span class="text-neutral-700">{continuity ? 'CONTINUITY' : 'CASE'}</span>
+				<span class="text-neutral-500">{continuity ? 'CONTINUITY' : 'CASE'}</span>
 				<span class="text-neutral-500">71-C</span>
-				<span class="text-neutral-800">·</span>
-				<span class="text-neutral-700">Q{slotLabel} / 30</span>
+				<span class="text-neutral-600">·</span>
+				<span class="text-neutral-500">Q{slotLabel} / 30</span>
 			</div>
 
-			<span class="font-mono text-[10px] tracking-[0.1em] text-neutral-700" title="Investigator designation">
-				INV-{roll}<span class="text-neutral-800"> · {codename}</span>
+			<span class="font-mono text-[10px] tracking-[0.1em] text-neutral-500" title="Investigator designation">
+				INV-{roll}<span class="text-neutral-600"> · {codename}</span>
 			</span>
 		</div>
 		<!-- Case progress line -->
@@ -393,14 +393,14 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<div class="border-b border-neutral-800 bg-neutral-950/50 px-7 py-5">
 					<p class="mb-3 font-mono text-[10px] tracking-[0.25em] text-neutral-600 uppercase">Subject Record</p>
 					<dl class="grid grid-cols-[8rem_1fr] gap-x-5 gap-y-1.5">
-						<dt class="font-mono text-[10px] text-neutral-700">Name</dt>
+						<dt class="font-mono text-[10px] text-neutral-500">Name</dt>
 						<dd class="font-mono text-xs text-neutral-300">{q1.subjectName}</dd>
-						<dt class="font-mono text-[10px] text-neutral-700">Last known</dt>
+						<dt class="font-mono text-[10px] text-neutral-500">Last known</dt>
 						<dd class="font-mono text-xs text-neutral-500">{q1.subjectLastSeen}</dd>
-						<dt class="font-mono text-[10px] text-neutral-700">Status</dt>
+						<dt class="font-mono text-[10px] text-neutral-500">Status</dt>
 						<dd class="font-mono text-xs text-neutral-600">{q1.subjectStatus}</dd>
-						<dt class="font-mono text-[10px] text-neutral-700">File</dt>
-						<dd class="font-mono text-[10px] text-neutral-700">71-C &nbsp;/&nbsp; BLACKWOOD INVESTIGATIVE BUREAU</dd>
+						<dt class="font-mono text-[10px] text-neutral-500">File</dt>
+						<dd class="font-mono text-[10px] text-neutral-500">71-C &nbsp;/&nbsp; BLACKWOOD INVESTIGATIVE BUREAU</dd>
 					</dl>
 				</div>
 
@@ -412,7 +412,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
 							<li class="flex gap-4" data-hint-number={h.hintNumber}>
-								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-500 uppercase pt-px">Note {h.hintNumber}</span>
 								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
 							</li>
 						))}
@@ -437,10 +437,10 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 									type="button"
 									data-hint-button
 									data-next-hint={nextHint}
-									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-500 uppercase transition-colors hover:text-neutral-500"
 								>
 									Request assistance note {nextHint}
-									<span class="ml-1 text-neutral-800">— halves score</span>
+									<span class="ml-1 text-neutral-600">— halves score</span>
 								</button>
 							</div>
 						)}
@@ -464,7 +464,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										spellcheck="false"
 										placeholder="Your designation"
 										aria-label="Investigator designation"
-										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-600 transition-colors focus:border-neutral-500 focus:outline-none"
 									/>
 									<button
 										type="submit"
@@ -473,7 +473,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										Confirm
 									</button>
 								</div>
-								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-500" data-result aria-live="polite"></p>
 							</form>
 						</div>
 					</div>
@@ -481,7 +481,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 			</div>
 
-			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-600">
 				<span>BLACKWOOD INVESTIGATIVE BUREAU — INTERNAL</span>
 				<span>FILE 71-C</span>
 			</div>
@@ -538,16 +538,16 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<div class="border-b border-neutral-800 bg-neutral-950/40 px-7 py-5">
 					<p class="mb-3 font-mono text-[10px] tracking-[0.25em] text-neutral-600 uppercase">Subject</p>
 					<dl class="grid grid-cols-[7rem_1fr] gap-x-5 gap-y-1.5">
-						<dt class="font-mono text-[10px] text-neutral-700">Name</dt>
+						<dt class="font-mono text-[10px] text-neutral-500">Name</dt>
 						<dd class="font-mono text-xs text-neutral-200">{q2.subjectName}</dd>
 
-						<dt class="font-mono text-[10px] text-neutral-700">Born</dt>
+						<dt class="font-mono text-[10px] text-neutral-500">Born</dt>
 						<dd class="font-mono text-xs text-neutral-500">{q2.subjectYOB}</dd>
 
-						<dt class="font-mono text-[10px] text-neutral-700">Occupation</dt>
+						<dt class="font-mono text-[10px] text-neutral-500">Occupation</dt>
 						<dd class="font-mono text-xs text-neutral-500">{q2.subjectOccupation}</dd>
 
-						<dt class="font-mono text-[10px] text-neutral-700">Status</dt>
+						<dt class="font-mono text-[10px] text-neutral-500">Status</dt>
 						<dd class="font-mono text-xs text-neutral-600">{q2.subjectStatus}</dd>
 					</dl>
 				</div>
@@ -616,7 +616,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 							</li>
 						))}
 					</ul>
-					<p class="mt-4 font-mono text-[10px] text-neutral-700">
+					<p class="mt-4 font-mono text-[10px] text-neutral-500">
 						This record may be incomplete. Contact the archive office for the full evidence inventory.
 					</p>
 				</div>
@@ -643,7 +643,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
 							<li class="flex gap-4" data-hint-number={h.hintNumber}>
-								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-500 uppercase pt-px">Note {h.hintNumber}</span>
 								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
 							</li>
 						))}
@@ -668,10 +668,10 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 									type="button"
 									data-hint-button
 									data-next-hint={nextHint}
-									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-500 uppercase transition-colors hover:text-neutral-500"
 								>
 									Request assistance note {nextHint}
-									<span class="ml-1 text-neutral-800">— halves score</span>
+									<span class="ml-1 text-neutral-600">— halves score</span>
 								</button>
 							</div>
 						)}
@@ -695,7 +695,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										spellcheck="false"
 										placeholder="Evidence reference number"
 										aria-label="Evidence reference number"
-										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-600 transition-colors focus:border-neutral-500 focus:outline-none"
 									/>
 									<button
 										type="submit"
@@ -704,7 +704,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										Submit
 									</button>
 								</div>
-								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-500" data-result aria-live="polite"></p>
 							</form>
 						</div>
 					</div>
@@ -712,7 +712,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 			</div>
 
-			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-600">
 				<span>BLACKWOOD INVESTIGATIVE BUREAU — OFFICIAL ARCHIVE</span>
 				<span>FILE 71-C</span>
 			</div>
@@ -767,7 +767,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 				<!-- Scan viewer -->
 				<div class="border-b border-neutral-800 bg-neutral-950 px-7 py-6">
-					<p class="mb-3 font-mono text-[10px] tracking-[0.25em] text-neutral-700 uppercase">
+					<p class="mb-3 font-mono text-[10px] tracking-[0.25em] text-neutral-500 uppercase">
 						Scan — page 1 of 1
 					</p>
 
@@ -866,7 +866,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 					</svg>
 
-					<p class="mt-3 font-mono text-[9px] tracking-[0.15em] text-neutral-700 uppercase">
+					<p class="mt-3 font-mono text-[9px] tracking-[0.15em] text-neutral-500 uppercase">
 						Forensic scan · EVD-71C-017 · Original held in secure evidence storage
 					</p>
 				</div>
@@ -879,7 +879,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
 							<li class="flex gap-4" data-hint-number={h.hintNumber}>
-								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-500 uppercase pt-px">Note {h.hintNumber}</span>
 								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
 							</li>
 						))}
@@ -904,10 +904,10 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 									type="button"
 									data-hint-button
 									data-next-hint={nextHint}
-									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-500 uppercase transition-colors hover:text-neutral-500"
 								>
 									Request assistance note {nextHint}
-									<span class="ml-1 text-neutral-800">— halves score</span>
+									<span class="ml-1 text-neutral-600">— halves score</span>
 								</button>
 							</div>
 						)}
@@ -931,7 +931,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										spellcheck="false"
 										placeholder="Street number, road name, district"
 										aria-label="Address from the notebook"
-										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-600 transition-colors focus:border-neutral-500 focus:outline-none"
 									/>
 									<button
 										type="submit"
@@ -940,7 +940,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										Submit
 									</button>
 								</div>
-								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-500" data-result aria-live="polite"></p>
 							</form>
 						</div>
 					</div>
@@ -948,7 +948,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 			</div>
 
-			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-600">
 				<span>BLACKWOOD INVESTIGATIVE BUREAU — EVIDENCE MANAGEMENT</span>
 				<span>FILE 71-C</span>
 			</div>
@@ -981,9 +981,9 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<!-- Search context bar -->
 				<div class="border-b border-neutral-800 bg-neutral-950/30 px-7 py-3">
 					<div class="flex flex-wrap items-center gap-x-5 gap-y-1">
-						<span class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase">Query</span>
+						<span class="font-mono text-[10px] tracking-[0.1em] text-neutral-500 uppercase">Query</span>
 						<span class="font-mono text-[10px] text-neutral-600">Address reference: EVD-71C-017</span>
-						<span class="ml-auto font-mono text-[10px] text-neutral-700">1 record found</span>
+						<span class="ml-auto font-mono text-[10px] text-neutral-500">1 record found</span>
 					</div>
 				</div>
 
@@ -1004,7 +1004,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 						<dd class="font-mono text-xs text-neutral-500">Estate dissolution — death of registered owner</dd>
 
 						<dt class="font-mono text-[10px] tracking-[0.08em] text-neutral-600 uppercase self-start pt-px">Record status</dt>
-						<dd class="font-mono text-[10px] text-neutral-700">Digitised — original held in county archive</dd>
+						<dd class="font-mono text-[10px] text-neutral-500">Digitised — original held in county archive</dd>
 					</dl>
 				</div>
 
@@ -1014,7 +1014,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 					<!-- Filename / document reference card -->
 					<div class="mb-5 rounded border border-neutral-800 bg-neutral-950 px-4 py-3">
-						<p class="mb-1.5 font-mono text-[10px] tracking-[0.12em] text-neutral-700 uppercase">Document file</p>
+						<p class="mb-1.5 font-mono text-[10px] tracking-[0.12em] text-neutral-500 uppercase">Document file</p>
 						<code class="break-all font-mono text-xs text-neutral-400">{q4.deedFilename}</code>
 					</div>
 
@@ -1090,7 +1090,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
 							<li class="flex gap-4" data-hint-number={h.hintNumber}>
-								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-500 uppercase pt-px">Note {h.hintNumber}</span>
 								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
 							</li>
 						))}
@@ -1115,10 +1115,10 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 									type="button"
 									data-hint-button
 									data-next-hint={nextHint}
-									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-500 uppercase transition-colors hover:text-neutral-500"
 								>
 									Request assistance note {nextHint}
-									<span class="ml-1 text-neutral-800">— halves score</span>
+									<span class="ml-1 text-neutral-600">— halves score</span>
 								</button>
 							</div>
 						)}
@@ -1142,7 +1142,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										spellcheck="false"
 										placeholder="First and last name of the registered owner"
 										aria-label="Registered owner name"
-										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-600 transition-colors focus:border-neutral-500 focus:outline-none"
 									/>
 									<button
 										type="submit"
@@ -1151,7 +1151,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										Submit
 									</button>
 								</div>
-								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-500" data-result aria-live="polite"></p>
 							</form>
 						</div>
 					</div>
@@ -1159,7 +1159,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 			</div>
 
-			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-600">
 				<span>PEMBRIDGE DISTRICT — LAND &amp; PROPERTY REGISTRY</span>
 				<span>PUBLIC RECORDS</span>
 			</div>
@@ -1178,9 +1178,9 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 			data-slot={view.slot}
 		>
 			<!-- Investigation context strip -->
-			<div class="mb-4 flex items-center justify-between font-mono text-[10px] text-neutral-700">
+			<div class="mb-4 flex items-center justify-between font-mono text-[10px] text-neutral-500">
 				<span class="tracking-[0.1em] uppercase">Case 71-C · Q05 Lead</span>
-				<span class="text-neutral-800">INV-{roll}</span>
+				<span class="text-neutral-600">INV-{roll}</span>
 			</div>
 
 			<!-- Fake browser frame containing the local-history site -->
@@ -1294,7 +1294,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
 							<li class="flex gap-4" data-hint-number={h.hintNumber}>
-								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-500 uppercase pt-px">Note {h.hintNumber}</span>
 								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
 							</li>
 						))}
@@ -1319,10 +1319,10 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 									type="button"
 									data-hint-button
 									data-next-hint={nextHint}
-									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-500 uppercase transition-colors hover:text-neutral-500"
 								>
 									Request assistance note {nextHint}
-									<span class="ml-1 text-neutral-800">— halves score</span>
+									<span class="ml-1 text-neutral-600">— halves score</span>
 								</button>
 							</div>
 						)}
@@ -1346,7 +1346,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										spellcheck="false"
 										placeholder="Name of the workshop"
 										aria-label="Workshop name"
-										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-600 transition-colors focus:border-neutral-500 focus:outline-none"
 									/>
 									<button
 										type="submit"
@@ -1355,7 +1355,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										Submit
 									</button>
 								</div>
-								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-500" data-result aria-live="polite"></p>
 							</form>
 						</div>
 					</div>
@@ -1363,7 +1363,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 			</div>
 
-			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-600">
 				<span>BLACKWOOD INVESTIGATIVE BUREAU — EXTERNAL ARCHIVE</span>
 				<span>FILE 71-C</span>
 			</div>
@@ -1382,9 +1382,9 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 			data-slot={view.slot}
 		>
 			<!-- Investigation context strip -->
-			<div class="mb-4 flex items-center justify-between font-mono text-[10px] text-neutral-700">
+			<div class="mb-4 flex items-center justify-between font-mono text-[10px] text-neutral-500">
 				<span class="tracking-[0.1em] uppercase">Case 71-C · Q06 Lead</span>
-				<span class="text-neutral-800">INV-{roll}</span>
+				<span class="text-neutral-600">INV-{roll}</span>
 			</div>
 
 			<!-- Directory terminal frame -->
@@ -1472,7 +1472,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
 							<li class="flex gap-4" data-hint-number={h.hintNumber}>
-								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-500 uppercase pt-px">Note {h.hintNumber}</span>
 								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
 							</li>
 						))}
@@ -1497,10 +1497,10 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 									type="button"
 									data-hint-button
 									data-next-hint={nextHint}
-									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-500 uppercase transition-colors hover:text-neutral-500"
 								>
 									Request assistance note {nextHint}
-									<span class="ml-1 text-neutral-800">— halves score</span>
+									<span class="ml-1 text-neutral-600">— halves score</span>
 								</button>
 							</div>
 						)}
@@ -1524,7 +1524,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										spellcheck="false"
 										placeholder="Full name of the suppressed contact"
 										aria-label="Suppressed contact name"
-										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-600 transition-colors focus:border-neutral-500 focus:outline-none"
 									/>
 									<button
 										type="submit"
@@ -1533,7 +1533,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										Submit
 									</button>
 								</div>
-								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-500" data-result aria-live="polite"></p>
 							</form>
 						</div>
 					</div>
@@ -1541,7 +1541,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 			</div>
 
-			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-600">
 				<span>ASHWICK TRADES DIRECTORY — PEMBRIDGE DISTRICT RECORDS</span>
 				<span>FILE 71-C</span>
 			</div>
@@ -1560,9 +1560,9 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 			data-slot={view.slot}
 		>
 			<!-- Evidence header -->
-			<div class="mb-4 flex items-center justify-between font-mono text-[10px] text-neutral-700">
+			<div class="mb-4 flex items-center justify-between font-mono text-[10px] text-neutral-500">
 				<span class="tracking-[0.1em] uppercase">Case 71-C · Evidence Item 8</span>
-				<span class="tracking-[0.08em] text-neutral-800">{q7.photoRef} · INV-{roll}</span>
+				<span class="tracking-[0.08em] text-neutral-600">{q7.photoRef} · INV-{roll}</span>
 			</div>
 
 			<div class="overflow-hidden rounded border border-neutral-700/60 bg-neutral-900">
@@ -1574,11 +1574,11 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 							<p class="font-mono text-[10px] font-medium tracking-[0.22em] text-neutral-400 uppercase">
 								Blackwood Evidence Viewer
 							</p>
-							<p class="mt-0.5 font-mono text-[10px] tracking-[0.1em] text-neutral-700">
+							<p class="mt-0.5 font-mono text-[10px] tracking-[0.1em] text-neutral-500">
 								Photographic evidence &nbsp;·&nbsp; Vale estate collection &nbsp;·&nbsp; Ref: {q7.photoRef}
 							</p>
 						</div>
-						<span class="rounded border border-neutral-800 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] text-neutral-700 uppercase">
+						<span class="rounded border border-neutral-800 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] text-neutral-500 uppercase">
 							Item 8
 						</span>
 					</div>
@@ -1706,34 +1706,34 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<details class="group">
 						<summary class="flex cursor-pointer select-none items-center justify-between px-5 py-3 font-mono text-[10px] tracking-[0.18em] text-neutral-600 uppercase transition-colors hover:text-neutral-400 list-none">
 							<span>EXIF Metadata</span>
-							<span class="text-neutral-700 group-open:hidden">▸ Show</span>
-							<span class="text-neutral-700 hidden group-open:inline">▾ Hide</span>
+							<span class="text-neutral-500 group-open:hidden">▸ Show</span>
+							<span class="text-neutral-500 hidden group-open:inline">▾ Hide</span>
 						</summary>
 						<div class="border-t border-neutral-800/60 bg-neutral-950/30 px-5 py-4">
 							<table class="w-full font-mono text-[11px]">
 								<tbody class="divide-y divide-neutral-800/40">
 									<tr>
-										<td class="py-1.5 pr-6 text-neutral-700 whitespace-nowrap align-top">DateTimeOriginal</td>
+										<td class="py-1.5 pr-6 text-neutral-500 whitespace-nowrap align-top">DateTimeOriginal</td>
 										<td class="py-1.5 text-neutral-400">{q7.exif.dateTimeOriginal}</td>
 									</tr>
 									<tr>
-										<td class="py-1.5 pr-6 text-neutral-700 whitespace-nowrap align-top">ImageDescription</td>
+										<td class="py-1.5 pr-6 text-neutral-500 whitespace-nowrap align-top">ImageDescription</td>
 										<td class="py-1.5 text-neutral-400">{q7.exif.imageDescription}</td>
 									</tr>
 									<tr>
-										<td class="py-1.5 pr-6 text-neutral-700 whitespace-nowrap align-top">GPSAreaInformation</td>
-										<td class="py-1.5 text-neutral-700 italic">[ENCODED — inspect raw file]</td>
+										<td class="py-1.5 pr-6 text-neutral-500 whitespace-nowrap align-top">GPSAreaInformation</td>
+										<td class="py-1.5 text-neutral-500 italic">[ENCODED — inspect raw file]</td>
 									</tr>
 									<tr>
-										<td class="py-1.5 pr-6 text-neutral-700 whitespace-nowrap align-top">Make</td>
+										<td class="py-1.5 pr-6 text-neutral-500 whitespace-nowrap align-top">Make</td>
 										<td class="py-1.5 text-neutral-500">{q7.exif.make}</td>
 									</tr>
 									<tr>
-										<td class="py-1.5 pr-6 text-neutral-700 whitespace-nowrap align-top">Software</td>
+										<td class="py-1.5 pr-6 text-neutral-500 whitespace-nowrap align-top">Software</td>
 										<td class="py-1.5 text-neutral-500">{q7.exif.software}</td>
 									</tr>
 									<tr>
-										<td class="py-1.5 pr-6 text-neutral-700 whitespace-nowrap align-top">Copyright</td>
+										<td class="py-1.5 pr-6 text-neutral-500 whitespace-nowrap align-top">Copyright</td>
 										<td class="py-1.5 text-neutral-500">{q7.exif.copyright}</td>
 									</tr>
 								</tbody>
@@ -1751,7 +1751,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					>
 						↓ Download raw photograph file
 					</a>
-					<span class="font-mono text-[10px] text-neutral-800">— open in a text editor or use exiftool to inspect embedded metadata</span>
+					<span class="font-mono text-[10px] text-neutral-600">— open in a text editor or use exiftool to inspect embedded metadata</span>
 				</div>
 
 				<!-- Revealed hints -->
@@ -1762,7 +1762,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
 							<li class="flex gap-4" data-hint-number={h.hintNumber}>
-								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-500 uppercase pt-px">Note {h.hintNumber}</span>
 								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
 							</li>
 						))}
@@ -1787,10 +1787,10 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 									type="button"
 									data-hint-button
 									data-next-hint={nextHint}
-									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-500 uppercase transition-colors hover:text-neutral-500"
 								>
 									Request assistance note {nextHint}
-									<span class="ml-1 text-neutral-800">— halves score</span>
+									<span class="ml-1 text-neutral-600">— halves score</span>
 								</button>
 							</div>
 						)}
@@ -1814,7 +1814,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										spellcheck="false"
 										placeholder="Source location as recorded in the metadata"
 										aria-label="Photograph source location"
-										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-600 transition-colors focus:border-neutral-500 focus:outline-none"
 									/>
 									<button
 										type="submit"
@@ -1823,7 +1823,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										Submit
 									</button>
 								</div>
-								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-500" data-result aria-live="polite"></p>
 							</form>
 						</div>
 					</div>
@@ -1831,7 +1831,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 			</div>
 
-			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-600">
 				<span>BLACKWOOD INVESTIGATIVE BUREAU — PHOTOGRAPHIC EVIDENCE</span>
 				<span>FILE 71-C</span>
 			</div>
@@ -1850,9 +1850,9 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 			data-slot={view.slot}
 		>
 			<!-- Investigation context strip -->
-			<div class="mb-4 flex items-center justify-between font-mono text-[10px] text-neutral-700">
+			<div class="mb-4 flex items-center justify-between font-mono text-[10px] text-neutral-500">
 				<span class="tracking-[0.1em] uppercase">Case 71-C · Q08 Lead — Auction Archive</span>
-				<span class="text-neutral-800">INV-{roll}</span>
+				<span class="text-neutral-600">INV-{roll}</span>
 			</div>
 
 			<!-- Legacy portal frame -->
@@ -2005,7 +2005,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
 							<li class="flex gap-4" data-hint-number={h.hintNumber}>
-								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-500 uppercase pt-px">Note {h.hintNumber}</span>
 								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
 							</li>
 						))}
@@ -2030,10 +2030,10 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 									type="button"
 									data-hint-button
 									data-next-hint={nextHint}
-									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-500 uppercase transition-colors hover:text-neutral-500"
 								>
 									Request assistance note {nextHint}
-									<span class="ml-1 text-neutral-800">— halves score</span>
+									<span class="ml-1 text-neutral-600">— halves score</span>
 								</button>
 							</div>
 						)}
@@ -2057,7 +2057,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										spellcheck="false"
 										placeholder="Lot 47 origin as returned by the catalogue query"
 										aria-label="Lot 47 origin phrase"
-										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-600 transition-colors focus:border-neutral-500 focus:outline-none"
 									/>
 									<button
 										type="submit"
@@ -2066,7 +2066,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										Submit
 									</button>
 								</div>
-								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-500" data-result aria-live="polite"></p>
 							</form>
 						</div>
 					</div>
@@ -2074,7 +2074,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 			</div>
 
-			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-600">
 				<span>SOVEREIGN AUCTION HOUSE — VALE ESTATE CATALOGUE</span>
 				<span>FILE 71-C</span>
 			</div>
@@ -2094,9 +2094,9 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 			data-slot={view.slot}
 		>
 			<!-- Archive download reference header -->
-			<div class="mb-4 flex items-center justify-between font-mono text-[10px] text-neutral-700">
+			<div class="mb-4 flex items-center justify-between font-mono text-[10px] text-neutral-500">
 				<span class="tracking-[0.1em] uppercase">Case 71-C · Evidence Archive</span>
-				<span class="tracking-[0.08em] text-neutral-800">{q9.downloadRef} · INV-{roll}</span>
+				<span class="tracking-[0.08em] text-neutral-600">{q9.downloadRef} · INV-{roll}</span>
 			</div>
 
 			<div class="overflow-hidden rounded border border-neutral-700/60 bg-neutral-900">
@@ -2108,11 +2108,11 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 							<p class="font-mono text-[10px] font-medium tracking-[0.22em] text-neutral-400 uppercase">
 								Blackwood Archive System &mdash; Evidence Download
 							</p>
-							<p class="mt-0.5 font-mono text-[10px] tracking-[0.1em] text-neutral-700">
+							<p class="mt-0.5 font-mono text-[10px] tracking-[0.1em] text-neutral-500">
 								Vale estate catalogue &nbsp;&middot;&nbsp; Ref: {q9.downloadRef}
 							</p>
 						</div>
-						<span class="rounded border border-neutral-800 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] text-neutral-700 uppercase">
+						<span class="rounded border border-neutral-800 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] text-neutral-500 uppercase">
 							16 files
 						</span>
 					</div>
@@ -2120,7 +2120,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 				<!-- Archive info strip -->
 				<div class="border-b border-neutral-800 bg-neutral-950/30 px-5 py-2">
-					<div class="flex flex-wrap gap-x-5 gap-y-0.5 font-mono text-[10px] text-neutral-700">
+					<div class="flex flex-wrap gap-x-5 gap-y-0.5 font-mono text-[10px] text-neutral-500">
 						<span>Source: VALE-ESTATE-2015-04.zip</span>
 						<span>Manifest date: 2015-04-07</span>
 						<span>Case 71-C archival copy</span>
@@ -2132,10 +2132,10 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<table class="w-full min-w-[36rem] font-mono text-[11px]">
 						<thead>
 							<tr class="border-b border-neutral-800/60 bg-neutral-950/40">
-								<th class="px-4 py-2 text-left text-[9px] tracking-[0.15em] text-neutral-700 uppercase font-normal">Path</th>
-								<th class="px-3 py-2 text-right text-[9px] tracking-[0.15em] text-neutral-700 uppercase font-normal whitespace-nowrap">Manifest (B)</th>
-								<th class="px-3 py-2 text-right text-[9px] tracking-[0.15em] text-neutral-700 uppercase font-normal whitespace-nowrap">Actual (B)</th>
-								<th class="px-4 py-2 text-left text-[9px] tracking-[0.15em] text-neutral-700 uppercase font-normal">Status</th>
+								<th class="px-4 py-2 text-left text-[9px] tracking-[0.15em] text-neutral-500 uppercase font-normal">Path</th>
+								<th class="px-3 py-2 text-right text-[9px] tracking-[0.15em] text-neutral-500 uppercase font-normal whitespace-nowrap">Manifest (B)</th>
+								<th class="px-3 py-2 text-right text-[9px] tracking-[0.15em] text-neutral-500 uppercase font-normal whitespace-nowrap">Actual (B)</th>
+								<th class="px-4 py-2 text-left text-[9px] tracking-[0.15em] text-neutral-500 uppercase font-normal">Status</th>
 							</tr>
 						</thead>
 						<tbody class="divide-y divide-neutral-800/40">
@@ -2144,67 +2144,67 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 							<tr data-q9-file="MANIFEST.txt"
 							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
 								<td class="px-4 py-2 text-neutral-500">MANIFEST.txt</td>
-								<td class="px-3 py-2 text-right text-neutral-700">2,847</td>
-								<td class="px-3 py-2 text-right text-neutral-700">2,847</td>
+								<td class="px-3 py-2 text-right text-neutral-500">2,847</td>
+								<td class="px-3 py-2 text-right text-neutral-500">2,847</td>
 								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
 							</tr>
 
 							<!-- correspondence/ -->
 							<tr class="bg-neutral-950/30">
-								<td class="px-4 py-1.5 text-[9px] tracking-[0.12em] text-neutral-800 uppercase" colspan="4">correspondence/</td>
+								<td class="px-4 py-1.5 text-[9px] tracking-[0.12em] text-neutral-600 uppercase" colspan="4">correspondence/</td>
 							</tr>
 							<tr data-q9-file="correspondence/letter-solicitor-01.pdf"
 							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
 								<td class="pl-8 pr-4 py-2 text-neutral-600">letter-solicitor-01.pdf</td>
-								<td class="px-3 py-2 text-right text-neutral-700">84,291</td>
-								<td class="px-3 py-2 text-right text-neutral-700">84,291</td>
+								<td class="px-3 py-2 text-right text-neutral-500">84,291</td>
+								<td class="px-3 py-2 text-right text-neutral-500">84,291</td>
 								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
 							</tr>
 							<tr data-q9-file="correspondence/letter-solicitor-02.pdf"
 							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
 								<td class="pl-8 pr-4 py-2 text-neutral-600">letter-solicitor-02.pdf</td>
-								<td class="px-3 py-2 text-right text-neutral-700">76,188</td>
-								<td class="px-3 py-2 text-right text-neutral-700">76,188</td>
+								<td class="px-3 py-2 text-right text-neutral-500">76,188</td>
+								<td class="px-3 py-2 text-right text-neutral-500">76,188</td>
 								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
 							</tr>
 							<tr data-q9-file="correspondence/letter-auctioneer-01.pdf"
 							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
 								<td class="pl-8 pr-4 py-2 text-neutral-600">letter-auctioneer-01.pdf</td>
-								<td class="px-3 py-2 text-right text-neutral-700">91,440</td>
-								<td class="px-3 py-2 text-right text-neutral-700">91,440</td>
+								<td class="px-3 py-2 text-right text-neutral-500">91,440</td>
+								<td class="px-3 py-2 text-right text-neutral-500">91,440</td>
 								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
 							</tr>
 
 							<!-- inventory/ -->
 							<tr class="bg-neutral-950/30">
-								<td class="px-4 py-1.5 text-[9px] tracking-[0.12em] text-neutral-800 uppercase" colspan="4">inventory/</td>
+								<td class="px-4 py-1.5 text-[9px] tracking-[0.12em] text-neutral-600 uppercase" colspan="4">inventory/</td>
 							</tr>
 							<tr data-q9-file="inventory/inventory-furniture.csv"
 							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
 								<td class="pl-8 pr-4 py-2 text-neutral-600">inventory-furniture.csv</td>
-								<td class="px-3 py-2 text-right text-neutral-700">1,247</td>
-								<td class="px-3 py-2 text-right text-neutral-700">1,247</td>
+								<td class="px-3 py-2 text-right text-neutral-500">1,247</td>
+								<td class="px-3 py-2 text-right text-neutral-500">1,247</td>
 								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
 							</tr>
 							<tr data-q9-file="inventory/inventory-silverware.csv"
 							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
 								<td class="pl-8 pr-4 py-2 text-neutral-600">inventory-silverware.csv</td>
-								<td class="px-3 py-2 text-right text-neutral-700">892</td>
-								<td class="px-3 py-2 text-right text-neutral-700">892</td>
+								<td class="px-3 py-2 text-right text-neutral-500">892</td>
+								<td class="px-3 py-2 text-right text-neutral-500">892</td>
 								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
 							</tr>
 							<tr data-q9-file="inventory/inventory-textiles.csv"
 							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
 								<td class="pl-8 pr-4 py-2 text-neutral-600">inventory-textiles.csv</td>
-								<td class="px-3 py-2 text-right text-neutral-700">1,044</td>
-								<td class="px-3 py-2 text-right text-neutral-700">1,044</td>
+								<td class="px-3 py-2 text-right text-neutral-500">1,044</td>
+								<td class="px-3 py-2 text-right text-neutral-500">1,044</td>
 								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
 							</tr>
 							<tr data-q9-file="inventory/inventory-ceramics.csv"
 							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
 								<td class="pl-8 pr-4 py-2 text-neutral-600">inventory-ceramics.csv</td>
-								<td class="px-3 py-2 text-right text-neutral-700">788</td>
-								<td class="px-3 py-2 text-right text-neutral-700">788</td>
+								<td class="px-3 py-2 text-right text-neutral-500">788</td>
+								<td class="px-3 py-2 text-right text-neutral-500">788</td>
 								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
 							</tr>
 							<!-- The anomalous file — highlighted amber -->
@@ -2219,72 +2219,72 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 							<!-- photographs/ -->
 							<tr class="bg-neutral-950/30">
-								<td class="px-4 py-1.5 text-[9px] tracking-[0.12em] text-neutral-800 uppercase" colspan="4">photographs/</td>
+								<td class="px-4 py-1.5 text-[9px] tracking-[0.12em] text-neutral-600 uppercase" colspan="4">photographs/</td>
 							</tr>
 							<tr data-q9-file="photographs/estate-exterior.jpg"
 							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
 								<td class="pl-8 pr-4 py-2 text-neutral-600">estate-exterior.jpg</td>
-								<td class="px-3 py-2 text-right text-neutral-700">2,847,291</td>
-								<td class="px-3 py-2 text-right text-neutral-700">2,847,291</td>
+								<td class="px-3 py-2 text-right text-neutral-500">2,847,291</td>
+								<td class="px-3 py-2 text-right text-neutral-500">2,847,291</td>
 								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
 							</tr>
 							<tr data-q9-file="photographs/collection-overview.jpg"
 							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
 								<td class="pl-8 pr-4 py-2 text-neutral-600">collection-overview.jpg</td>
-								<td class="px-3 py-2 text-right text-neutral-700">3,108,442</td>
-								<td class="px-3 py-2 text-right text-neutral-700">3,108,442</td>
+								<td class="px-3 py-2 text-right text-neutral-500">3,108,442</td>
+								<td class="px-3 py-2 text-right text-neutral-500">3,108,442</td>
 								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
 							</tr>
 							<tr data-q9-file="photographs/interior-library.jpg"
 							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
 								<td class="pl-8 pr-4 py-2 text-neutral-600">interior-library.jpg</td>
-								<td class="px-3 py-2 text-right text-neutral-700">2,219,877</td>
-								<td class="px-3 py-2 text-right text-neutral-700">2,219,877</td>
+								<td class="px-3 py-2 text-right text-neutral-500">2,219,877</td>
+								<td class="px-3 py-2 text-right text-neutral-500">2,219,877</td>
 								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
 							</tr>
 
 							<!-- receipts/ -->
 							<tr class="bg-neutral-950/30">
-								<td class="px-4 py-1.5 text-[9px] tracking-[0.12em] text-neutral-800 uppercase" colspan="4">receipts/</td>
+								<td class="px-4 py-1.5 text-[9px] tracking-[0.12em] text-neutral-600 uppercase" colspan="4">receipts/</td>
 							</tr>
 							<tr data-q9-file="receipts/receipt-001-furniture.pdf"
 							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
 								<td class="pl-8 pr-4 py-2 text-neutral-600">receipt-001-furniture.pdf</td>
-								<td class="px-3 py-2 text-right text-neutral-700">48,220</td>
-								<td class="px-3 py-2 text-right text-neutral-700">48,220</td>
+								<td class="px-3 py-2 text-right text-neutral-500">48,220</td>
+								<td class="px-3 py-2 text-right text-neutral-500">48,220</td>
 								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
 							</tr>
 							<tr data-q9-file="receipts/receipt-002-general.pdf"
 							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
 								<td class="pl-8 pr-4 py-2 text-neutral-600">receipt-002-general.pdf</td>
-								<td class="px-3 py-2 text-right text-neutral-700">52,884</td>
-								<td class="px-3 py-2 text-right text-neutral-700">52,884</td>
+								<td class="px-3 py-2 text-right text-neutral-500">52,884</td>
+								<td class="px-3 py-2 text-right text-neutral-500">52,884</td>
 								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
 							</tr>
 
 							<!-- appraisal/ -->
 							<tr class="bg-neutral-950/30">
-								<td class="px-4 py-1.5 text-[9px] tracking-[0.12em] text-neutral-800 uppercase" colspan="4">appraisal/</td>
+								<td class="px-4 py-1.5 text-[9px] tracking-[0.12em] text-neutral-600 uppercase" colspan="4">appraisal/</td>
 							</tr>
 							<tr data-q9-file="appraisal/appraisal-summary.pdf"
 							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
 								<td class="pl-8 pr-4 py-2 text-neutral-600">appraisal-summary.pdf</td>
-								<td class="px-3 py-2 text-right text-neutral-700">118,844</td>
-								<td class="px-3 py-2 text-right text-neutral-700">118,844</td>
+								<td class="px-3 py-2 text-right text-neutral-500">118,844</td>
+								<td class="px-3 py-2 text-right text-neutral-500">118,844</td>
 								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
 							</tr>
 							<tr data-q9-file="appraisal/appraisal-notes.txt"
 							    class="cursor-pointer select-none transition-colors hover:bg-neutral-800/40">
 								<td class="pl-8 pr-4 py-2 text-neutral-600">appraisal-notes.txt</td>
-								<td class="px-3 py-2 text-right text-neutral-700">3,891</td>
-								<td class="px-3 py-2 text-right text-neutral-700">3,891</td>
+								<td class="px-3 py-2 text-right text-neutral-500">3,891</td>
+								<td class="px-3 py-2 text-right text-neutral-500">3,891</td>
 								<td class="px-4 py-2 text-[10px] text-emerald-700">&#10003; MATCH</td>
 							</tr>
 
 						</tbody>
 					</table>
 
-					<p class="px-5 py-2 font-mono text-[9px] text-neutral-800">
+					<p class="px-5 py-2 font-mono text-[9px] text-neutral-600">
 						Click any file to view contents &nbsp;&mdash;&nbsp; 15 of 16 files pass integrity check
 					</p>
 				</div>
@@ -2292,12 +2292,12 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<!-- File viewer (hidden until user clicks a file) -->
 				<div id="q9-viewer" class="hidden border-b border-neutral-800">
 					<div class="flex items-center justify-between border-b border-neutral-800/50 bg-neutral-950/50 px-5 py-2">
-						<p class="font-mono text-[10px] text-neutral-700 uppercase tracking-[0.1em]">
+						<p class="font-mono text-[10px] text-neutral-500 uppercase tracking-[0.1em]">
 							Viewing: <span id="q9-viewer-path" class="text-neutral-500 normal-case tracking-normal"></span>
 						</p>
 						<button id="q9-viewer-close"
 						        type="button"
-						        class="font-mono text-[9px] text-neutral-800 uppercase tracking-[0.1em] transition-colors hover:text-neutral-600">
+						        class="font-mono text-[9px] text-neutral-600 uppercase tracking-[0.1em] transition-colors hover:text-neutral-600">
 							Close
 						</button>
 					</div>
@@ -2322,7 +2322,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
 							<li class="flex gap-4" data-hint-number={h.hintNumber}>
-								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-500 uppercase pt-px">Note {h.hintNumber}</span>
 								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
 							</li>
 						))}
@@ -2347,10 +2347,10 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 									type="button"
 									data-hint-button
 									data-next-hint={nextHint}
-									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-500 uppercase transition-colors hover:text-neutral-500"
 								>
 									Request assistance note {nextHint}
-									<span class="ml-1 text-neutral-800">&mdash; halves score</span>
+									<span class="ml-1 text-neutral-600">&mdash; halves score</span>
 								</button>
 							</div>
 						)}
@@ -2374,7 +2374,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										spellcheck="false"
 										placeholder="Catalogue reference from the suppressed entry"
 										aria-label="Catalogue reference from the suppressed Lot 47 entry"
-										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-600 transition-colors focus:border-neutral-500 focus:outline-none"
 									/>
 									<button
 										type="submit"
@@ -2383,7 +2383,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										Submit
 									</button>
 								</div>
-								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-500" data-result aria-live="polite"></p>
 							</form>
 						</div>
 					</div>
@@ -2391,7 +2391,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 			</div>
 
-			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-600">
 				<span>BLACKWOOD INVESTIGATIVE BUREAU &mdash; EVIDENCE ARCHIVE</span>
 				<span>FILE 71-C</span>
 			</div>
@@ -2419,11 +2419,11 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 							<p class="font-mono text-[10px] font-medium tracking-[0.22em] text-neutral-400 uppercase">
 								Vale Collection Provenance Verification System
 							</p>
-							<p class="mt-0.5 font-mono text-[10px] tracking-[0.1em] text-neutral-700">
+							<p class="mt-0.5 font-mono text-[10px] tracking-[0.1em] text-neutral-500">
 								Historical ownership records &nbsp;&middot;&nbsp; Blackwood access ref: {q11.recordRef}
 							</p>
 						</div>
-						<span class="rounded border border-neutral-800 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] text-neutral-700 uppercase">
+						<span class="rounded border border-neutral-800 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] text-neutral-500 uppercase">
 							Case 71-C
 						</span>
 					</div>
@@ -2432,32 +2432,32 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<!-- Object record header -->
 				<div class="border-b border-neutral-800 bg-neutral-950/30 px-5 py-3">
 					<dl class="grid grid-cols-[9rem_1fr] gap-x-4 gap-y-1 font-mono text-[11px]">
-						<dt class="text-neutral-700">Object</dt>
+						<dt class="text-neutral-500">Object</dt>
 						<dd class="text-neutral-400">Doll #6 &mdash; Untitled Figure (Commission)</dd>
-						<dt class="text-neutral-700">Catalogue ID</dt>
+						<dt class="text-neutral-500">Catalogue ID</dt>
 						<dd class="text-neutral-500">VALE-M-1882-047</dd>
-						<dt class="text-neutral-700">Record ref</dt>
+						<dt class="text-neutral-500">Record ref</dt>
 						<dd class="text-neutral-600">{q11.recordRef}</dd>
-						<dt class="text-neutral-700">Query date</dt>
+						<dt class="text-neutral-500">Query date</dt>
 						<dd class="text-neutral-600">2015-04-09</dd>
 					</dl>
 				</div>
 
 				<!-- Verification status panel (populated by JS) -->
 				<div id="q11-status" class="border-b border-neutral-800 px-5 py-4">
-					<p class="font-mono text-[10px] tracking-[0.15em] text-neutral-700 uppercase">
+					<p class="font-mono text-[10px] tracking-[0.15em] text-neutral-500 uppercase">
 						Loading provenance records&hellip;
 					</p>
 				</div>
 
 				<!-- Ownership chain (populated by JS) -->
 				<div id="q11-chain" class="border-b border-neutral-800 px-5 py-5 min-h-[8rem]">
-					<p class="font-mono text-[10px] text-neutral-700">Querying archive&hellip;</p>
+					<p class="font-mono text-[10px] text-neutral-500">Querying archive&hellip;</p>
 				</div>
 
 				<!-- Re-check control -->
 				<div class="border-b border-neutral-800 bg-neutral-950/20 px-5 py-3 flex items-center justify-between">
-					<p class="font-mono text-[10px] text-neutral-700">
+					<p class="font-mono text-[10px] text-neutral-500">
 						Verification scope controlled by browser storage (<code class="text-neutral-600">prov_clearance</code>)
 					</p>
 					<button
@@ -2477,7 +2477,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
 							<li class="flex gap-4" data-hint-number={h.hintNumber}>
-								<span class="shrink-0 font-mono text-[10px] text-neutral-700 uppercase pt-px">Note {h.hintNumber}</span>
+								<span class="shrink-0 font-mono text-[10px] text-neutral-500 uppercase pt-px">Note {h.hintNumber}</span>
 								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
 							</li>
 						))}
@@ -2502,10 +2502,10 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 									type="button"
 									data-hint-button
 									data-next-hint={nextHint}
-									class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500"
+									class="font-mono text-[10px] tracking-[0.1em] text-neutral-500 uppercase transition-colors hover:text-neutral-500"
 								>
 									Request assistance note {nextHint}
-									<span class="ml-1 text-neutral-800">&mdash; halves score</span>
+									<span class="ml-1 text-neutral-600">&mdash; halves score</span>
 								</button>
 							</div>
 						)}
@@ -2529,7 +2529,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										spellcheck="false"
 										placeholder="Name of suppressed previous owner"
 										aria-label="Suppressed previous owner name"
-										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-600 transition-colors focus:border-neutral-500 focus:outline-none"
 									/>
 									<button
 										type="submit"
@@ -2538,7 +2538,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 										Submit
 									</button>
 								</div>
-								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-500" data-result aria-live="polite"></p>
 							</form>
 						</div>
 					</div>
@@ -2546,7 +2546,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 			</div>
 
-			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-600">
 				<span>VALE COLLECTION PROVENANCE VERIFICATION SYSTEM</span>
 				<span>FILE 71-C</span>
 			</div>
@@ -2566,9 +2566,9 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<div class="flex items-start justify-between gap-4">
 						<div>
 							<p class="font-mono text-[10px] font-medium tracking-[0.25em] text-neutral-300 uppercase">{qm.systemLabel}</p>
-							<p class="mt-0.5 font-mono text-[10px] tracking-[0.1em] text-neutral-700">{qm.sourceRef}</p>
+							<p class="mt-0.5 font-mono text-[10px] tracking-[0.1em] text-neutral-500">{qm.sourceRef}</p>
 						</div>
-						<span class="shrink-0 rounded border border-neutral-800 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] text-neutral-700 uppercase">Case 71-C</span>
+						<span class="shrink-0 rounded border border-neutral-800 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] text-neutral-500 uppercase">Case 71-C</span>
 					</div>
 				</div>
 
@@ -2579,14 +2579,14 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 						<span class="font-mono text-[10px] text-neutral-600">{view.basePoints} PTS</span>
 					</div>
 					<div class="text-right">
-						<p class="font-mono text-[9px] tracking-[0.25em] text-neutral-700">CHALLENGE {slotLabel} / 30</p>
+						<p class="font-mono text-[9px] tracking-[0.25em] text-neutral-500">CHALLENGE {slotLabel} / 30</p>
 						<p class="font-mono text-xs font-medium text-neutral-400">{view.title}</p>
 					</div>
 				</div>
 
 				<!-- Terminal output block -->
 				<div class="px-6 py-5">
-					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">{qm.promptLabel}</p>
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-500 uppercase">{qm.promptLabel}</p>
 					<div class="rounded border border-neutral-800 bg-neutral-950 px-5 py-4">
 						<pre class="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-neutral-300">{cp.prompt}</pre>
 					</div>
@@ -2616,9 +2616,9 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 							class="inline-flex items-center gap-2 rounded border border-neutral-700/60 bg-neutral-900 px-4 py-2 font-mono text-[11px] text-neutral-400 transition-colors hover:border-neutral-500 hover:text-neutral-200"
 						>
 							→ Open Vale Collection Archive
-							<span class="text-neutral-700">↗</span>
+							<span class="text-neutral-500">↗</span>
 						</a>
-						<p class="mt-2 font-mono text-[10px] text-neutral-700">
+						<p class="mt-2 font-mono text-[10px] text-neutral-500">
 							Open DevTools (F12) → Network tab after clicking to inspect response headers
 						</p>
 					</div>
@@ -2647,9 +2647,9 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 							class="inline-flex items-center gap-2 rounded border border-neutral-700/60 bg-neutral-900 px-4 py-2 font-mono text-[11px] text-neutral-400 transition-colors hover:border-neutral-500 hover:text-neutral-200"
 						>
 							→ GET /api/search/records?q=
-							<span class="text-neutral-700">↗</span>
+							<span class="text-neutral-500">↗</span>
 						</a>
-						<p class="mt-2 font-mono text-[10px] text-neutral-700">
+						<p class="mt-2 font-mono text-[10px] text-neutral-500">
 							Try injecting via the URL — replace the query value with your injection string
 						</p>
 					</div>
@@ -2664,11 +2664,11 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 				<!-- Hints -->
 				<div data-hints class={`border-t border-neutral-800 px-6 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}>
-					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Field Notes</p>
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-500 uppercase">Field Notes</p>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
 							<li class="flex gap-3 rounded border border-neutral-800 bg-neutral-950/60 px-4 py-2.5" data-hint-number={h.hintNumber}>
-								<span class="shrink-0 font-mono text-[9px] text-neutral-700 uppercase pt-0.5">N{h.hintNumber}</span>
+								<span class="shrink-0 font-mono text-[9px] text-neutral-500 uppercase pt-0.5">N{h.hintNumber}</span>
 								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
 							</li>
 						))}
@@ -2680,12 +2680,12 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<div class="border-t border-neutral-800 px-6 py-5 space-y-4">
 						{nextHint <= MAX_HINTS && (
 							<button type="button" data-hint-button data-next-hint={nextHint}
-								class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500">
-								Request field note {nextHint}<span class="ml-1 text-neutral-800">— halves score</span>
+								class="font-mono text-[10px] tracking-[0.1em] text-neutral-500 uppercase transition-colors hover:text-neutral-500">
+								Request field note {nextHint}<span class="ml-1 text-neutral-600">— halves score</span>
 							</button>
 						)}
 						<div>
-							<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Submit Finding</p>
+							<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-500 uppercase">Submit Finding</p>
 							<form data-submit-form
 								data-msg-verifying={qm.msgVerifying}
 								data-msg-correct={qm.msgCorrect}
@@ -2696,18 +2696,18 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 								<div class="flex gap-2">
 									<input type="text" name="answer" autocomplete="off" spellcheck="false"
 										placeholder={qm.placeholder} aria-label={qm.placeholder}
-										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"/>
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-600 transition-colors focus:border-neutral-500 focus:outline-none"/>
 									<button type="submit"
 										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100">Submit</button>
 								</div>
-								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-500" data-result aria-live="polite"></p>
 							</form>
 						</div>
 					</div>
 				)}
 
 			</div>
-			<div class="mt-5 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+			<div class="mt-5 flex items-center justify-between font-mono text-[10px] text-neutral-600">
 				<span>{qm.systemLabel.toUpperCase()}</span>
 				<span>FILE 71-C</span>
 			</div>
@@ -2727,9 +2727,9 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<div class="flex items-start justify-between gap-4">
 						<div>
 							<p class="font-mono text-[10px] font-medium tracking-[0.25em] text-neutral-300 uppercase">{qm.systemLabel}</p>
-							<p class="mt-0.5 font-mono text-[10px] tracking-[0.1em] text-neutral-700">{qm.sourceRef}</p>
+							<p class="mt-0.5 font-mono text-[10px] tracking-[0.1em] text-neutral-500">{qm.sourceRef}</p>
 						</div>
-						<span class="shrink-0 rounded border border-neutral-800 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] text-neutral-700 uppercase">Case 71-C</span>
+						<span class="shrink-0 rounded border border-neutral-800 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] text-neutral-500 uppercase">Case 71-C</span>
 					</div>
 				</div>
 
@@ -2740,14 +2740,14 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 						<span class="font-mono text-[10px] text-neutral-600">{view.basePoints} PTS</span>
 					</div>
 					<div class="text-right">
-						<p class="font-mono text-[9px] tracking-[0.25em] text-neutral-700">CHALLENGE {slotLabel} / 30</p>
+						<p class="font-mono text-[9px] tracking-[0.25em] text-neutral-500">CHALLENGE {slotLabel} / 30</p>
 						<p class="font-mono text-xs font-medium text-neutral-400">{view.title}</p>
 					</div>
 				</div>
 
 				<!-- Document label -->
 				<div class="px-6 pt-5 pb-2">
-					<p class="font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">{qm.promptLabel}</p>
+					<p class="font-mono text-[9px] tracking-[0.2em] text-neutral-500 uppercase">{qm.promptLabel}</p>
 				</div>
 
 				<!-- Aged document block -->
@@ -2766,7 +2766,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 						>
 							↓ Open document — ownership-transfer.pdf ↗
 						</a>
-						<span class="self-center font-mono text-[10px] text-neutral-700">Inspect page source — text layer bypasses visual redaction</span>
+						<span class="self-center font-mono text-[10px] text-neutral-500">Inspect page source — text layer bypasses visual redaction</span>
 					</div>
 				)}
 
@@ -2806,11 +2806,11 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 				<!-- Hints -->
 				<div data-hints class={`border-t border-neutral-800 px-6 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}>
-					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Investigator Notes</p>
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-500 uppercase">Investigator Notes</p>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
 							<li class="flex gap-3 rounded border border-neutral-800 bg-neutral-950/60 px-4 py-2.5" data-hint-number={h.hintNumber}>
-								<span class="shrink-0 font-mono text-[9px] text-neutral-700 uppercase pt-0.5">N{h.hintNumber}</span>
+								<span class="shrink-0 font-mono text-[9px] text-neutral-500 uppercase pt-0.5">N{h.hintNumber}</span>
 								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
 							</li>
 						))}
@@ -2822,12 +2822,12 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<div class="border-t border-neutral-800 px-6 py-5 space-y-4">
 						{nextHint <= MAX_HINTS && (
 							<button type="button" data-hint-button data-next-hint={nextHint}
-								class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500">
-								Request assistance note {nextHint}<span class="ml-1 text-neutral-800">— halves score</span>
+								class="font-mono text-[10px] tracking-[0.1em] text-neutral-500 uppercase transition-colors hover:text-neutral-500">
+								Request assistance note {nextHint}<span class="ml-1 text-neutral-600">— halves score</span>
 							</button>
 						)}
 						<div>
-							<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Submit Finding</p>
+							<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-500 uppercase">Submit Finding</p>
 							<form data-submit-form
 								data-msg-verifying={qm.msgVerifying}
 								data-msg-correct={qm.msgCorrect}
@@ -2838,18 +2838,18 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 								<div class="flex gap-2">
 									<input type="text" name="answer" autocomplete="off" spellcheck="false"
 										placeholder={qm.placeholder} aria-label={qm.placeholder}
-										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"/>
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-600 transition-colors focus:border-neutral-500 focus:outline-none"/>
 									<button type="submit"
 										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100">Submit</button>
 								</div>
-								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-500" data-result aria-live="polite"></p>
 							</form>
 						</div>
 					</div>
 				)}
 
 			</div>
-			<div class="mt-5 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+			<div class="mt-5 flex items-center justify-between font-mono text-[10px] text-neutral-600">
 				<span>BLACKWOOD INVESTIGATIVE BUREAU — EVIDENCE MANAGEMENT</span>
 				<span>FILE 71-C</span>
 			</div>
@@ -2869,9 +2869,9 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<div class="flex items-start justify-between gap-4">
 						<div>
 							<p class="font-mono text-[10px] font-medium tracking-[0.25em] text-neutral-300 uppercase">{qm.systemLabel}</p>
-							<p class="mt-0.5 font-mono text-[10px] tracking-[0.1em] text-neutral-700">{qm.sourceRef}</p>
+							<p class="mt-0.5 font-mono text-[10px] tracking-[0.1em] text-neutral-500">{qm.sourceRef}</p>
 						</div>
-						<span class="shrink-0 rounded border border-neutral-800 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] text-neutral-700 uppercase">Case 71-C</span>
+						<span class="shrink-0 rounded border border-neutral-800 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] text-neutral-500 uppercase">Case 71-C</span>
 					</div>
 				</div>
 
@@ -2882,14 +2882,14 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 						<span class="font-mono text-[10px] text-neutral-600">{view.basePoints} PTS</span>
 					</div>
 					<div class="text-right">
-						<p class="font-mono text-[9px] tracking-[0.25em] text-neutral-700">CHALLENGE {slotLabel} / 30</p>
+						<p class="font-mono text-[9px] tracking-[0.25em] text-neutral-500">CHALLENGE {slotLabel} / 30</p>
 						<p class="font-mono text-xs font-medium text-neutral-400">{view.title}</p>
 					</div>
 				</div>
 
 				<!-- Forensic report block -->
 				<div class="px-6 py-5">
-					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">{qm.promptLabel}</p>
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-500 uppercase">{qm.promptLabel}</p>
 					<div class="rounded border border-neutral-700/60 bg-neutral-950/80 px-5 py-5">
 						<pre class="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-neutral-300">{cp.prompt}</pre>
 					</div>
@@ -2905,11 +2905,11 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 				<!-- Hints -->
 				<div data-hints class={`border-t border-neutral-800 px-6 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}>
-					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Examiner Notes</p>
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-500 uppercase">Examiner Notes</p>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
 							<li class="flex gap-3 rounded border border-neutral-800 bg-neutral-950/60 px-4 py-2.5" data-hint-number={h.hintNumber}>
-								<span class="shrink-0 font-mono text-[9px] text-neutral-700 uppercase pt-0.5">N{h.hintNumber}</span>
+								<span class="shrink-0 font-mono text-[9px] text-neutral-500 uppercase pt-0.5">N{h.hintNumber}</span>
 								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
 							</li>
 						))}
@@ -2921,12 +2921,12 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<div class="border-t border-neutral-800 px-6 py-5 space-y-4">
 						{nextHint <= MAX_HINTS && (
 							<button type="button" data-hint-button data-next-hint={nextHint}
-								class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500">
-								Request examiner note {nextHint}<span class="ml-1 text-neutral-800">— halves score</span>
+								class="font-mono text-[10px] tracking-[0.1em] text-neutral-500 uppercase transition-colors hover:text-neutral-500">
+								Request examiner note {nextHint}<span class="ml-1 text-neutral-600">— halves score</span>
 							</button>
 						)}
 						<div>
-							<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Submit Finding</p>
+							<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-500 uppercase">Submit Finding</p>
 							<form data-submit-form
 								data-msg-verifying={qm.msgVerifying}
 								data-msg-correct={qm.msgCorrect}
@@ -2937,18 +2937,18 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 								<div class="flex gap-2">
 									<input type="text" name="answer" autocomplete="off" spellcheck="false"
 										placeholder={qm.placeholder} aria-label={qm.placeholder}
-										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"/>
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-600 transition-colors focus:border-neutral-500 focus:outline-none"/>
 									<button type="submit"
 										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100">Submit</button>
 								</div>
-								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-500" data-result aria-live="polite"></p>
 							</form>
 						</div>
 					</div>
 				)}
 
 			</div>
-			<div class="mt-5 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+			<div class="mt-5 flex items-center justify-between font-mono text-[10px] text-neutral-600">
 				<span>BLACKWOOD INVESTIGATIVE BUREAU — FORENSIC EVIDENCE UNIT</span>
 				<span>FILE 71-C</span>
 			</div>
@@ -2968,11 +2968,11 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<div class="flex items-start justify-between gap-4">
 						<div>
 							<p class="font-mono text-[10px] font-semibold tracking-[0.3em] text-neutral-200 uppercase">{qm.systemLabel}</p>
-							<p class="mt-0.5 font-mono text-[10px] tracking-[0.12em] text-neutral-700">{qm.sourceRef}</p>
+							<p class="mt-0.5 font-mono text-[10px] tracking-[0.12em] text-neutral-500">{qm.sourceRef}</p>
 						</div>
 						<div class="text-right shrink-0">
 							<span class={`rounded border px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] ${ts.badge}`}>{view.tier.toUpperCase()}</span>
-							<p class="mt-1 font-mono text-[9px] tracking-[0.25em] text-neutral-700">CHALLENGE {slotLabel} · {view.basePoints} PTS</p>
+							<p class="mt-1 font-mono text-[9px] tracking-[0.25em] text-neutral-500">CHALLENGE {slotLabel} · {view.basePoints} PTS</p>
 						</div>
 					</div>
 					<h1 class="mt-4 text-lg font-semibold tracking-tight text-neutral-100">{view.title}</h1>
@@ -2980,7 +2980,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 				<!-- Case board content -->
 				<div class="px-6 py-5">
-					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">{qm.promptLabel}</p>
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-500 uppercase">{qm.promptLabel}</p>
 					<div class="rounded border border-neutral-800 bg-neutral-950/70 px-5 py-5">
 						<pre class="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-neutral-300">{cp.prompt}</pre>
 					</div>
@@ -2989,7 +2989,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<!-- Verdict divider -->
 				<div class="flex items-center gap-3 px-6 pb-2">
 					<div class="h-px flex-1 bg-neutral-800"></div>
-					<p class="font-mono text-[9px] tracking-[0.3em] text-neutral-700 uppercase">Verdict</p>
+					<p class="font-mono text-[9px] tracking-[0.3em] text-neutral-500 uppercase">Verdict</p>
 					<div class="h-px flex-1 bg-neutral-800"></div>
 				</div>
 
@@ -3002,11 +3002,11 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 				<!-- Hints -->
 				<div data-hints class={`border-t border-neutral-800 px-6 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}>
-					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Bureau Notes</p>
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-500 uppercase">Bureau Notes</p>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
 							<li class="flex gap-3 rounded border border-neutral-800 bg-neutral-950/60 px-4 py-2.5" data-hint-number={h.hintNumber}>
-								<span class="shrink-0 font-mono text-[9px] text-neutral-700 uppercase pt-0.5">N{h.hintNumber}</span>
+								<span class="shrink-0 font-mono text-[9px] text-neutral-500 uppercase pt-0.5">N{h.hintNumber}</span>
 								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
 							</li>
 						))}
@@ -3018,12 +3018,12 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<div class="border-t border-neutral-800 px-6 py-5 space-y-4">
 						{nextHint <= MAX_HINTS && (
 							<button type="button" data-hint-button data-next-hint={nextHint}
-								class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500">
-								Request bureau note {nextHint}<span class="ml-1 text-neutral-800">— halves score</span>
+								class="font-mono text-[10px] tracking-[0.1em] text-neutral-500 uppercase transition-colors hover:text-neutral-500">
+								Request bureau note {nextHint}<span class="ml-1 text-neutral-600">— halves score</span>
 							</button>
 						)}
 						<div>
-							<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">File Case Conclusion</p>
+							<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-500 uppercase">File Case Conclusion</p>
 							<form data-submit-form
 								data-ceremony="case-closed"
 								data-msg-verifying={qm.msgVerifying}
@@ -3035,18 +3035,18 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 								<div class="flex gap-2">
 									<input type="text" name="answer" autocomplete="off" spellcheck="false"
 										placeholder={qm.placeholder} aria-label={qm.placeholder}
-										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"/>
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-600 transition-colors focus:border-neutral-500 focus:outline-none"/>
 									<button type="submit"
 										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100">File</button>
 								</div>
-								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-500" data-result aria-live="polite"></p>
 							</form>
 						</div>
 					</div>
 				)}
 
 			</div>
-			<div class="mt-5 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+			<div class="mt-5 flex items-center justify-between font-mono text-[10px] text-neutral-600">
 				<span>BLACKWOOD INVESTIGATIVE BUREAU — CASE BOARD</span>
 				<span>FILE 71-C</span>
 			</div>
@@ -3058,7 +3058,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 	<!-- ══════════════════════════════════════════════════════════════════════ -->
 
 	{isShellE && cp && qm && (
-		<main class="mx-auto w-full max-w-2xl px-4 py-10" data-challenge data-slug={slug} data-slot={view.slot}>
+		<main class={`mx-auto w-full ${isQ28 ? 'max-w-4xl' : 'max-w-2xl'} px-4 py-10`} data-challenge data-slug={slug} data-slot={view.slot}>
 			<div class="overflow-hidden rounded border border-neutral-800 bg-neutral-900">
 
 				<!-- Ledger header — database terminal style -->
@@ -3072,7 +3072,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 						</div>
 						<div class="text-right shrink-0">
 							<span class={`rounded border px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] ${ts.badge}`}>{view.tier.toUpperCase()}</span>
-							<p class="mt-1 font-mono text-[9px] tracking-[0.25em] text-neutral-700">{view.basePoints} PTS · CHALLENGE {slotLabel}</p>
+							<p class="mt-1 font-mono text-[9px] tracking-[0.25em] text-neutral-500">{view.basePoints} PTS · CHALLENGE {slotLabel}</p>
 						</div>
 					</div>
 				</div>
@@ -3080,23 +3080,27 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<!-- Access status bar -->
 				<div class="border-b border-neutral-800 bg-neutral-950/40 px-6 py-2.5">
 					<div class="flex items-center gap-5 font-mono text-[10px]">
-						<span class="text-neutral-700">ACCESS</span>
+						<span class="text-neutral-500">ACCESS</span>
 						<span class="text-neutral-600">CASE 71-C INVESTIGATOR</span>
-						<span class="ml-auto text-neutral-700">SESSION {cp.token}</span>
+						<span class="ml-auto text-neutral-500">SESSION {cp.token}</span>
 					</div>
 				</div>
 
 				<!-- Database output block -->
 				<div class="px-6 py-5">
-					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">{qm.promptLabel}</p>
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-500 uppercase">{qm.promptLabel}</p>
 					<div class="rounded border border-neutral-800 bg-neutral-950 px-5 py-5">
 						<pre class="whitespace-pre-wrap font-mono text-[11.5px] leading-relaxed text-neutral-300">{cp.prompt}</pre>
 					</div>
 				</div>
 
-				<!-- Q28: the Ledger grid, checked row by row by /{event}/ledger -->
+				<!-- Q28: the Ledger grid, checked by /{event}/ledger (count of reconciled rows only) -->
 				{isQ28 && q28 && (
 					<form id="q28-ledger" class="px-6 pb-5">
+						<label class="mb-3 flex items-center gap-3 font-mono text-[10px] tracking-[0.15em] text-neutral-500 uppercase">
+							Open at folio
+							<input id="q28-folio" inputmode="numeric" autocomplete="off" spellcheck="false" class="w-24 rounded border border-neutral-700 bg-black px-2 py-1 text-neutral-200 focus:border-neutral-400 focus:outline-none" />
+						</label>
 						<div class="overflow-x-auto rounded border border-neutral-800">
 							<table class="w-full min-w-[46rem] font-mono text-[10.5px]">
 								<thead>
@@ -3108,7 +3112,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 								<tbody>
 									{q28.rows.map((row, i) => (
 										<tr class="border-b border-neutral-800/60" data-row={i}>
-											<td class="px-2 py-1.5 whitespace-nowrap text-neutral-500">{row.cycle} <span class="text-neutral-700">{row.years}</span></td>
+											<td class="px-2 py-1.5 whitespace-nowrap text-neutral-500">{row.cycle} <span class="text-neutral-500">{row.years}</span></td>
 											{row.cells.map((c) => (
 												<td class="px-1 py-1">
 													{'blank' in c
@@ -3138,11 +3142,11 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 				<!-- Hints -->
 				<div data-hints class={`border-t border-neutral-800 px-6 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}>
-					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Research Notes</p>
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-500 uppercase">Research Notes</p>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
 							<li class="flex gap-3 rounded border border-neutral-800 bg-neutral-950/60 px-4 py-2.5" data-hint-number={h.hintNumber}>
-								<span class="shrink-0 font-mono text-[9px] text-neutral-700 uppercase pt-0.5">N{h.hintNumber}</span>
+								<span class="shrink-0 font-mono text-[9px] text-neutral-500 uppercase pt-0.5">N{h.hintNumber}</span>
 								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
 							</li>
 						))}
@@ -3154,12 +3158,12 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<div class="border-t border-neutral-800 px-6 py-5 space-y-4">
 						{nextHint <= MAX_HINTS && (
 							<button type="button" data-hint-button data-next-hint={nextHint}
-								class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500">
-								Request research note {nextHint}<span class="ml-1 text-neutral-800">— halves score</span>
+								class="font-mono text-[10px] tracking-[0.1em] text-neutral-500 uppercase transition-colors hover:text-neutral-500">
+								Request research note {nextHint}<span class="ml-1 text-neutral-600">— halves score</span>
 							</button>
 						)}
 						<div>
-							<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">Submit Ledger Query</p>
+							<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-500 uppercase">Submit Ledger Query</p>
 							<form data-submit-form
 								data-msg-verifying={qm.msgVerifying}
 								data-msg-correct={qm.msgCorrect}
@@ -3170,18 +3174,18 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 								<div class="flex gap-2">
 									<input type="text" name="answer" autocomplete="off" spellcheck="false"
 										placeholder={qm.placeholder} aria-label={qm.placeholder}
-										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"/>
+										class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-sm text-neutral-200 placeholder-neutral-600 transition-colors focus:border-neutral-500 focus:outline-none"/>
 									<button type="submit"
 										class="rounded border border-neutral-700 bg-neutral-800 px-4 py-2 font-mono text-[10px] tracking-[0.15em] text-neutral-300 uppercase transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100">Query</button>
 								</div>
-								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-500" data-result aria-live="polite"></p>
 							</form>
 						</div>
 					</div>
 				)}
 
 			</div>
-			<div class="mt-5 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+			<div class="mt-5 flex items-center justify-between font-mono text-[10px] text-neutral-600">
 				<span>THE LEDGER — HISTORICAL RECORDS DATABASE</span>
 				<span>FILE 71-C</span>
 			</div>
@@ -3199,22 +3203,22 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				{/* Q29 — Blackwood evidence terminal with TC masthead */}
 				{!isQ30 && (
 					<div class="border-b border-neutral-800 px-6 py-5">
-						<p class="font-mono text-[9px] tracking-[0.4em] text-neutral-700 uppercase mb-2">
+						<p class="font-mono text-[9px] tracking-[0.4em] text-neutral-500 uppercase mb-2">
 							{'━'.repeat(36)}
 						</p>
 						<p class="font-mono text-sm font-semibold tracking-[0.35em] text-neutral-300 uppercase">{isSolved ? 'The Continuity' : qm.systemLabel}</p>
-						<p class="font-mono text-[9px] tracking-[0.4em] text-neutral-700 uppercase mt-2">
+						<p class="font-mono text-[9px] tracking-[0.4em] text-neutral-500 uppercase mt-2">
 							{'━'.repeat(36)}
 						</p>
-						<p class="mt-3 font-mono text-[10px] tracking-[0.12em] text-neutral-700">{qm.sourceRef}</p>
+						<p class="mt-3 font-mono text-[10px] tracking-[0.12em] text-neutral-500">{qm.sourceRef}</p>
 					</div>
 				)}
 
 				{/* Q30 — The system has taken over: minimal case reference only */}
 				{isQ30 && (
 					<div class="border-b border-neutral-700/60 px-6 py-3 flex items-center justify-between">
-						<span class="font-mono text-[9px] tracking-[0.25em] text-neutral-700">FINAL RECORD — CYCLE 6</span>
-						<span class="font-mono text-[9px] tracking-[0.25em] text-neutral-700">CASE 71-C</span>
+						<span class="font-mono text-[9px] tracking-[0.25em] text-neutral-500">FINAL RECORD — CYCLE 6</span>
+						<span class="font-mono text-[9px] tracking-[0.25em] text-neutral-500">CASE 71-C</span>
 					</div>
 				)}
 
@@ -3222,10 +3226,10 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<div class="flex items-center justify-between border-b border-neutral-800 bg-neutral-950/80 px-6 py-3">
 					<div class="flex items-center gap-3">
 						<span class={`rounded border px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] ${ts.badge}`}>{view.tier.toUpperCase()}</span>
-						<span class="font-mono text-[10px] text-neutral-700">{view.basePoints} PTS</span>
+						<span class="font-mono text-[10px] text-neutral-500">{view.basePoints} PTS</span>
 					</div>
 					<div class="text-right">
-						<p class="font-mono text-[9px] tracking-[0.25em] text-neutral-700">CHALLENGE {slotLabel} / 30</p>
+						<p class="font-mono text-[9px] tracking-[0.25em] text-neutral-500">CHALLENGE {slotLabel} / 30</p>
 						<p class="font-mono text-xs font-medium text-neutral-400">{view.title}</p>
 					</div>
 				</div>
@@ -3233,7 +3237,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<!-- Terminal output -->
 				<div class={isQ30 ? 'px-6 pt-6 pb-5' : 'px-6 py-5'}>
 					{!isQ30 && (
-						<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">{qm.promptLabel}</p>
+						<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-500 uppercase">{qm.promptLabel}</p>
 					)}
 					<div class={`rounded border bg-black ${isQ30 ? 'border-neutral-700/60 px-6 py-6' : 'border-neutral-800 px-5 py-5'}`}>
 						<pre class={`whitespace-pre-wrap font-mono leading-relaxed ${isQ30 ? 'text-[13px] text-neutral-100' : 'text-[12px] text-neutral-200'}`}>{cp.prompt}</pre>
@@ -3246,7 +3250,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 							<pre id="q29-output" class="mb-2 whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-emerald-400/90"></pre>
 							<div class="flex items-center gap-2 font-mono text-[12px] text-neutral-300">
 								<span class="text-neutral-600">&gt;</span>
-								<input id="q29-command" autocomplete="off" spellcheck="false" placeholder="VERIFY ..." aria-label="Terminal command" class="flex-1 bg-transparent placeholder-neutral-800 focus:outline-none" />
+								<input id="q29-command" autocomplete="off" spellcheck="false" placeholder="VERIFY ..." aria-label="Terminal command" class="flex-1 bg-transparent placeholder-neutral-600 focus:outline-none" />
 							</div>
 						</form>
 					)}
@@ -3260,13 +3264,13 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 				<!-- Hints -->
 				<div data-hints class={`border-t border-neutral-800 px-6 py-4${revealedHints.length === 0 ? ' hidden' : ''}`}>
-					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">
+					<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-500 uppercase">
 						{isQ30 ? 'Case Notes' : 'Terminal Notes'}
 					</p>
 					<ul class="space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
 							<li class="flex gap-3 rounded border border-neutral-800 bg-black/40 px-4 py-2.5" data-hint-number={h.hintNumber}>
-								<span class="shrink-0 font-mono text-[9px] text-neutral-700 uppercase pt-0.5">N{h.hintNumber}</span>
+								<span class="shrink-0 font-mono text-[9px] text-neutral-500 uppercase pt-0.5">N{h.hintNumber}</span>
 								<span class="text-xs text-neutral-500 leading-relaxed">{h.text}</span>
 							</li>
 						))}
@@ -3278,12 +3282,12 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					<div class="border-t border-neutral-800 px-6 py-5 space-y-4">
 						{nextHint <= MAX_HINTS && (
 							<button type="button" data-hint-button data-next-hint={nextHint}
-								class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500">
-								Request {isQ30 ? 'case note' : 'terminal note'} {nextHint}<span class="ml-1 text-neutral-800">— halves score</span>
+								class="font-mono text-[10px] tracking-[0.1em] text-neutral-500 uppercase transition-colors hover:text-neutral-500">
+								Request {isQ30 ? 'case note' : 'terminal note'} {nextHint}<span class="ml-1 text-neutral-600">— halves score</span>
 							</button>
 						)}
 						<div>
-							<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-700 uppercase">
+							<p class="mb-2 font-mono text-[9px] tracking-[0.2em] text-neutral-500 uppercase">
 								{isQ30 ? 'Response' : 'Terminal Input'}
 							</p>
 							<form data-submit-form
@@ -3298,20 +3302,20 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 								<div class="flex gap-2">
 									<input type="text" name="answer" autocomplete="off" spellcheck="false"
 										placeholder={qm.placeholder} aria-label={qm.placeholder}
-										class={`flex-1 rounded border bg-black px-3 py-2 font-mono text-sm placeholder-neutral-800 transition-colors focus:outline-none ${isQ30 ? 'border-neutral-600 text-neutral-100 focus:border-neutral-400' : 'border-neutral-700 text-neutral-200 focus:border-neutral-600'}`}/>
+										class={`flex-1 rounded border bg-black px-3 py-2 font-mono text-sm placeholder-neutral-600 transition-colors focus:outline-none ${isQ30 ? 'border-neutral-600 text-neutral-100 focus:border-neutral-400' : 'border-neutral-700 text-neutral-200 focus:border-neutral-600'}`}/>
 									<button type="submit"
 										class={`rounded border px-4 py-2 font-mono text-[10px] tracking-[0.15em] uppercase transition-colors ${isQ30 ? 'border-neutral-500 bg-neutral-800 text-neutral-300 hover:border-neutral-300 hover:bg-neutral-700 hover:text-neutral-100' : 'border-neutral-700 bg-neutral-900 text-neutral-400 hover:border-neutral-600 hover:bg-neutral-800 hover:text-neutral-200'}`}>
 										{isQ30 ? 'Submit' : 'Enter'}
 									</button>
 								</div>
-								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-700" data-result aria-live="polite"></p>
+								<p class="mt-2 min-h-[1rem] font-mono text-[10px] text-neutral-500" data-result aria-live="polite"></p>
 							</form>
 						</div>
 					</div>
 				)}
 
 			</div>
-			<div class="mt-5 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+			<div class="mt-5 flex items-center justify-between font-mono text-[10px] text-neutral-600">
 				<span>{isQ30 || isSolved ? 'THE CONTINUITY' : 'BLACKWOOD — EVIDENCE CORRELATION'}</span>
 				<span>FILE 71-C</span>
 			</div>
@@ -3341,7 +3345,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 							<span class="font-mono text-[10px] text-neutral-600 tracking-widest">{view.basePoints} PTS</span>
 						</div>
 						<div>
-							<p class="mb-0.5 font-mono text-[10px] tracking-[0.3em] text-neutral-700">CHALLENGE {slotLabel}</p>
+							<p class="mb-0.5 font-mono text-[10px] tracking-[0.3em] text-neutral-500">CHALLENGE {slotLabel}</p>
 							<h1 class="text-xl font-semibold tracking-tight text-neutral-100">{view.title}</h1>
 						</div>
 					</div>
@@ -3360,20 +3364,20 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<!-- Meta strip -->
 				<div class="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-neutral-800 bg-neutral-950/40 px-6 py-3">
 					<div class="flex items-center gap-2 font-mono text-[10px]">
-						<span class="text-neutral-700">STATUS</span>
+						<span class="text-neutral-500">STATUS</span>
 						<span data-status class={isSolved ? 'text-neutral-500' : 'text-neutral-600'}>
 							{isSolved ? 'SOLVED' : 'ACTIVE'}
 						</span>
 					</div>
 					<div class="flex items-center gap-2 font-mono text-[10px]">
-						<span class="text-neutral-700">TOKEN</span>
-						<span class="tracking-widest text-neutral-700">{gp.token}</span>
+						<span class="text-neutral-500">TOKEN</span>
+						<span class="tracking-widest text-neutral-500">{gp.token}</span>
 					</div>
 				</div>
 
 				<!-- Briefing block -->
 				<div class="px-6 py-6">
-					<p class="mb-3 font-mono text-[10px] tracking-[0.3em] text-neutral-700 uppercase">Briefing</p>
+					<p class="mb-3 font-mono text-[10px] tracking-[0.3em] text-neutral-500 uppercase">Briefing</p>
 					<div class="rounded border border-neutral-800 bg-neutral-950/60 p-5">
 						<pre class="whitespace-pre-wrap font-mono text-sm leading-relaxed text-neutral-300">{gp.prompt}</pre>
 					</div>
@@ -3389,7 +3393,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 				<!-- Hints section -->
 				<section class="border-t border-neutral-800 px-6 py-5" data-hints aria-label="Field assistance">
-					<p class="mb-3 font-mono text-[10px] tracking-[0.3em] text-neutral-700 uppercase">Field Assistance</p>
+					<p class="mb-3 font-mono text-[10px] tracking-[0.3em] text-neutral-500 uppercase">Field Assistance</p>
 					<ul class="mb-3 space-y-2" data-hint-list>
 						{revealedHints.map((h) => (
 							<li class="flex gap-3 rounded border border-neutral-800 bg-neutral-950/60 px-4 py-3" data-hint-number={h.hintNumber}>
@@ -3400,9 +3404,9 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 					</ul>
 					{isCurrent && nextHint <= MAX_HINTS && (
 						<button type="button" data-hint-button data-next-hint={nextHint}
-							class="font-mono text-[10px] tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:text-neutral-500">
+							class="font-mono text-[10px] tracking-[0.1em] text-neutral-500 uppercase transition-colors hover:text-neutral-500">
 							Request hint {nextHint}
-							<span class="ml-1 text-neutral-800">— halves this challenge's score</span>
+							<span class="ml-1 text-neutral-600">— halves this challenge's score</span>
 						</button>
 					)}
 				</section>
@@ -3410,12 +3414,12 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 				<!-- Submit section -->
 				{isCurrent && (
 					<div class="border-t border-neutral-800 px-6 py-6">
-						<p class="mb-3 font-mono text-[10px] tracking-[0.3em] text-neutral-700 uppercase">Submit Finding</p>
+						<p class="mb-3 font-mono text-[10px] tracking-[0.3em] text-neutral-500 uppercase">Submit Finding</p>
 						<form data-submit-form>
 							<div class="flex gap-3">
 								<input type="text" name="answer" autocomplete="off" spellcheck="false"
 									placeholder="Enter your answer…" aria-label="Your answer"
-									class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-4 py-2.5 text-sm text-neutral-200 placeholder-neutral-700 transition-colors focus:border-neutral-500 focus:outline-none"/>
+									class="flex-1 rounded border border-neutral-700 bg-neutral-950 px-4 py-2.5 text-sm text-neutral-200 placeholder-neutral-600 transition-colors focus:border-neutral-500 focus:outline-none"/>
 								<button type="submit"
 									class="rounded border border-neutral-700 bg-neutral-800 px-6 py-2.5 text-sm font-medium text-neutral-300 transition-colors hover:border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100">
 									Submit
@@ -3428,7 +3432,7 @@ const ts = TIER_STYLE[view.tier as keyof typeof TIER_STYLE] ?? TIER_STYLE.easy;
 
 			</article>
 
-			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-800">
+			<div class="mt-6 flex items-center justify-between font-mono text-[10px] text-neutral-600">
 				<span>BLACKWOOD INVESTIGATIVE BUREAU</span>
 				<span>FILE 71-C · {new Date().getFullYear()}</span>
 			</div>

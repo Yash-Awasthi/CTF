@@ -6,8 +6,8 @@ defineChallengeTests({
   slot: 19,
   key: 'the-same-file',
   title: 'The Same File',
-  tier: 'medium',
-  basePoints: 200,
+  tier: 'hard',
+  basePoints: 250,
   attributionEnabled: false,
   customTests: () => {
     describe('Q19 answer as copied from the memo', () => {

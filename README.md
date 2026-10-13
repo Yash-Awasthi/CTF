@@ -96,11 +96,11 @@ Players never see standings; the leaderboard is public only after results are pu
 
 `score = base_points × time_factor × hint_factor`, stored as integer milli-points.
 
-- Base points: slots 1–6 score 100, 7–12 score 150, 13–20 score 200, 21–27 score 300, 28–29 score
-  350, 30 scores 500.
+- Base points never fall from one slot to the next: slots 1–6 score 100, 7–12 score 150, 13–18
+  score 200, 19–23 score 250, then 24 scores 300 and each later slot 50 more, up to 600 for slot 30.
 - Time factor falls linearly from 1.0 to 0.5 over the event.
 - Taking any hint halves that challenge's score (once, however many hints).
-- Wrong answers to attribution slots (8, 15, 16, 17, 28) that match another player's answer are
+- Wrong answers to attribution slots (8, 15, 16, 17, 27, 28, 29) that match another player's answer are
   recorded as strikes; a second strike on a different challenge disqualifies.
 
 ## Tests

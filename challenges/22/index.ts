@@ -46,7 +46,7 @@ const challenge: ChallengeModule<Public, Q22Private> = {
 		key: 'the-alibi',
 		title: 'The Alibi',
 		tier: 'hard',
-		basePoints: 300,
+		basePoints: 250,
 		attributionEnabled: false,
 	},
 	hints: [

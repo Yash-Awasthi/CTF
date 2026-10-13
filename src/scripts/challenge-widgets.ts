@@ -199,7 +199,7 @@ document.querySelectorAll<HTMLButtonElement>('[data-spectrogram]').forEach((btn)
 	btn.remove();
 }));
 
-// ── Q28: the Ledger, checked row by row on the server ─────────────────────────
+// ── Q28: the Ledger, checked on the server; it says how many rows reconcile, not which ─
 const q28Form = $<HTMLFormElement>('q28-ledger');
 if (q28Form) {
 	const status = $('q28-status')!;
@@ -207,21 +207,17 @@ if (q28Form) {
 		e.preventDefault();
 		const cells: Record<string, string> = {};
 		q28Form.querySelectorAll<HTMLInputElement>('[data-cell]').forEach((i) => (cells[i.dataset.cell!] = i.value));
+		const folio = $<HTMLInputElement>('q28-folio')?.value ?? '';
 		status.textContent = 'Checking the Ledger…';
 		const res = await fetch(`/${slug}/ledger`, {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ cells }),
+			body: JSON.stringify({ folio, cells }),
 		});
 		const data: any = await res.json().catch(() => ({}));
-		if (!res.ok || !Array.isArray(data.rows)) return void (status.textContent = 'Ledger unavailable.');
-		(data.rows as boolean[]).forEach((ok, i) => {
-			const tr = q28Form.querySelector<HTMLElement>(`[data-row="${i}"]`)!;
-			tr.style.background = ok ? 'rgba(16,185,129,.08)' : '';
-			tr.querySelectorAll('input').forEach((inp) => (inp.style.borderColor = ok ? '#065f46' : ''));
-		});
-		const done = (data.rows as boolean[]).filter(Boolean).length;
-		if (!data.complete) return void (status.textContent = `${done} of ${data.rows.length} rows reconstructed. The current row stays blank.`);
+		if (!res.ok) return void (status.textContent = 'Ledger unavailable.');
+		if (!data.folio) return void (status.textContent = 'The Ledger has no folio by that number.');
+		if (!data.complete) return void (status.textContent = `${data.reconciled} of ${data.total} rows reconcile. The current row stays blank.`);
 		status.textContent = 'All rows reconstructed. The Ledger printed one more.';
 		const row = $('q28-current')!;
 		row.replaceChildren();

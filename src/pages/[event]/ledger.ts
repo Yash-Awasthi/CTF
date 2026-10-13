@@ -1,9 +1,10 @@
 /**
- * POST /{event}/ledger  { cells: { [blankId]: string } }
+ * POST /{event}/ledger  { folio: string, cells: { [blankId]: string } }
  *
- * Q28's Ledger. Checks the player's rebuilt role table row by row (never cell by
- * cell) and, once every row is right, prints the current cycle with the
- * reference for its open role — the Q28 answer.
+ * Q28's Ledger. Opens only at the folio Mira left (the player's Q27 answer), then
+ * reports how many rows of the rebuilt role table reconcile (never which ones) and,
+ * once every row is right, prints the current cycle with the reference for its
+ * open role — the Q28 answer.
  */
 import type { APIRoute } from 'astro';
 import { createDb } from '../../lib/db/client';
@@ -27,7 +28,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
 	const denied = await gateArtifact(auth, 28);
 	if (denied) return json({ error: 'locked' }, denied.status);
 
-	const body = (await request.json().catch(() => null)) as { cells?: unknown } | null;
+	const body = (await request.json().catch(() => null)) as { folio?: unknown; cells?: unknown } | null;
 	const cells = body?.cells;
 	if (!cells || typeof cells !== 'object') return json({ error: 'invalid_input' }, 400);
 
@@ -36,14 +37,17 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
 		28,
 	);
 	const { rows } = instance.publicData as Q28Public;
-	const { expected, answer } = instance.privateData as Q28Private;
-	const given = cells as Record<string, unknown>;
+	const { expected, answer, folio } = instance.privateData as Q28Private;
+	if (String(body?.folio ?? '').trim() !== folio) return json({ folio: false, complete: false });
 
-	const status = checkLedger(rows, expected, given);
-	if (!status.every(Boolean)) return json({ rows: status, complete: false });
+	const status = checkLedger(rows, expected, cells as Record<string, unknown>);
+	const reconciled = status.filter(Boolean).length;
+	if (reconciled < rows.length) return json({ folio: true, reconciled, total: rows.length, complete: false });
 
 	return json({
-		rows: status,
+		folio: true,
+		reconciled,
+		total: rows.length,
 		complete: true,
 		current: {
 			cycle: '6',

@@ -1,17 +1,17 @@
 /**
  * The "dead" Vale Collection archive website — Q17 artifact.
  *
- * The page content claims it was last updated in 2013.
- * The HTTP Last-Modified header says otherwise.
- * Participants must inspect response headers (DevTools / curl) to find the date.
+ * The page content claims it was last updated in 2013, and so does the forged
+ * Last-Modified header. The nginx-style ETag still carries the real mtime in hex.
  *
- * Answer: the participant's attributed date, sent as the Last-Modified header.
+ * Answer: the participant's attributed date, readable only by decoding the ETag.
  */
 import type { APIRoute } from 'astro';
 import { gateArtifact } from '../../../lib/challenges/artifact-gate';
 import { createDb } from '../../../lib/db/client';
 import { getEnv } from '../../../lib/runtime';
 import { generateChallengeForParticipant, getEventRoster } from '../../../lib/challenges';
+import { FORGED_MODIFIED, etagFor } from '../../../../challenges/17/index';
 
 export const prerender = false;
 
@@ -23,7 +23,7 @@ export const GET: APIRoute = async ({ locals }) => {
 		{ env: getEnv(), event: auth.event, rollNumber: auth.participant.rollNumber, roster: await getEventRoster(createDb(getEnv().DB), auth.event.id) },
 		17,
 	);
-	const modified = new Date(`${(instance.privateData as { answer: string }).answer}T03:22:11Z`).toUTCString();
+	const answer = (instance.privateData as { answer: string }).answer;
 
 	const html = `<!DOCTYPE html>
 <html lang="en">
@@ -127,7 +127,8 @@ p { font-size: 14px; line-height: 1.8; color: #3a3028; margin-bottom: 14px; }
 	return new Response(html, {
 		headers: {
 			'Content-Type': 'text/html; charset=utf-8',
-			'Last-Modified': modified,
+			'Last-Modified': FORGED_MODIFIED,
+			ETag: etagFor(answer, new TextEncoder().encode(html).length),
 			'Cache-Control': 'private, no-store',
 			'X-Archive-Status': 'preserved',
 			'Server': 'nginx/1.18.0',

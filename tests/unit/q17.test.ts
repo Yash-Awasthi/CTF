@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defineChallengeTests, ctx } from './helpers/challenge-factory';
 import { generateChallengeForParticipant, getAttributionOwnershipMap } from '../../src/lib/challenges/engine';
 import { normalizeAnswer } from '../../src/lib/validation/answer';
+import { FORGED_MODIFIED, etagFor } from '../../challenges/17/index';
 
 defineChallengeTests({
   slot: 17,
@@ -24,6 +25,15 @@ defineChallengeTests({
           seen.add(answer);
         }
         expect(seen.size).toBe(116);
+      });
+
+      it('the ETag decodes to the answer while Last-Modified stays forged in 2013', async () => {
+        const { instance } = await generateChallengeForParticipant(ctx(25_115_040), 17);
+        const answer = (instance.privateData as { answer: string }).answer;
+        const [mtime, size] = etagFor(answer, 5120).replace(/"/g, '').split('-').map((h) => parseInt(h, 16));
+        expect(new Date(mtime * 1000).toISOString().slice(0, 10)).toBe(answer);
+        expect(size).toBe(5120);
+        expect(FORGED_MODIFIED).toContain('2013');
       });
     });
   },

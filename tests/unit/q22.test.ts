@@ -22,7 +22,7 @@ defineChallengeTests({
   key: 'the-alibi',
   title: 'The Alibi',
   tier: 'hard',
-  basePoints: 300,
+  basePoints: 250,
   attributionEnabled: false,
   customTests: () => {
     describe('Q22 access logs', () => {

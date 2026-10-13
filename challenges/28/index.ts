@@ -1,8 +1,10 @@
 /**
  * Q28 — The Ledger
  *
- * Following "follow the names", the investigator reaches a records database that
- * tracks the same five roles through every cycle since 1871. Most cells are blank.
+ * Following "follow the names", the investigator opens the Ledger at the folio Mira
+ * left in Q27 (the player's own Q27 answer; any other folio is refused). It tracks
+ * the same five roles through every cycle since 1871. Most cells are blank, and the
+ * Ledger only says how many rows reconcile, never which.
  * The Ledger only prints the current row once the earlier rows are rebuilt from
  * names found across the case — two of them this player's own answers (their Q10
  * register file and their Q11 suppressed owner), one their own codename.
@@ -39,6 +41,8 @@ export interface Q28Private {
 	answer: string;
 	/** blank id → accepted value (compared after upper-casing and collapsing spaces) */
 	expected: Record<string, string>;
+	/** The folio the Ledger opens at: this player's Q27 answer. */
+	folio: string;
 }
 
 export const normalizeCell = (v: string) => v.toUpperCase().replace(/[^A-Z0-9-]+/g, ' ').trim();
@@ -77,17 +81,17 @@ const challenge: ChallengeModule<Q28Public, Q28Private> = {
 		key: 'the-ledger',
 		title: 'The Ledger',
 		tier: 'hard',
-		basePoints: 350,
+		basePoints: 500,
 		attributionEnabled: true,
 	},
 	hints: [
 		{
 			order: 1,
-			text: 'Every blank is a name you have already met: the 1889 registry and the heritage page, the 1948 owner, your own Q10 and Q11 answers, the caretaker who reported Mira missing, a stamp on a photograph.',
+			text: 'Mira told you where the Ledger opens. Every blank is a name you have already met, in a registry, a heritage page, a redaction, your own earlier answers, the person who reported Mira missing, and a stamp read by its role code.',
 		},
 		{
 			order: 2,
-			text: 'Two rows are about you. Mira was both the Subject and the Investigator of her cycle. The Successor of a cycle is whoever inherits its file next; in 2015 that was the person the Bureau reassigned 71-C to, under the codename it gave you.',
+			text: 'TC-III-W on the 1960s photograph means Cycle 3, Witness: the man labelled on its reverse. Mira was both Subject and Investigator of her cycle. A Successor is whoever inherits the file next.',
 		},
 	],
 
@@ -95,12 +99,13 @@ const challenge: ChallengeModule<Q28Public, Q28Private> = {
 		const token = await ctx.rng.string(8, ALPHABETS.upper);
 		const q10 = ((await ctx.related(10)).privateData as { answer: string }).answer;
 		const q11 = ((await ctx.related(11)).privateData as { answer: string }).answer;
+		const folio = ((await ctx.related(27)).privateData as { answer: string }).answer;
 		const { rows, expected } = buildLedger(q10, q11, getCodename(ctx.rollNumber));
 
 		const prompt = [
 			'THE LEDGER — HISTORICAL RECORDS DATABASE',
 			'',
-			'Mira said: follow the names. They led here.',
+			'Mira said: follow the names. She also said where to open it.',
 			'',
 			'The database tracks five roles through every cycle since 1871:',
 			'  COLLECTOR     holds the objects, never by choice',
@@ -111,6 +116,7 @@ const challenge: ChallengeModule<Q28Public, Q28Private> = {
 			'',
 			'Most cells are blank. The Ledger will not print the current row',
 			'until the earlier rows are complete. Rebuild them from what you found.',
+			'It reports how many rows reconcile. It does not say which.',
 			'',
 			'Marginal note, unsigned, repeated in every cycle\'s file:',
 			"  '█████ CHANGE. █████ REMAIN. █████ CHANGE. █████ REMAIN.",
@@ -122,7 +128,7 @@ const challenge: ChallengeModule<Q28Public, Q28Private> = {
 
 		return {
 			publicData: { prompt, token, rows },
-			privateData: { answer: ctx.attributionAnswer!, expected },
+			privateData: { answer: ctx.attributionAnswer!, expected, folio },
 		};
 	},
 

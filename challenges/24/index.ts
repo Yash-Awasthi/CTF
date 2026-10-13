@@ -4,24 +4,51 @@
  * All evidence threads converge: motive (protecting the 2001 connection),
  * means (elevated access, Q21), opportunity (Q22 alibi broken), and Mira's
  * named fear (Q23). The participant synthesizes and closes the case — wrongly,
- * as Q25–27 will reveal. Peak false resolution. Fixed: DANIEL REYES.
+ * as Q25–27 will reveal. Peak false resolution.
+ *
+ * The board quotes this player's own Q15, Q22 and Q23 answers, but one of them is
+ * silently miscopied (records change). The Bureau will not file a board that
+ * misquotes its evidence, so the filing needs the name and that exhibit's true value.
+ * Answer: DANIEL REYES / <true value>, personal to each player.
  *
  * Q29 contribution: none
  * Mutable: no
  */
-import { exactMatch } from '../../src/lib/challenges/validators';
 import { ALPHABETS } from '../../src/lib/crypto/constants';
+import type { DeterministicRng } from '../../src/lib/crypto/rng';
 import type { ChallengeModule, GeneratedChallenge } from '../../src/lib/challenges/types';
+import { ROOMS } from '../22/index';
 
 interface Public {
 	prompt: string;
 	token: string;
 }
-interface Private {
+export interface Q24Private {
 	answer: string;
+	/** Which exhibit the board misquotes, and its true value. */
+	altered: 'met' | 'room' | 'box';
+	truth: string;
 }
 
-const challenge: ChallengeModule<Public, Private> = {
+const DAY = 86_400_000;
+
+/** A plausible wrong copy of one exhibit: another day in 2001, another room, one box digit off. */
+export async function miscopy(kind: Q24Private['altered'], value: string, rng: DeterministicRng): Promise<string> {
+	if (kind === 'room') return rng.choice(ROOMS.filter((r) => r !== value));
+	if (kind === 'box') {
+		const i = await rng.int(0, value.length);
+		const d = (Number(value[i]) + 1 + (await rng.int(0, 9))) % 10;
+		return value.slice(0, i) + d + value.slice(i + 1);
+	}
+	const base = Date.parse(`${value}T00:00:00Z`);
+	const step = (1 + (await rng.int(0, 20))) * DAY;
+	const later = new Date(base + step).toISOString().slice(0, 10);
+	return later.startsWith('2001') ? later : new Date(base - step).toISOString().slice(0, 10);
+}
+
+const clean = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim();
+
+const challenge: ChallengeModule<Public, Q24Private> = {
 	metadata: {
 		slot: 24,
 		key: 'case-closed',
@@ -33,19 +60,22 @@ const challenge: ChallengeModule<Public, Private> = {
 	hints: [
 		{
 			order: 1,
-			text: 'Everything you have points one way. No new evidence is needed — review what you have gathered.',
+			text: 'The board was typed from your notes, not from the evidence. Reopen Q15, Q22 and Q23 and check every quoted value against the source itself.',
 		},
 		{
 			order: 2,
-			text: 'Motive, means, opportunity, and direct evidence all converge on the same name. Submit the full name of the person responsible.',
+			text: "Exactly one of the meeting date, the room and the box number differs from its evidence. File the full name and that exhibit's true value.",
 		},
 	],
 
-	async generate(ctx): Promise<GeneratedChallenge<Public, Private>> {
+	async generate(ctx): Promise<GeneratedChallenge<Public, Q24Private>> {
 		const token = await ctx.rng.string(8, ALPHABETS.upper);
-		// The board quotes this player's own findings, so it reads as their case.
 		const found = async (slot: number) => ((await ctx.related(slot)).privateData as { answer: string }).answer;
-		const [met, room, box] = [await found(15), await found(22), await found(23)];
+		const truths = { met: await found(15), room: await found(22), box: await found(23) };
+		const altered = await ctx.rng.choice(['met', 'room', 'box'] as const);
+		const shown: Record<Q24Private['altered'], string> = { ...truths };
+		shown[altered] = await miscopy(altered, truths[altered], ctx.rng);
+		const { met, room, box } = shown;
 
 		const prompt = [
 			'BLACKWOOD BUREAU — CASE BOARD',
@@ -72,17 +102,22 @@ const challenge: ChallengeModule<Public, Private> = {
 			'',
 			'Four independent threads. One name.',
 			'',
-			'Who is responsible for Mira Castellan\'s disappearance? (Submit full name.)',
+			'FILING CHECK: the Bureau will not close a case whose board misquotes',
+			'its own evidence. This board was typed from your notes.',
+			'',
+			'File the case: the person responsible, and the true value of the',
+			'exhibit the board gets wrong.  (Format: FULL NAME / VALUE)',
 		].join('\n');
 
 		return {
 			publicData: { prompt, token },
-			privateData: { answer: 'DANIEL REYES' },
+			privateData: { answer: `DANIEL REYES / ${truths[altered]}`, altered, truth: truths[altered] },
 		};
 	},
 
 	validate(instance, normalizedAnswer) {
-		return exactMatch(normalizedAnswer, instance.privateData.answer);
+		const got = clean(normalizedAnswer);
+		return { correct: got.startsWith('DANIEL REYES ') && got.slice(13) === clean(instance.privateData.truth) };
 	},
 };
 

@@ -12,7 +12,7 @@ defineChallengeTests({
   key: 'the-ledger',
   title: 'The Ledger',
   tier: 'hard',
-  basePoints: 350,
+  basePoints: 500,
   attributionEnabled: true,
   customTests: () => {
     describe('Q28 ledger', () => {
@@ -26,6 +26,8 @@ defineChallengeTests({
           expect(expected.c3s).toBe(q10);
           expect(expected.c3c).toBe(q11);
           expect(expected.c5n).toBe(getCodename(roll));
+          const q27 = ((await instanceOf(roll, 27)).privateData as { answer: string }).answer;
+          expect((q28.privateData as Q28Private).folio).toBe(q27);
 
           const typed = Object.fromEntries(Object.entries(expected).map(([k, v]) => [k, `  ${v.toLowerCase().replace('.', '')} `]));
           expect(checkLedger(rows, expected, typed).every(Boolean)).toBe(true);

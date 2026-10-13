@@ -49,11 +49,11 @@ const challenge: ChallengeModule<Q12Public, Q12Private> = {
 	hints: [
 		{
 			order: 1,
-			text: 'Daniel gave you more than he realized — read his contact message carefully for details he reused.',
+			text: 'Daniel says the password is in his subject line. The relay shows mail exactly as it travelled, headers included.',
 		},
 		{
 			order: 2,
-			text: 'His portal password is the same string he used as a reference code in his introductory message. Check what he sent.',
+			text: 'A header of the form =?UTF-8?B?…?= is an RFC 2047 encoded word: the part between the last two question marks is base64.',
 		},
 	],
 
@@ -79,21 +79,25 @@ const challenge: ChallengeModule<Q12Public, Q12Private> = {
 			'MEMO-published.html',
 		]);
 
+		const subject = btoa(`Vale estate review — ref ${credential}`.replace(/—/g, '-'));
 		const prompt = [
 			'DANIEL REYES — CONTACT RECEIVED',
 			'',
 			'A message arrived through the Blackwood routing system.',
-			'No bureau registration. Unsolicited.',
+			'No bureau registration. Unsolicited. Shown as relayed.',
 			'',
 			"--- MESSAGE ---",
+			'From: "D. Reyes" <d.reyes@vale-provenance.org>',
+			'To: case-71c@blackwood-bureau.org',
+			`Subject: =?UTF-8?B?${subject}?=`,
+			'X-Relay: blackwood-relay-3; spf=none',
+			'',
 			'"I have been assisting with the Vale estate provenance review since',
 			'before Mira was contracted. My private archive portal is linked below.',
-			`Reference code: ${credential}`,
+			'The password is the reference in my subject line.',
 			'Please review the collection transfer document first."',
 			'— D. REYES',
 			'--- END MESSAGE ---',
-			'',
-			'The portal asks for a password. He never sent one.',
 			'',
 			'What is the filename of the collection transfer document?',
 		].join('\n');

@@ -23,6 +23,14 @@ interface Private {
 	answer: string;
 }
 
+/** The headers' forged Last-Modified, matching the page's claim. */
+export const FORGED_MODIFIED = 'Tue, 12 Nov 2013 09:14:02 GMT';
+
+/** nginx-style ETag: the file's real mtime and size in hex. Nobody thought to forge it. */
+export function etagFor(answer: string, size: number): string {
+	return `"${(Date.parse(`${answer}T03:22:11Z`) / 1000).toString(16)}-${size.toString(16)}"`;
+}
+
 /** Every day of 2018 and 2019, all after Mira's disappearance. Kept small: attribution shuffles the whole pool per request. */
 export function buildModifiedPool(): string[] {
 	const out: string[] = [];
@@ -42,11 +50,11 @@ const challenge: ChallengeModule<Public, Private> = {
 	hints: [
 		{
 			order: 1,
-			text: '"Defunct" sites do not usually update themselves. Check when the page actually changed, not what it says on screen.',
+			text: 'Whoever keeps the site alive also set its Last-Modified header to agree with the banner. Servers fingerprint files in more than one header.',
 		},
 		{
 			order: 2,
-			text: 'The Last-Modified response header is set by the server, not the page content. It cannot be faked by the HTML. Check the raw HTTP headers.',
+			text: "An nginx ETag is two hex numbers joined by a dash: the file's modification time in Unix seconds, then its size in bytes.",
 		},
 	],
 
@@ -64,14 +72,10 @@ const challenge: ChallengeModule<Public, Private> = {
 			'',
 			'Mira Castellan disappeared in October 2015.',
 			'',
-			'A server always knows when it last modified a file.',
-			'That information travels in the HTTP response headers —',
-			'separate from anything the page itself claims.',
+			'The page says nothing changed. So do its Last-Modified headers.',
+			'Someone took care to make both agree.',
 			'',
-			'Check the response headers for that URL.',
-			'(DevTools → Network tab, or: curl -I [url])',
-			'',
-			'What does the Last-Modified header say? (Format: YYYY-MM-DD)',
+			'When did the file really last change? (Format: YYYY-MM-DD)',
 		].join('\n');
 
 		return {

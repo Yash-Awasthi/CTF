@@ -3,9 +3,9 @@
  *
  * Q15 artifact — the published memo from Daniel Reyes.
  *
- * The rendered page shows only the polished, published version.
- * The draft text is buried in an HTML comment — not rendered visually.
- * Participants must View Source (Ctrl+U) or DevTools to find it.
+ * The page shows only the polished, published version. Reyes edited it in place
+ * with an editor that keeps backups; the overwritten draft survives at
+ * daniel-reyes.bak (see that route). The X-Editor header is the only pointer.
  *
  * Hidden: the draft dates Daniel's first meeting with Vale to a day in 2001; that
  * day is attributed per participant and is the Q15 answer.
@@ -14,9 +14,6 @@
 import type { APIRoute } from 'astro';
 import { gateArtifact } from '../../../lib/challenges/artifact-gate';
 import { GET as memoV2 } from './_v2';
-import { createDb } from '../../../lib/db/client';
-import { getEnv } from '../../../lib/runtime';
-import { generateChallengeForParticipant, getEventRoster } from '../../../lib/challenges';
 
 export const prerender = false;
 
@@ -26,14 +23,6 @@ export const GET: APIRoute = async (context) => {
 	if (denied) return denied;
 	// Same address, different content once the player reaches Q19.
 	if (locals.auth!.participant.currentChallenge >= 19) return memoV2(context);
-	const auth = locals.auth!;
-	const { instance } = await generateChallengeForParticipant(
-		{ env: getEnv(), event: auth.event, rollNumber: auth.participant.rollNumber, roster: await getEventRoster(createDb(getEnv().DB), auth.event.id) },
-		15,
-	);
-	const met = new Date(`${(instance.privateData as { answer: string }).answer}T12:00:00Z`)
-		.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
-
 	const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -56,13 +45,6 @@ p { font-size: 14px; line-height: 1.85; color: #2a2218; margin-bottom: 16px; }
 </style>
 </head>
 <body>
-<!--
-  DRAFT 1 — do not publish
-  I have known Silas Vale since ${met}, through private auction circles.
-  We met at the Caldwell sale that day. He trusted me with access to
-  the collection long before his death.
-  [REVISION NOTE: change to "engaged by solicitors" version — too much detail]
--->
 <div class="document">
 
   <div class="letterhead">
@@ -110,6 +92,7 @@ p { font-size: 14px; line-height: 1.85; color: #2a2218; margin-bottom: 16px; }
 			'Content-Type': 'text/html; charset=utf-8',
 			'Cache-Control': 'private, no-store',
 			'X-Document-Status': 'published',
+			'X-Editor': 'GNU nano 2.2.6 (backup on save)',
 		},
 	});
 };

@@ -2,15 +2,16 @@
  * Q15 — Daniel's Explanation
  *
  * Daniel provides a memo explaining the impossible date anomaly from Q14.
- * Inspecting the HTML source reveals an earlier draft in a comment — the draft
- * contradicts the published version: it dates his first meeting with Vale to 2001,
+ * He edited it in place on the server; his editor (named only in an X-Editor
+ * response header) left the overwritten draft at /case/memo/daniel-reyes.bak. The
+ * draft contradicts the published version: it dates his first meeting with Vale to 2001,
  * not "late 2013". The meeting date in the draft is the answer.
  *
  * Attribution-enabled: each participant's draft names a different day of 2001, so a
  * shared answer identifies its owner. The year stays 2001 for Q24.
  *
  * Q29 contribution: none (mutation to Q19 is the continuity marker)
- * Mutable: v1 here (draft visible in source) — filename returns at Q19 with
+ * Mutable: v1 here (draft in the .bak copy) — filename returns at Q19 with
  *   content changed (no comment, different sentence).
  */
 import { exactMatch } from '../../src/lib/challenges/validators';
@@ -37,11 +38,11 @@ const challenge: ChallengeModule<Public, Private> = {
 	hints: [
 		{
 			order: 1,
-			text: 'The published memo was not the first draft. Look at the HTML source for evidence of earlier versions.',
+			text: 'The page source is clean this time. Look at what the server says about how the file was written.',
 		},
 		{
 			order: 2,
-			text: 'HTML comment blocks are used to preserve draft text during revision. Find what was commented out before publishing.',
+			text: 'Editors that save over a file often keep the old copy beside it under a predictable name. Try the memo URL with the usual backup suffixes.',
 		},
 	],
 
@@ -59,9 +60,8 @@ const challenge: ChallengeModule<Public, Private> = {
 			'The published memo says he was engaged by solicitors in late 2013.',
 			'Mira was contracted in June 2015.',
 			'',
-			'Published documents sometimes carry remnants of earlier drafts.',
-			'What the page displays is not always what the page contains.',
-			'Inspect the page source.',
+			'He says this is the only version. He wrote it on the server,',
+			'and saved over whatever was there before.',
 			'',
 			'On what date does the draft say Reyes first met Silas Vale? (YYYY-MM-DD)',
 		].join('\n');

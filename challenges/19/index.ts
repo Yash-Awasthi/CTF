@@ -26,8 +26,8 @@ const challenge: ChallengeModule<Public, Private> = {
 		slot: 19,
 		key: 'the-same-file',
 		title: 'The Same File',
-		tier: 'medium',
-		basePoints: 200,
+		tier: 'hard',
+		basePoints: 250,
 		attributionEnabled: false,
 	},
 	hints: [

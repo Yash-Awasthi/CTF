@@ -5,6 +5,6 @@ defineChallengeTests({
   key: 'access-granted',
   title: 'Access Granted',
   tier: 'hard',
-  basePoints: 300,
+  basePoints: 250,
   attributionEnabled: false,
 });

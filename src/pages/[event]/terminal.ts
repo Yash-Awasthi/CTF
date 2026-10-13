@@ -2,11 +2,15 @@
  * POST /{event}/terminal  { command }
  *
  * Q29's correlation terminal. VERIFY checks a reconstructed doctrine and, when it
- * matches the Ledger margin, shows the initials it is signed with.
+ * matches the Ledger margin, shows the initials it is signed with and this player's
+ * countersign, enciphered under the keeper's name.
  */
 import type { APIRoute } from 'astro';
+import { createDb } from '../../lib/db/client';
+import { getEnv } from '../../lib/runtime';
 import { gateArtifact } from '../../lib/challenges/artifact-gate';
-import { isDoctrine } from '../../../challenges/29/index';
+import { generateChallengeForParticipant, getEventRoster } from '../../lib/challenges';
+import { KEEPER, isDoctrine, vigenere, type Q29Private } from '../../../challenges/29/index';
 
 export const prerender = false;
 
@@ -27,6 +31,11 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
 	const match = /^verify\s+([\s\S]+)$/i.exec(command);
 	if (!match) return json({ output: 'UNKNOWN COMMAND. Available: VERIFY <doctrine>' });
 	if (!isDoctrine(match[1])) return json({ output: 'NO MATCH IN THE LEDGER MARGIN.' });
+	const { instance } = await generateChallengeForParticipant(
+		{ env: getEnv(), event: auth.event, rollNumber: auth.participant.rollNumber, roster: await getEventRoster(createDb(getEnv().DB), auth.event.id) },
+		29,
+	);
+	const countersign = vigenere((instance.privateData as Q29Private).answer, KEEPER);
 	return json({
 		output: [
 			'MATCH — LEDGER MARGIN, ALL CYCLES.',
@@ -36,6 +45,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
 			'  THE INVESTIGATION MUST CONTINUE.',
 			'',
 			'  — initialled  T. C.',
+			`  — countersign, keyed to the keeper's full name:  ${countersign}`,
 		].join('\n'),
 	});
 };

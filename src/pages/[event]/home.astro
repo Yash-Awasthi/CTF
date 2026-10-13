@@ -43,6 +43,15 @@ const solvedSet = new Set(solvedSlots);
 const completed = solvedSet.has(30);
 const entries = solvedSlots.map((slot) => ({ slot, title: getChallengeBySlot(slot)?.metadata.title ?? '', text: CASEBOOK[slot] }));
 const lead = getChallengeBySlot(current)?.metadata.title ?? '';
+// Act names stay sealed until the player reaches them, so they never spoil the turn.
+const ACTS = [
+	{ name: 'The Trail', from: 1, to: 9 },
+	{ name: 'The Collection', from: 10, to: 15 },
+	{ name: 'The Haunting', from: 16, to: 20 },
+	{ name: 'The Case Against Him', from: 21, to: 24 },
+	{ name: 'The Unravelling', from: 25, to: 27 },
+	{ name: 'The Pattern', from: 28, to: 30 },
+];
 
 function fmt(seconds: number): string {
 	const s = Math.max(0, seconds);
@@ -91,7 +100,7 @@ else view = 'ended'; // FROZEN or expired-LIVE
 						<p class="font-mono text-[10px] tracking-[0.3em] text-neutral-600 uppercase">{current >= 30 ? 'The Continuity' : 'Blackwood Investigative Bureau'} · Case 71-C</p>
 						<h1 class="mt-1 text-2xl font-semibold">{completed ? 'Case 71-C is closed.' : 'The investigation is open.'}</h1>
 					</div>
-					<p class="text-right font-mono text-[10px] text-neutral-600">INV-{roll}<br /><span class="text-neutral-700">{codename}</span></p>
+					<p class="text-right font-mono text-[10px] text-neutral-600">INV-{roll}<br /><span class="text-neutral-500">{codename}</span></p>
 				</header>
 
 				{completed ? (
@@ -120,10 +129,28 @@ else view = 'ended'; // FROZEN or expired-LIVE
 					<p class="text-right font-mono text-[10px] leading-relaxed text-neutral-600">remaining<br />server time is authoritative</p>
 				</div>
 
-				<ol class="grid grid-cols-10 gap-1" aria-label="Case files">
-					{Array.from({ length: 30 }, (_, i) => i + 1).map((n) => (
-						<li title={`Q${n}`} class={`h-2 rounded-sm ${solvedSet.has(n) ? 'bg-emerald-500/70' : n === current ? 'bg-neutral-500 animate-pulse' : 'bg-neutral-800'}`}></li>
-					))}
+				<ol class="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3" aria-label="Case files by act">
+					{ACTS.map((act) => {
+						const reached = current >= act.from;
+						return (
+							<li>
+								<p class={`mb-1.5 font-mono text-[9px] tracking-[0.25em] uppercase ${reached ? 'text-neutral-400' : 'text-neutral-600'}`}>
+									{reached ? act.name : '— sealed —'}
+								</p>
+								<ol class="flex gap-1">
+									{Array.from({ length: act.to - act.from + 1 }, (_, i) => act.from + i).map((n) => (
+										<li class="flex-1">
+											{solvedSet.has(n) ? (
+												<a href={`/${slug}/challenge/${n}`} title={`Q${n} · filed`} class="block h-2 rounded-sm bg-emerald-500/70 hover:bg-emerald-400"></a>
+											) : (
+												<span title={`Q${n}`} class={`block h-2 rounded-sm ${n === current ? 'bg-neutral-400 animate-pulse' : 'bg-neutral-800'}`}></span>
+											)}
+										</li>
+									))}
+								</ol>
+							</li>
+						);
+					})}
 				</ol>
 
 				<section aria-label="Casebook">
